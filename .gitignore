@@ -18,6 +18,7 @@ staticfiles/
 # VSCodeなどIDE関連
 .vscode/
 .idea/
+*.code-workspace
 
 # Docker関連
 *.pid
