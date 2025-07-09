@@ -1,21 +1,21 @@
 # sao
 Djangoの勤怠管理アプリです
 
-# セットアップ
+## セットアップ
 
 ```
 docker compose up --build
 ```
 
-#  使い方
+## 使い方
 
 ブラウザで ```http://localhost:8000/sao/```にアクセス
 
 
-# ライセンス
+## ライセンス
 
 MIT
 
-# 開発者
+## 開発者
 
 [tatamyiwathy](http://github.com/tatamyiwathy)
