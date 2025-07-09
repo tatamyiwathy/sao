@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block header %}
+{% endblock %}
+
+
+{% block content %}
+
+<script>
+    $('#example').confirmation(options);
+
+    function jump(a) {
+        if (confirm("削除してもよろしいですか？")) {
+            location.href = a.href;
+        }
+    }
+
+</script>
+
+
+<div class="container">
+    <div class="row mt-3">
+
+        <div class="col"></div>
+
+        <div class="col">
+
+            <div class="page-header">
+                <h4>
+                    公休日の設定
+                </h4>
+            </div>
+
+            <div>
+                「国民の祝日」以外の会社公式の休日を設定します
+            </div>
+
+            <div>
+            {% if form.message %}
+            <div class="alert alert-danger" role="alert">
+                {{form.message}}
+            </div>
+            {% endif %}
+            </div>
+
+            <form class="form" method='POST' action={% url 'sao:holiday_settings' %}>
+                <div class="row mt-3">
+                    {% csrf_token %}
+                    <div class="col col-auto">
+                        {{ form }}
+                    </div>
+                    <div class="col col-auto">
+                        <button class="btn btn-primary" type="submit" />追加</button>
+                    </div>
+                </div>
+            </form>
+            <br>
+            <br>
+
+            {% if holidays %}
+            <table class="table table-striped">
+                <tr>
+                    <th>公休日</th>
+                    <th></th>
+                </tr>
+                {% for h in holidays %}
+                <tr>
+                    <td>{{h.holiday}}</td>
+                    <td><a onclick="jump(this); return false;" class=""
+                            href="{% url 'sao:holiday_settings' %}?del={{h.id}}">削除</a></td>
+                </tr>
+
+                {% endfor %}
+            </table>
+            {% else %}
+                設定されていません
+            {% endif %}
+        </div>
+        <div class="col"></div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block footer%}
+{% endblock %}

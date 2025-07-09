@@ -1,0 +1,5 @@
+CREATE USER 'saoadmin'@'localhost' IDENTIFIED BY 'saoadmin';
+CREATE DATABASE sao_db CHARACTER SET utf8;
+GRANT ALL PRIVILEGES ON sao_db.* TO 'saoadmin'@'localhost';
+CREATE DATABASE test_sao_db CHARACTER SET utf8;
+GRANT ALL PRIVILEGES ON test_sao_db.* TO 'saoadmin'@'localhost';

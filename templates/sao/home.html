@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+ 
+{% block content %}
+<form action="" method="POST">
+  {% csrf_token %}
+  {{ form }}
+  <button type="submit" class="btn btn-primary">処理の開始</button>
+</form>
+{% endblock %}
+ 

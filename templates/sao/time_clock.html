@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+
+{% block header %}
+{% endblock %}
+
+
+{% block content %}
+<script>
+	function onload_func() {
+		dd = new Date();
+		year = dd.getYear(); if (year < 2000) year += 1900;
+		mon = dd.getMonth() + 1; if (mon < 10) mon = "0" + mon;
+		date = dd.getDate(); if (date < 10) date = "0" + date;
+		hour = dd.getHours(); if (hour < 10) hour = "0" + hour;
+		min = dd.getMinutes(); if (min < 10) min = "0" + min;
+		sec = dd.getSeconds(); if (sec < 10) sec = "0" + sec;
+		document.getElementById("clock_box").innerHTML =
+			year + "/" + mon + "/" + date + " " +
+			hour + ":" + min + ":" + sec;
+		setTimeout("onload_func()", 1000);
+	}
+
+	window.onload = onload_func;
+
+</script>
+
+
+<div class="container">
+
+	<div class="row mt-3">
+		<div class="col"></div>
+		<div class="col">
+			<div class="card card-default">
+				<div class="card-header">
+					WEB打刻
+				</div>
+
+				<div class="card-body">
+					<div style="margin: 10px">
+						<font size="5">
+							<div id="clock_box"></div>
+						</font>
+					</div>
+
+					<form class="form-inline" method='POST' action={% url 'sao:time_clock' %}>
+						{% csrf_token %}
+
+						<table class="table">
+							<tr>
+								<td>
+									<button class="btn btn-primary" type="submit" name="dakoku"
+										value="退勤" />打刻する</button>
+								</td>
+							</tr>
+						</table>
+					</form>
+
+				</div>
+				<table class="table">
+					{% for stamp in stamps %}
+					<tr>
+						<td>{{ stamp.stamp |date:"Y/n/j H:i:s" }}</td>
+					</tr>
+					{% endfor %}
+				</table>
+
+			</div>
+		</div>
+		<div class="col"></div>
+	</div>
+</div>
+
+{% endblock %}
+
+
+{% block footer %}
+{% endblock %}

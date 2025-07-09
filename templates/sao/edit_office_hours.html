@@ -1,0 +1,6 @@
+{{message}}
+<form method='POST' action='/sao/office_hours/' >
+{% csrf_token %}
+{{form.as_table}}
+<input type='submit' value='追加' />
+</form>

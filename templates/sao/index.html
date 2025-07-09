@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block header %}
+{% endblock %}
+
+{% block content %}
+
+
+<h>
+	社員一覧
+</h>
+	<table id="table-01">
+
+	<tr>
+		<th>社員番号</th><th>氏名</th>
+	</tr>
+    {% for a in employees %}
+		<tr>
+			<td>{{a.employee_no}}</td>
+			<td><a id='name' href={% url sao:sao_proj.sao.views.detail a.employee_no %}>{{a.name}}</a></td>
+		</tr>
+
+	{% endfor %}
+	</table>
+
+{% endblock %}
+
+
+{% block footer%}
+■<a href="javascript:history.back();">戻る</a>
+{% endblock %}
+
+</div><!-- // #footer --> 

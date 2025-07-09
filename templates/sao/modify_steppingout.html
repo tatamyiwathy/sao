@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+
+{% block header %}
+{% endblock %}
+{% block content %}
+
+<script>
+function YesNo() {
+    var res = confirm("削除します");
+    if( res == true ) {
+        // OKなら移動
+        window.location.href = "{% url 'sao:del_steppingout' steppingout record.id year month%}";
+    }
+    else {
+        // キャンセルならアラートボックスを表示
+    }
+}    
+</script>
+
+
+<div class="container">
+	<div class="page-header">
+		{{record.employee}}の外出の変更・削除
+	</div>
+
+    {% if msg %}
+    <div class="alert alert-danger" role="alert">
+        {{msg}}
+    </div>
+    {% endif %}
+
+    <form class="form" name="form1" method="post" action="{% url 'sao:modify_steppingout' steppingout record.id year month%}">
+        {% csrf_token %}
+        {{form.as_p}}
+        <!--<button class="btn btn-primary" type="submit"/>変更</button>-->
+        <input class="btn btn-primary" type="submit" value="変更" />
+        <button class="btn btn-danger" onclick="YesNo(); return false;" />削除</button>
+    </form>
+
+{% endblock %}
+
+{% block footer%}
+{% endblock %}
+
+</div>
+<!-- // #footer -->

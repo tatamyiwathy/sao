@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+{% load widget_tweaks %}
+
+{% block content %}
+
+
+<div class="container">
+    <div class="row mb-5"></div>
+    <div class="row mb-5">
+
+        <div class="col"></div>
+        <div class="col">
+
+            <div class="card">
+                <div class="card-header">
+                    サインアップ
+                </div>
+
+                <div class="card-body">
+                    <form class="form" method="post" action="{% url 'accounts:signup' %}">
+                        {% csrf_token %}
+                        {{ form.non_field_errors }}
+                        {% for field in form %}
+                        <label class="form-label mt-3">{{ field.label }}</label>
+                        {{ field |attr:"class:form-control" }}
+                        {{ field.errors }}
+                        {% endfor %}
+                        <button class="btn btn-primary mt-3" type="submit">サインアップ</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col"></div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block footer %}
+{% endblock %}

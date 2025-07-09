@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+
+{% block header %}
+{% endblock %}
+{% block content %}
+
+
+<div class="container">
+	<div class="page-header"><h4>
+		ユーザーの権限一覧</h4>
+	</div>
+
+	<table class="table table-striped table-bordered table-condensed">
+		<tr>
+			<th class="col-md-2">ユーザー名</th>
+			<th>管理者</th>
+			<th>派遣スタッフの勤務実績の閲覧</th>
+			<th>業務委託スタッフの勤務実績の閲覧</th>
+			<th>開発所属スタッフの「時間外」時間の閲覧</th>
+			<th>自分の勤務実績詳細</th>
+			<th>WEB打刻</th>
+			<th>セコムカード情報</th>
+			<th>スケジュールの登録</th>
+			<th>スタッフの登録</th>
+			<th>勤怠のインポート</th>
+
+		</tr>
+		{% for s in staffs %}
+		<tr>
+			<td><a id="link" href={% url 'sao:modify_permission' s.user.id %}>{{s.name}}</a></td>
+			<td>
+				{% if s.user.is_staff %}
+				<span class="oi oi-check"></span>
+				{% endif %}
+			</td>
+			<td>
+				{% if s.user.permission.enable_view_temporary_staff_record %}
+				<span class="oi oi-check"></span>
+				{% endif %}
+			</td>
+			<td>
+				{% if s.user.permission.enable_view_outsource_staff_record %}
+				<span class="oi oi-check"></span>
+				{% endif %}
+			</td>
+			<td>
+				{% if s.user.permission.enable_view_dev_staff_record %}
+				<span class="oi oi-check"></span>
+				{% endif %}
+			</td>
+			<td>
+				{% if s.user.permission.enable_view_detail %}
+				<span class="oi oi-check"></span>
+				{% endif %}
+			</td>
+			<td>
+				{% if s.user.permission.enable_stamp_on_web %}
+				<span class="oi oi-check"></span>
+				{% endif %}
+			</td>
+			<td>
+				{% if s.user.permission.enable_regist_event %}
+				<span class="oi oi-check"></span>
+				{% endif %}
+			</td>
+
+			<td>
+				{% if s.user.permission.enable_add_staff %}
+				<span class="oi oi-check"></span>
+				{% endif %}
+
+			</td>
+		</tr>
+
+		{% endfor %}
+	</table>
+	{% endblock %}
+
+	{% block footer%}
+	{% endblock %}
+
+</div>
+<!-- // #footer -->

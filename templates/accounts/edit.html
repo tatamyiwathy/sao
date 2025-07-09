@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title%}アカウント管理{% endblock %}
+
+{% block content%}
+
+<div class="container">
+    <div class="row mt-3">
+        <div class="col"></div>
+        <div class="col">
+            <form action="{% url 'accounts:edit' edituser.username %}" method="POST" style="font-size:11px;">
+                {% csrf_token %}
+                {{form.as_p}}
+                <input class="btn btn-primary" type="submit" value="更新">
+            </form>
+        </div>
+        <div class="col"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block footer %}
+{% endblock %}

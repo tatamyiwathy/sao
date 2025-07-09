@@ -1,0 +1,24 @@
+始業時間            opening hour/opening time   予め契約で決められた業務を開始する時刻
+終業時間            closing hour/closing time   予め契約で決められた業務を終了する時刻
+所定労働時間        prescribed working hours    労働者と会社との間で交わされた契約の中で定められた労働時間
+勤務時間            office hours/working hour   所定労働時間と同じ意味。休息時間が含まれていない時間
+業務時間,営業時間   office hours/working hour   所定労働時間と同じ意味。個々人の時間というよりは会社のルールとしての時間
+実労働時間          actual working hours        実際に労働した時間。６時間超なら休息が１時間短縮される。半休などで所定労働時間より短くなることも、残業で長くなることもある。
+労働時間            working hours               実労働時間ともとれるし、所定労働時間とも取れるので使用しないほうがいい
+勤怠表              attendance sheet
+遅刻                tardy
+早退                early leaving
+前半休              morning off
+後半休              afternoon off
+集計                tally
+正社員              full-time staff/permanent employee
+年次有給休暇	    anuual paied holiday
+
+https://www.active-connector.com/post/resources/payslip
+http://www.japaneselawtranslation.go.jp/law/detail_main?vm=&id=5#:~:text=%E5%8A%B4%E5%83%8D%E5%9F%BA%E6%BA%96%E6%B3%95%20%2F%20Labor%20Standards%20Act
+
+
+時間外労働時間(Overtime work) = 労働時間 - 勤務時間
+労働時間(Actual woking hours) = (終業打刻 - 始業打刻)-外出時間 (ただし6h超なら1h短縮)
+勤務時間(Prescribed working hours) = 所定勤務終了時間 - 所定勤務開始時間 (ただし6h超なら1h短縮)
+

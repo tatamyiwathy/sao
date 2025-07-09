@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+{% load widget_tweaks %}
+
+{% block content %}
+
+
+<div class="container">
+    <div class="row mb-5"></div>
+    <div class="row mb-5">
+
+        <div class="col"></div>
+        <div class="col">
+
+            <div class="card">
+                <div class="card-header">
+                    ログイン
+                </div>
+                {% if form.errors %}
+                <div class="text-danger text-center">
+                    <p>名前かパスワードが正しくありません。</p>
+                </div>
+                {% endif %}
+
+                <div class="card-body">
+                    <form class="form" method="post" action="{% url 'accounts:login' %}">
+                        {% csrf_token %}
+                        <label class="form-label mt-3">{{form.username.label}}</label>
+                        {{form.username|attr:"class:form-control"}}
+                        <label class="form-label mt-3">{{form.password.label}}</label>
+                        {{form.password|attr:"class:form-control"}}
+                        <button class="btn btn-primary mt-3" type="submit">ログイン</button>
+                        <input type="hidden" name="next" value="{{ next }}" />
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col"></div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block footer %}
+{% endblock %}

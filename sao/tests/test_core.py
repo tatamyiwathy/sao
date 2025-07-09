@@ -1,0 +1,557 @@
+from datetime import date, time, datetime, timedelta
+from django.test import TestCase
+from sao_proj.test_utils import create_user, create_employee
+from ..models import TimeRecord, SteppingOut
+from .utils import (
+    create_working_hours,
+    set_office_hours_to_employee,
+    create_time_stamp_data,
+    TOTAL_ACTUAL_WORKING_TIME,
+)
+from ..core import (
+    adjust_working_hours,
+    get_assumed_working_time,
+    eval_record,
+    tally_monthly_attendance,
+    sumup_attendances,
+    round_down,
+    round_stamp,
+    round_result,
+    get_adjusted_starting_time,
+    get_adjusted_closing_time,
+    calc_tardiness,
+    calc_leave_early,
+    tally_steppingout,
+    calc_overtime,
+    calc_over_8h,
+    calc_midnight_work,
+    calc_legal_holiday,
+    calc_holiday,
+    count_days,
+    accumulate_weekly_working_hours,
+    is_permit_overtime,
+    get_half_year_day,
+    get_annual_paied_holiday_days,
+    get_recent_day_of_annual_leave_update,
+    is_need_break_time,
+    collect_timerecord_by_month,
+    get_office_hours,
+    get_working_hours_by_category,
+    get_working_hours_tobe_applied,
+    calc_actual_working_time,
+)
+from ..const import Const
+from ..calendar import monthdays, is_holiday
+from ..working_status import WorkingStatus
+
+
+class TallyMonthAttendancesTest(TestCase):
+    """月の勤怠を集計するテスト"""
+
+    def setUp(self):
+        self.day = date(2021, 8, 6)
+        self.emp = create_employee(create_user(), include_overtime_pay=True)
+        self.today = date(year=2020, month=1, day=23)
+        create_working_hours()
+        create_time_stamp_data(self.emp)  # 月の勤怠データを生成
+
+    def test_tally_monthly_attendance(self):
+        set_office_hours_to_employee(
+            self.emp, date(1900, 1, 1), get_working_hours_by_category("A")
+        )
+
+        # 勤怠記録収集
+        records = collect_timerecord_by_month(self.emp, self.day)
+        self.assertEqual(len(records), monthdays(self.day))
+
+        # 勤怠記録を集計
+        results = tally_monthly_attendance(self.day.month, records)
+        self.assertEqual(len(results), monthdays(self.day))
+
+        # self.assertEqual(results[5].date, date(2021, 9, 6))
+
+        for r in results:
+            self.assertTrue(r.is_valid())
+
+    def test_tally_month_attendances_empty(self):
+        set_office_hours_to_employee(
+            self.emp, date(1900, 1, 1), get_working_hours_by_category("A")
+        )
+        # 勤怠記録がない場合
+        records = collect_timerecord_by_month(self.emp, self.day)
+        self.assertEqual(len(records), monthdays(self.day))
+
+        results = tally_monthly_attendance(self.day.month, records)
+        self.assertEqual(len(results), monthdays(self.day))
+
+
+class AccumulateWeeklyWorkingHoursTest(TestCase):
+
+    def setUp(self) -> None:
+        self.employee = create_employee(create_user(), include_overtime_pay=True)
+        create_working_hours()
+
+    def test_accumulate_weekly_working_hours(self) -> None:
+        create_time_stamp_data(self.employee)
+        set_office_hours_to_employee(
+            self.employee, date(1900, 1, 1), get_working_hours_by_category("A")
+        )
+        records = collect_timerecord_by_month(self.employee, date(2021, 8, 1))
+        results = accumulate_weekly_working_hours(records)
+        week = 1
+        for r in results:
+            self.assertEqual(r[0], week)
+            week += 1
+
+    def test_accumulate_weekly_working_hours_when_empty(self) -> None:
+        """勤怠記録がない場合の週間勤務時間集計のテスト"""
+        set_office_hours_to_employee(
+            self.employee, date(1900, 1, 1), get_working_hours_by_category("A")
+        )
+        records = collect_timerecord_by_month(self.employee, date(2021, 8, 1))
+        results = accumulate_weekly_working_hours(records)
+        week = 1
+        for r in results:
+            self.assertEqual(r[0], week)
+            week += 1
+
+
+class TestSumupAttendances(TestCase):
+    def test_sumup_attendances(self):
+        employee = create_employee(create_user(), include_overtime_pay=True)
+        create_time_stamp_data(employee)
+        create_working_hours()
+        set_office_hours_to_employee(
+            employee, date(1901, 1, 1), get_working_hours_by_category("A")
+        )
+        attendances = tally_monthly_attendance(8, TimeRecord.objects.all())
+        summed_up = sumup_attendances(attendances)
+        self.assertEqual(summed_up["work"], TOTAL_ACTUAL_WORKING_TIME)
+        self.assertEqual(summed_up["late"], Const.TD_3H)  # 遅刻
+        self.assertEqual(summed_up["before"], timedelta(minutes=24))  # 早退
+        self.assertEqual(summed_up["steppingout"], timedelta(minutes=0))
+        self.assertEqual(summed_up["out_of_time"], timedelta(seconds=61560))
+        self.assertEqual(summed_up["over_8h"], timedelta(seconds=61560))
+        self.assertEqual(summed_up["night"], timedelta(seconds=3060))
+        self.assertEqual(summed_up["legal_holiday"], timedelta(hours=0))
+        self.assertEqual(summed_up["holiday"], timedelta(seconds=11580))
+        self.assertEqual(summed_up["accumulated_overtime"], timedelta(seconds=61560))
+
+
+class TestRoundDown(TestCase):
+    def test_round_down(self):
+        t = timedelta(seconds=1700)
+        self.assertEqual(round_down(t), timedelta(seconds=0))
+        t = timedelta(seconds=1900)
+        self.assertEqual(round_down(t), timedelta(minutes=30))
+
+
+class TestRoundStamp(TestCase):
+    def test_round_stamp(self):
+        t = timedelta(seconds=13 * 3600 + 28 * 60)
+        value = round_stamp(t)
+        self.assertEqual(value, timedelta(seconds=13 * 3600))
+
+        t = timedelta(seconds=13 * 3600 + 35 * 60)
+        value = round_stamp(t)
+        self.assertEqual(value, timedelta(seconds=14 * 3600))
+
+
+class TestRoundResult(TestCase):
+    def test_round_result(self):
+        employee = create_employee(create_user(), include_overtime_pay=True)
+        create_time_stamp_data(employee)
+        create_working_hours()
+        set_office_hours_to_employee(
+            employee, date(1901, 1, 1), get_working_hours_by_category("A")
+        )
+        attendances = tally_monthly_attendance(8, TimeRecord.objects.all())
+        summed_up = sumup_attendances(attendances)
+        rounded_result = round_result(summed_up)
+        self.assertEqual(
+            rounded_result["work"], timedelta(seconds=6 * 24 * 3600 + 90 * 60)
+        )
+
+
+class TestGetAdjustedStartingTime(TestCase):
+    def test_get_adjusted_starting_time(self):
+
+        day = date(2021, 8, 2)
+        time_record = TimeRecord(
+            date=day,
+            clock_in=datetime.combine(day, time(9, 30)),
+        )
+        starting_time = get_adjusted_starting_time(
+            time_record, datetime.combine(time_record.date, time(10, 0))
+        )
+        self.assertEqual(starting_time, datetime.combine(time_record.date, time(10, 0)))
+
+
+class TestGetAdjustedClosingTime(TestCase):
+    def test_get_adjusted_closing_time(self):
+        d = date(2021, 8, 2)
+        employee = create_employee(create_user(), include_overtime_pay=True)
+        time_record = TimeRecord(
+            date=d,
+            employee=employee,
+            clock_in=datetime.combine(d, time(9, 0)),
+            clock_out=datetime.combine(d, time(19, 0)),
+            status=WorkingStatus.C_KINMU,
+        )
+        closing_time = get_adjusted_closing_time(
+            time_record, datetime.combine(d, time(19, 0)), True
+        )
+        self.assertEqual(closing_time, datetime.combine(d, time(19, 0)))
+
+
+class TestCalcActualWorkingHours(TestCase):
+    def test_calc_actual_working_hours(self):
+        d = date(2021, 8, 2)
+        employee = create_employee(create_user(), include_overtime_pay=True)
+        time_record = TimeRecord(
+            date=d,
+            employee=employee,
+            clock_in=datetime.combine(d, time(9, 0)),
+            clock_out=datetime.combine(d, time(19, 0)),
+            status=WorkingStatus.C_KINMU,
+        )
+
+        starting_time = datetime.combine(d, time(10, 0))
+        closing_time = datetime.combine(d, time(19, 0))
+        actual_working_hours = calc_actual_working_time(
+            time_record, starting_time, closing_time, timedelta(0)
+        )
+        self.assertEqual(actual_working_hours, timedelta(hours=8))
+
+
+class TestCalcTardiness(TestCase):
+    def test_calc_tardy(self):
+        d = date(2021, 8, 2)
+        employee = create_employee(create_user(), include_overtime_pay=True)
+        time_record = TimeRecord(
+            date=d,
+            employee=employee,
+            clock_in=datetime.combine(d, time(10, 15)),
+            clock_out=datetime.combine(d, time(19, 0)),
+            status=WorkingStatus.C_KINMU,
+        )
+
+        starting_time = datetime.combine(time_record.date, time(10, 0))
+        tardy = calc_tardiness(time_record, starting_time)
+        self.assertEqual(tardy, timedelta(minutes=15))
+
+
+class TestCalcLeaveEarly(TestCase):
+    def test_calc_sotai(self):
+        d = date(2021, 8, 2)
+        employee = create_employee(create_user(), include_overtime_pay=True)
+        time_record = TimeRecord(
+            date=d,
+            employee=employee,
+            clock_in=datetime.combine(d, time(10, 00)),
+            clock_out=datetime.combine(d, time(18, 0)),
+            status=WorkingStatus.C_KINMU,
+        )
+
+        closing_time = datetime.combine(d, time(19, 0))
+        leave_early_time = calc_leave_early(time_record, closing_time)
+        self.assertEqual(leave_early_time, timedelta(minutes=60))
+
+
+class TestTallySteppingOut(TestCase):
+    """外出時間を集計するテスト"""
+
+    def test_tally_steppingout(self):
+        employee = create_employee(create_user(), include_overtime_pay=True)
+        SteppingOut(
+            employee=employee,
+            out_time=datetime(2021, 8, 2, 13, 0, 0),
+            return_time=datetime(2021, 8, 2, 14, 0, 0),
+        ).save()
+        create_time_stamp_data(employee)
+        time_record = TimeRecord.objects.get(date=date(2021, 8, 2))
+        total_stepping_out = tally_steppingout(time_record)
+        self.assertEqual(total_stepping_out, Const.TD_1H)
+
+    def test_tally_steppingout_when_empty(self):
+        employee = create_employee(create_user(), include_overtime_pay=True)
+        create_time_stamp_data(employee)
+        time_record = TimeRecord.objects.get(date=date(2021, 8, 2))
+        total_stepping_out = tally_steppingout(time_record)
+        self.assertEqual(total_stepping_out, Const.TD_ZERO)
+
+
+class TestCalcOvertime(TestCase):
+    def setUp(self) -> None:
+        self.employee = create_employee(create_user(), include_overtime_pay=True)
+        create_working_hours()
+        set_office_hours_to_employee(
+            self.employee, date(1901, 1, 1), get_working_hours_by_category("A")
+        )
+        create_time_stamp_data(self.employee)
+
+    def test_calc_overtime(self):
+        time_record = TimeRecord.objects.get(date=date(2021, 8, 3))
+        working_hours = adjust_working_hours(time_record)
+        period = get_assumed_working_time(
+            time_record, working_hours[0], working_hours[1]
+        )
+        working_time = calc_actual_working_time(
+            time_record, working_hours[0], working_hours[1], Const.TD_ZERO
+        )
+        overtime = calc_overtime(time_record, working_time, period)
+        self.assertEqual(overtime, timedelta(hours=1))
+
+    def test_calc_overtime_on_holiday(self):
+        time_record = TimeRecord.objects.get(date=date(2021, 8, 1))  # 日曜日
+        working_hours = adjust_working_hours(time_record)
+        period = get_assumed_working_time(
+            time_record, working_hours[0], working_hours[1]
+        )
+        working_time = calc_actual_working_time(
+            time_record, working_hours[0], working_hours[1], Const.TD_ZERO
+        )
+        overtime = calc_overtime(time_record, working_time, period)
+        self.assertEqual(overtime, timedelta(hours=0))
+
+    def test_when_absent(self):
+        time_record = TimeRecord.objects.get(date=date(2021, 8, 23))
+        working_hours = adjust_working_hours(time_record)
+        period = get_assumed_working_time(
+            time_record, working_hours[0], working_hours[1]
+        )
+        working_time = calc_actual_working_time(
+            time_record, working_hours[0], working_hours[1], Const.TD_ZERO
+        )
+        overtime = calc_overtime(time_record, working_time, period)
+        self.assertEqual(overtime, timedelta(hours=0))
+
+
+class TestCalcOver8h(TestCase):
+    def setUp(self) -> None:
+        self.employee = create_employee(create_user(), include_overtime_pay=True)
+        create_working_hours()
+        set_office_hours_to_employee(
+            self.employee, date(1901, 1, 1), get_working_hours_by_category("A")
+        )
+        create_time_stamp_data(self.employee)
+
+    def test_calc_over_8h(self):
+        time_record = TimeRecord.objects.get(date=date(2021, 8, 3))
+        working_hours = adjust_working_hours(time_record)
+        working_time = calc_actual_working_time(
+            time_record, working_hours[0], working_hours[1], Const.TD_ZERO
+        )
+        over_8h = calc_over_8h(time_record, working_time)
+        self.assertEqual(over_8h, timedelta(hours=1))
+
+
+class TestCalcMidnightWork(TestCase):
+    def setUp(self) -> None:
+        self.employee = create_employee(create_user(), include_overtime_pay=True)
+        create_working_hours()
+        set_office_hours_to_employee(
+            self.employee, date(1901, 1, 1), get_working_hours_by_category("A")
+        )
+        create_time_stamp_data(self.employee)
+
+    def test_calc_midnight_work(self):
+        time_record = TimeRecord.objects.get(date=date(2021, 8, 31))
+        midnight_work = calc_midnight_work(time_record)
+        self.assertEqual(midnight_work, timedelta(minutes=51))
+
+
+class TestCalcLegalHoliday(TestCase):
+    def setUp(self) -> None:
+        self.employee = create_employee(create_user(), include_overtime_pay=True)
+        create_working_hours()
+        set_office_hours_to_employee(
+            self.employee, date(1901, 1, 1), get_working_hours_by_category("A")
+        )
+        create_time_stamp_data(self.employee)
+
+    def test_calc_legal_holiday(self):
+        time_record = TimeRecord.objects.get(date=date(2021, 8, 1))
+        legal_holiday = calc_legal_holiday(time_record, timedelta(hours=8))
+        self.assertEqual(legal_holiday, timedelta(hours=8))
+
+    def test_calc_workiday(self):
+        time_record = TimeRecord.objects.get(date=date(2021, 8, 2))
+        legal_holiday = calc_legal_holiday(time_record, timedelta(hours=8))
+        self.assertEqual(legal_holiday, timedelta(hours=0))
+
+
+class TestCalcHoliday(TestCase):
+    def setUp(self) -> None:
+        self.employee = create_employee(create_user(), include_overtime_pay=True)
+        create_working_hours()
+        set_office_hours_to_employee(
+            self.employee, date(1901, 1, 1), get_working_hours_by_category("A")
+        )
+        create_time_stamp_data(self.employee)
+
+    def test_calc_holiday(self):
+        time_record = TimeRecord.objects.get(date=date(2021, 8, 9))
+        self.assertTrue(is_holiday(time_record.date))
+        actual_working_hours = timedelta(hours=8)
+        holiday = calc_holiday(time_record, actual_working_hours)
+        self.assertEqual(holiday, timedelta(hours=8))
+
+
+# class TestCountDays(TestCase):
+#     def test_count_days(self):
+#         start_date = date(2021, 1, 1)
+#         end_date = date(2021, 1, 31)
+#         days = count_days(start_date, end_date)
+#         self.assertEqual(days, 31)
+
+
+class TestIsPermitOvertime(TestCase):
+    def test_is_permit_overtime(self):
+        employee = create_employee(create_user(), include_overtime_pay=True)
+        permit_overtime = is_permit_overtime(employee)
+        self.assertTrue(permit_overtime)
+
+    def test_not_permit_overtime(self):
+        employee = create_employee(create_user(), include_overtime_pay=False)
+        permit_overtime = is_permit_overtime(employee)
+        self.assertFalse(permit_overtime)
+
+
+class TestGetHalfYearDay(TestCase):
+    def test_get_half_year_day(self):
+        half_year_day = get_half_year_day(datetime(2021, 1, 1, 0, 0, 0))
+        self.assertEqual(half_year_day, datetime(2021, 7, 1, 0, 0, 0))
+
+    def test_get_half_year_day_when_leap_year(self):
+        half_year_day = get_half_year_day(datetime(2020, 2, 29, 0, 0, 0))
+        self.assertEqual(half_year_day, datetime(2020, 8, 29, 0, 0, 0))
+
+
+class TestGetAnnualPaidHolidayDays(TestCase):
+    def test_get_annual_paied_holiday_days(self):
+        join_date = date(2021, 1, 1)
+
+        # 3か月後
+        annual_leave_update_date = date(2021, 3, 1)
+        annual_paid_holiday_days = get_annual_paied_holiday_days(
+            annual_leave_update_date, join_date
+        )
+        self.assertEqual(annual_paid_holiday_days, 0)
+
+        # 6か月後 -1日
+        annual_leave_update_date = date(2021, 6, 30)
+        annual_paid_holiday_days = get_annual_paied_holiday_days(
+            annual_leave_update_date, join_date
+        )
+        self.assertEqual(annual_paid_holiday_days, 0)
+
+        # 6か月後
+        annual_leave_update_date = date(2021, 7, 1)
+        annual_paid_holiday_days = get_annual_paied_holiday_days(
+            annual_leave_update_date, join_date
+        )
+        self.assertEqual(annual_paid_holiday_days, 10)
+
+    def test_when_specify_anomaly_date(self):
+        join_date = date(2021, 3, 1)
+        annual_leave_update_date = date(2021, 1, 1)
+        with self.assertRaises(ValueError):
+            get_annual_paied_holiday_days(annual_leave_update_date, join_date)
+
+
+class TestGetRecentDayOfAnnualLeaveUpdate(TestCase):
+    def test_get_recent_day_of_annual_leave_update(self):
+        join_date = date(2021, 1, 1)
+        recent_day_of_annual_leave_update = get_recent_day_of_annual_leave_update(
+            2021, join_date
+        )
+        after_half_year = get_half_year_day(join_date)
+        self.assertEqual(recent_day_of_annual_leave_update, after_half_year)
+
+    def test_alter_year(self):
+        join_date = date(2021, 1, 1)
+        recent_day_of_annual_leave_update = get_recent_day_of_annual_leave_update(
+            2022, join_date
+        )
+        self.assertEqual(recent_day_of_annual_leave_update, date(2022, 7, 1))
+
+    def test_get_recent_day_of_annual_leave_update_when_leap_year(self):
+        join_date = date(2020, 2, 29)
+        recent_day_of_annual_leave_update = get_recent_day_of_annual_leave_update(
+            2020, join_date
+        )
+        after_half_year = get_half_year_day(join_date)
+        self.assertEqual(recent_day_of_annual_leave_update, after_half_year)
+
+
+class TestIsNeedBreakTime(TestCase):
+    def test_need_break_time(self):
+        # 6時間超労働で休息が必要
+        work_period = timedelta(hours=8)
+        status = WorkingStatus.C_KINMU
+        need_break_time = is_need_break_time(work_period, status)
+        self.assertTrue(need_break_time)
+
+    def test_no_need_break_time(self):
+        # 6時間超労働で休息が必要
+        work_period = timedelta(hours=6)
+        status = WorkingStatus.C_KINMU
+        need_break_time = is_need_break_time(work_period, status)
+        self.assertFalse(need_break_time)
+
+    def test_when_alternoon_off_with_rest(self):
+        # 午後休で休息が必要
+        work_period = timedelta(hours=5)
+        status = WorkingStatus.C_YUUKYUU_GOGOKYUU_ARI
+        need_break_time = is_need_break_time(work_period, status)
+        self.assertTrue(need_break_time)
+
+
+class TestCollectTimeRecordByMonth(TestCase):
+    def test_collect_timerecord_by_month(self):
+        emp = create_employee(create_user(), include_overtime_pay=True)
+        create_time_stamp_data(emp)  # 打刻データ生成
+        create_working_hours()
+        set_office_hours_to_employee(
+            emp, date(1901, 1, 1), get_working_hours_by_category("A")
+        )
+
+        records = collect_timerecord_by_month(emp, date(2021, 8, 1))
+        self.assertEqual(len(records), monthdays(date(2021, 8, 1)))
+
+
+class TestGetOfficeHours(TestCase):
+    def test_get_office_hours(self):
+        emp = create_employee(create_user(), include_overtime_pay=True)
+        create_time_stamp_data(emp)
+        create_working_hours()
+        set_office_hours_to_employee(
+            emp, date(1901, 1, 1), get_working_hours_by_category("A")
+        )
+
+        office_hours = get_office_hours(emp, date(2021, 8, 1))
+        self.assertEqual(office_hours.begin_time, Const.OCLOCK_1000)
+        self.assertEqual(office_hours.end_time, Const.OCLOCK_1900)
+
+
+class TestGetWorkingHoursByCategory(TestCase):
+    def test_get_working_hours_by_category(self):
+        create_working_hours()
+        working_hours = get_working_hours_by_category("A")
+        self.assertEqual(working_hours.begin_time, Const.OCLOCK_1000)
+        self.assertEqual(working_hours.end_time, Const.OCLOCK_1900)
+
+
+class TestGetWorkingHoursToBeApplied(TestCase):
+    def test_get_working_hours_tobe_applied(self):
+        emp = create_employee(create_user(), include_overtime_pay=True)
+        create_time_stamp_data(emp)
+        create_working_hours()
+        set_office_hours_to_employee(
+            emp, date(1901, 1, 1), get_working_hours_by_category("A")
+        )
+
+        working_hours = get_working_hours_tobe_applied(emp)
+        self.assertEqual(working_hours.begin_time, Const.OCLOCK_1000)
+        self.assertEqual(working_hours.end_time, Const.OCLOCK_1900)

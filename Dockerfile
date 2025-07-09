@@ -1,0 +1,30 @@
+# FROM python:3.11-slim
+FROM python:3.11
+
+ARG DJANGO_SUPERUSER_PASSWORD
+
+# 必要なパッケージをインストール
+RUN apt-get update && apt-get install -y \
+    apache2 \
+    libapache2-mod-wsgi-py3 \
+    libmariadb-dev \
+    pkg-config \
+    build-essential \
+    && apt-get clean
+
+# Djangoアプリのコピーと依存関係のインストール
+WORKDIR /app
+COPY . /app
+RUN pip install -r requirements.txt
+RUN touch /app/sao.log
+RUN chown -R www-data:www-data /app
+COPY tools/is-superuser.py /app
+COPY tools/docker-setup-db.sh /app
+
+# Apache設定ファイルを追加
+COPY ./apache/sao_proj.conf /etc/apache2/sites-available/000-default.conf
+
+
+
+# Apacheのモジュールを有効化
+ENTRYPOINT ["tools/docker-entrypoint.sh"]

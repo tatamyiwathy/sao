@@ -1,0 +1,28 @@
+services:
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: sao_db
+      MYSQL_USER: saoadmin
+      MYSQL_PASSWORD: saoadmin
+      MYSQL_ROOT_PASSWORD: 59FQW727
+    ports:
+      - "3306:3306"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    depends_on:
+      - db
+    ports:
+      - "8000:80"
+    environment:
+      DB_NAME: sao_db
+      DB_USER: saoadmin
+      DB_PASSWORD: saoadmin
+      DB_HOST: db
+

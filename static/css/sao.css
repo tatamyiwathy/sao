@@ -1,0 +1,53 @@
+
+.orange_bg {
+    background: #ffbf40;
+}
+
+.my_event_bg {
+    background: #c0c0ff;
+}
+
+.cream_bg {
+    background: #ffff40;
+}
+
+.red_color {
+    background: #ffbfbf;
+}
+
+.overtime_warn_15h {
+    background: #ffff40;
+    color: #000000;
+}
+
+.overtime_warn_20h {
+    background: #FF8040;
+    color: #000000;
+}
+
+.overtime_warn_23h {
+    background: #FF0040;
+    color: #000;
+}
+
+.overtime_warn_25h {
+    background: #c000c0;
+    color: #fff;
+}
+
+.overtime_warn_40h {
+    background: #989800;
+    color: #000;
+}
+
+
+.overtime_warn_60h {
+	background: #980000;
+    color: #fff;
+}
+
+.overtime_warn_100h {
+	background: #000000;
+	color: #ffffff;
+}
+

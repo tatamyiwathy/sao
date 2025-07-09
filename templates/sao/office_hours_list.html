@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block content %}
+
+<script>
+	function delete_office_hours(a) {
+		if (confirm("削除してもよろしいですか？")) {
+			location.href = a.href;
+		}
+	}
+</script>
+
+<div class="container">
+	<div class="row mb-3">
+	</div>
+
+
+	<div class="row">
+
+		<div class="col"></div>
+
+		<div class="col col-lg-6">
+			<div class="col page-header">
+				<h4>勤務時間設定の追加と削除</h4>
+			</div>
+	
+			{% if errors %}
+			<div class="alert alert-danger">
+				{{errors}}
+			</div>
+			{% endif %}
+			<div class="card">
+				<div class="card-header">
+					現在の勤務時間の設定
+				</div>
+				<div class="card-body">
+
+					{% if office_hours|length > 0 %}
+					<table class="table table-striped table-bordered">
+						<tr>
+							<th>適用日</th>
+							<th>勤務時間</th>
+							<th></th>
+						</tr>
+
+						{% for oh in office_hours %}
+						<tr>
+							<td>{{oh.date}}</td>
+							<td>{{oh.working_hours}}</td>
+							<td>
+								<a id="link" href={% url 'sao:del_office_hours' %}?id={{oh.id}}
+									onclick="delete_office_hours(this); return false;">削除</a>
+							</td>
+						</tr>
+						{% endfor %}
+					</table>
+					{% else %}
+					勤務時間が設定されていません
+					{% endif%}
+				</div>
+			</div>
+
+			<div class="card mt-3">
+				<div class="card-header">勤務時間の設定を新規追加する</div>
+				<div class="card-body">
+					<form class="form" method='POST' action="{% url 'sao:office_hours_list' employee.pk %}">
+						{% csrf_token %}
+
+						{{form.as_p}}
+						<button class="btn btn-primary" type='submit'>追加</button>
+						<input type='hidden' name='id' value='{{id}}' />
+						<input type='hidden' name='employee_no' value='{{employee.employee_no}}' />
+					</form>
+				</div>
+			</div>
+		</div>
+		<div class="col"></div>
+	</div>
+
+</div>
+
+{% endblock %}
+
+{% block footer %}
+{% endblock %}
