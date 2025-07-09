@@ -19,7 +19,6 @@ RUN pip install -r requirements.txt
 RUN touch /app/sao.log
 RUN chown -R www-data:www-data /app
 COPY tools/is-superuser.py /app
-COPY tools/docker-setup-db.sh /app
 
 # Apache設定ファイルを追加
 COPY ./apache/sao_proj.conf /etc/apache2/sites-available/000-default.conf
