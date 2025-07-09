@@ -1,0 +1,35 @@
+# Python関連
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+*.pyo
+
+# Django関連
+db.sqlite3
+media/
+staticfiles/
+
+# 環境変数・設定ファイル
+.env
+*.log
+*.pot
+
+# VSCodeなどIDE関連
+.vscode/
+.idea/
+
+# Docker関連
+*.pid
+*.db
+*.sock
+docker-compose.override.yml
+
+# OSごとの不要ファイル
+.DS_Store
+Thumbs.db
+
+# テスト関連
+htmlcov/
+.coverage
+.pytest_cache/
