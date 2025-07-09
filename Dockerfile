@@ -9,7 +9,6 @@ RUN apt-get update && apt-get install -y \
     libapache2-mod-wsgi-py3 \
     libmariadb-dev \
     pkg-config \
-    build-essential \
     && apt-get clean
 
 # Djangoアプリのコピーと依存関係のインストール
