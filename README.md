@@ -5,21 +5,21 @@ Djangoの勤怠管理アプリです
 
 1. コードをzipでダウンロードやgit cloneなどでローカルに展開します
 
-2. 展開したフォルダの中に```.env```ファイルを作成します
+1. 展開したフォルダの中に```.env.example```ファイルがあるので、コピーで```.env```ファイルを作成します
 
-3. ```.env```ファイルを開いたら以下をコピペして、```PLEASE_SET_YOUR_OWN_PASSWORD```の部分をご自身のパスワードで置き換えてください
+        # cp .env.example .env
+    
 
-```
-DJANGO_SUPERUSER_PASSWORD=PLEASE_SET_YOUR_OWN_PASSWORD
-MYSQL_ROOT_PASSWORD=PLEASE_SET_YOUR_OWN_PASSWORD
+1. SECRET_KEYを生成して、`.env` の `SECRET_KEY` に設定します:
+   ```sh
+   python -c "import secrets; print(secrets.token_urlsafe(50))"
+   ```
+   生成された値を `.env` の `SECRET_KEY=` の後ろに貼り付けてください。
 
-# specify the profile for the SAO application
-SAO_PROFILE=dev
-# SAO_PROFILE=prod 
-```
-- DJANGO_SUPERUSER_PASSWORDはDjangoの管理者のパスワードです
-- MYSQL_ROOT_PASSWORDはMySQLのrootユーザーのパスワードです
-- SAO_PROFILEは```dev```で開発バージョン、```prod```で本番バージョンに切りかえます
+1. DJANGO_SUPERUSER_PASSWORDとMYSQL_ROOT_PASSWORDは```PLEASE_SET_YOUR_OWN_PASSWORD```をユーザーが作成したパスワード文字列におきかえてください
+
+
+1. SAO_PROFILEはアプリケーションのプロファイルを切り替えます。```dev```で開発バージョン、```prod```で製品バージョンに切り替わります
 
 ## 実行
 
