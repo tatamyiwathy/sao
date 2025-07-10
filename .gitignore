@@ -9,6 +9,8 @@ __pycache__/
 db.sqlite3
 media/
 staticfiles/
+static/
+
 
 # 環境変数・設定ファイル
 .env
