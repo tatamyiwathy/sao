@@ -1,24 +1,23 @@
+DOCKER_COMPOSE_FILE := docker-compose.yml
+
+
 .phony: build dn up shell go log ps
 
-go:
-	make dn
-	make build
-	make up
-
 build:
-	docker compose build --no-cache
+	docker compose --profile dev build
 
 dn:
-	docker compose down
-
-up:
-	docker compose up -d
+	docker compose --profile dev down
 
 shell:
-	docker exec -it sao-web-1 bash
+	docker exec -it sao-web-dev-1 bash
 
 log:
 	docker compose logs -f
 
 ps:
 	docker compose ps
+
+up: build
+	docker compose --profile dev up -d
+

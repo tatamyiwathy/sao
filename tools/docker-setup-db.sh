@@ -1,8 +1,8 @@
 #!/bin/bash
 
 python manage.py migrate
-python manage.py collectstatic
-chown -R www-data:www-data /app/static
+# python manage.py collectstatic
+# chown -R www-data:www-data /app/static
 
 # $DJANGO_SUPERUSER_PASSWORDがなければエラーを出して終了
 if [ -z "$DJANGO_SUPERUSER_PASSWORD" ]; then
