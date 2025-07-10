@@ -6,7 +6,7 @@ services:
       MYSQL_DATABASE: sao_db
       MYSQL_USER: saoadmin
       MYSQL_PASSWORD: saoadmin
-      # MYSQL_ROOT_PASSWORD: # specified in .env
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
       - "3306:3306"
 
