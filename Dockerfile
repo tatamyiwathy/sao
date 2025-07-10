@@ -16,6 +16,7 @@ WORKDIR /app
 COPY . /app
 RUN pip install -r requirements.txt
 RUN touch /app/sao.log
+RUN chmod -R 755 /app
 RUN chown -R www-data:www-data /app
 COPY tools/is-superuser.py /app
 
