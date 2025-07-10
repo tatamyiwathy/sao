@@ -216,6 +216,7 @@ AUTHENTICATION_BACKENDS = [
 
 logger = logging.getLogger("sao")
 
+# ユーザーがアップロードしたファイルの保存先
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 MEDIA_URL = "/media/"
 
