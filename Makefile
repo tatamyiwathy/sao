@@ -1,4 +1,4 @@
-.phony: build up shell go log
+.phony: build up shell go log ps
 
 go:
 	make build
@@ -11,7 +11,10 @@ up:
 	docker compose up -d
 
 shell:
-	docker compose exec sao-web-1 bash
+	docker exec -it sao-web-1 bash
 
 log:
 	docker compose logs -f
+
+ps:
+	docker compose ps
