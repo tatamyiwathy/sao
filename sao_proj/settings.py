@@ -16,11 +16,16 @@ import logging
 import logging.handlers
 import os
 from sys import argv
+from dotenv import load_dotenv
+
 
 if argv and 1 < len(argv):
     IS_TEST = "test" == argv[1]
 else:
     IS_TEST = False
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -30,10 +35,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.10/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "^x0bff&csrgnpbot41985mfl*01seq=px*e48u)gwvn*-bju7k"
+# *DJANGO_SECRET_KEY has been moved to .env file*
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = IS_TEST or os.getenv("SAO_DEV") != 0
+DEBUG = IS_TEST or os.getenv("SAO_PROFILE")  == "dev"
 ALLOWED_HOSTS = ["*"]
 
 
