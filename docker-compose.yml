@@ -23,6 +23,4 @@ services:
       DB_USER: saoadmin
       DB_PASSWORD: saoadmin
       DB_HOST: db
-    volumes:
-      - .:/app
 
