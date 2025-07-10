@@ -1,13 +1,13 @@
 DOCKER_COMPOSE_FILE := docker-compose.yml
-
+DKC_OPT := --profile dev
 
 .phony: build dn up shell go log ps
 
 build:
-	docker compose --profile dev build
+	docker compose ${DKC_OPT} build
 
 dn:
-	docker compose --profile dev down
+	docker compose ${DKC_OPT} down
 
 shell:
 	docker exec -it sao-web-dev-1 bash
@@ -19,5 +19,5 @@ ps:
 	docker compose ps
 
 up: build
-	docker compose --profile dev up -d
+	docker compose ${DKC_OPT} up -d
 
