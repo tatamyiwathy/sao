@@ -19,5 +19,5 @@ ps:
 	docker compose ps
 
 up: build
-	docker compose ${DKC_OPT} up
+	docker compose ${DKC_OPT} up -d
 
