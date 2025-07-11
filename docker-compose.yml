@@ -9,6 +9,8 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
       - "3306:3306"
+    volumes:
+      - ./db-init:/docker-entrypoint-initdb.d
 
   web-dev:
     profiles:

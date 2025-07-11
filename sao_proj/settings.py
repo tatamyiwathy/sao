@@ -112,6 +112,9 @@ DATABASES = {
 #        "HOST": "",  # サーバのIPアドレスやホストを。空欄はローカルホスト
         "HOST": "db",  # Dockerでは別ホストで動いてる
         "PORT": "3306",
+        "TEST": {
+            "NAME": "test_sao_db",  # テスト用のデータベース名
+        },
     }
 }
 

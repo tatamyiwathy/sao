@@ -7,6 +7,7 @@ ARG DJANGO_SUPERUSER_PASSWORD
 RUN apt-get update && apt-get install -y \
     libmariadb-dev \
     pkg-config \
+    default-mysql-client \
     && apt-get clean
 
 # Djangoアプリのコピーと依存関係のインストール
