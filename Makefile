@@ -1,7 +1,8 @@
 DOCKER_COMPOSE_FILE := docker-compose.yml
 DKC_OPT := --profile dev
+# DKC_OPT := --profile prod
 
-.phony: build dn up shell go log ps
+.phony: build dn up shell go log ps clean
 
 build:
 	docker compose ${DKC_OPT} build
@@ -21,3 +22,6 @@ ps:
 up: build
 	docker compose ${DKC_OPT} up -d
 
+clean:
+	docker compose ${DKC_OPT} down --volumes --remove-orphans
+	docker image prune -f
