@@ -17,16 +17,13 @@ services:
       - dev
     build:
       context: .
-      dockerfile: Dockerfile.${SAO_PROFILE}
+      dockerfile: Dockerfile.dev
     env_file:
       - .env
     depends_on:
       - db
     environment:
-      DB_NAME: sao_db
-      DB_USER: saoadmin
-      DB_PASSWORD: saoadmin
-      DB_HOST: db
+      SAO_PROFILE: dev
     volumes:
       - .:/app
     stdin_open: true
@@ -39,15 +36,10 @@ services:
       - prod
     build:
       context: .
-      dockerfile: Dockerfile.${SAO_PROFILE}
+      dockerfile: Dockerfile.prod
     env_file:
       - .env
     depends_on:
       - db
     environment:
-      DB_NAME: sao_db
-      DB_USER: saoadmin
-      DB_PASSWORD: saoadmin
-      DB_HOST: db
-    volumes:
-      - .:/app
+      SAO_PROFILE: prod
