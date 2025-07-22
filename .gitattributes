@@ -2,3 +2,4 @@
 test-data/*.CSV working-tree-encoding=shift-jis
 test-data/*.csv working-tree-encoding=shift-jis
 
+* text=auto eol=lf
