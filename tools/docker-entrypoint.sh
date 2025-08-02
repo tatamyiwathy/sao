@@ -11,3 +11,4 @@ if [ "$SAO_PROFILE" == "dev" ]; then
 else
     exec apache2ctl -D FOREGROUND
 fi
+echo "###################Docker entrypoint script completed."
