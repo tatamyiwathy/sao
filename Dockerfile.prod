@@ -1,7 +1,4 @@
-# FROM python:3.11-slim
-FROM python:3.11
-
-ARG DJANGO_SUPERUSER_PASSWORD
+FROM python:3.11-slim
 
 # 必要なパッケージをインストール
 RUN apt-get update && apt-get install -y \
@@ -9,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     libapache2-mod-wsgi-py3 \
     libmariadb-dev \
     pkg-config \
+    gcc \
     && apt-get clean
 
 # Djangoアプリのコピーと依存関係のインストール
@@ -18,7 +16,6 @@ RUN pip install -r requirements.txt
 RUN touch /app/sao.log
 RUN chmod -R 755 /app
 RUN chown -R www-data:www-data /app
-# COPY tools/is-superuser.py /app
 
 # Apache設定ファイルを追加
 COPY ./apache/sao_proj.conf /etc/apache2/sites-available/000-default.conf

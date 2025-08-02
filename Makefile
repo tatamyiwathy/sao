@@ -1,4 +1,6 @@
 SAO-PROFILE := dev
+# SAO-PROFILE := prod
+
 DKC_OPT := --profile ${SAO-PROFILE}
 DOCKER_COMPOSE_FILE := docker-compose.yml
 
