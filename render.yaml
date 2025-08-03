@@ -28,3 +28,5 @@ envVarGroups:
         value: saoadmin
       - key: MYSQL_ROOT_PASSWORD
         generateValue: true
+      - key: DB_HOST
+        value: sao-mysql # ← ホスト名をサービス名に
