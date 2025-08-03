@@ -1,0 +1,33 @@
+services:
+  - type: pserv
+    name: mysql
+    plan: standard
+    env: docker
+    autoDeploy: false
+    disk:
+      name: mysql
+      mountPath: /var/lib/mysql
+      sizeGB: 10
+    envVars:
+      - fromGroup: mysql
+
+  - type: web
+    name: web-prod
+    env: docker
+    plan: starter
+    buildCommand: docker build -f Dockerfile.prod -t web-prod .
+    startCommand: gunicorn app.wsgi:application
+    ports:
+      - port: 80
+
+envVarGroups:
+  - name: mysql
+    envVars:
+      - key: MYSQL_DATABASE
+        value: mysql
+      - key: MYSQL_USER
+        value: mysql
+      - key: MYSQL_PASSWORD
+        generateValue: true
+      - key: MYSQL_ROOT_PASSWORD
+        generateValue: true
