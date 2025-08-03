@@ -9,6 +9,7 @@ if [ "$SAO_PROFILE" == "dev" ]; then
     exec tools/run
     # exec bash
 else
+    tools/docker-setup-db.sh
     exec apache2ctl -D FOREGROUND
 fi
 echo "###################Docker entrypoint script completed."
