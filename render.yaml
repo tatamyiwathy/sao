@@ -1,9 +1,8 @@
 services:
   - type: pserv
     name: mysql
-    plan: standard
+    plan: free
     runtime: docker
-    image: mysql:8.0
     autoDeploy: false
     disk:
       name: mysql
@@ -15,7 +14,7 @@ services:
   - type: web
     name: web-prod
     runtime: docker
-    plan: starter
+    plan: free
     buildCommand: docker build -f Dockerfile.prod -t web-prod .
     startCommand: gunicorn sao_proj.wsgi:application --bind 0.0.0.0:10000
     envVars:
