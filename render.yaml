@@ -11,7 +11,8 @@ services:
     name: web-prod
     runtime: docker
     plan: free
-    buildCommand: docker build -f Dockerfile.prod -t web-prod .
+    #buildCommand: docker build -f Dockerfile.prod -t web-prod .
+    dockerfilePath: ./Dockerfile.prod
     envVars:
       - key: SAO_PROFILE
         value: prod
