@@ -5,14 +5,14 @@ services:
     plan: starter
     image: mysql:8.0
     envVars:
-      - key: MYSQL_DATABASE
-        value: your_db_name
-      - key: MYSQL_USER
-        value: your_user
-      - key: MYSQL_PASSWORD
-        value: your_password
-      - key: MYSQL_ROOT_PASSWORD
-        value: your_root_password
+      # - key: MYSQL_DATABASE
+      #   value: your_db_name
+      # - key: MYSQL_USER
+      #   value: your_user
+      # - key: MYSQL_PASSWORD
+      #   value: your_password
+      # - key: MYSQL_ROOT_PASSWORD
+      #   value: your_root_password
     disk:
       name: mysql-data
       mountPath: /var/lib/mysql
@@ -28,7 +28,7 @@ services:
     buildCommand: docker build -f Dockerfile.prod -t web-prod .
     startCommand: gunicorn app.wsgi:application
     envVars:
-      - key: SAO_PROFILE
-        value: prod
+      # - key: SAO_PROFILE
+      #   value: prod
     ports:
       - port: 80
