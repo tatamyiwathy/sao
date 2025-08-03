@@ -104,16 +104,13 @@ WSGI_APPLICATION = "sao_proj.wsgi.application"
 
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": os.environ.get('MYSQL_DATABASE'),  # データベース名
-        "USER": os.environ.get('MYSQL_USER'),  # ユーザ名
-        "PASSWORD": os.environ.get('MYSQL_PASSWORD'),  # ぱすわど
-        "HOST": os.environ.get('MYSQL_HOST',''),  # Dockerでは別ホストで動いてる
-        "PORT": os.environ.get('PYSQL_PORT', '3306'),  # ポート番号",
-        "TEST": {
-            "NAME": "test_sao_db",  # テスト用のデータベース名
-        },
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST', ''),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 

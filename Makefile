@@ -7,7 +7,7 @@ DOCKER_COMPOSE_FILE := docker-compose.yml
 .phony: build dn up shell go log ps clean
 
 build:
-	docker compose ${DKC_OPT} build --no-cache
+	docker compose ${DKC_OPT} build
 
 dn:
 	docker compose ${DKC_OPT} down

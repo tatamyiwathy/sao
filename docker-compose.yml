@@ -1,16 +1,17 @@
 services:
   db:
-    image: mysql:8.0
-    restart: always
+    image: postgres:15
     environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_HOST: ${DB_HOST}
+      POSTGRES_PORT: ${DB_PORT}
+    # volumes:
+    #   - postgres_data:/var/lib/postgresql/data
     ports:
-      - "3306:3306"
-    volumes:
-      - ./db-init:/docker-entrypoint-initdb.d
+      - "${DB_PORT}:${DB_PORT}"
+
 
   web-dev:
     profiles:
