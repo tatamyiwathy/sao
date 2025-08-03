@@ -1,12 +1,14 @@
-services:
-  - type: pserv
-    name: sao-mysql
+databases:
+  - name: sao-db
+    databaseName: sao_db
+    user: saoadmin
     plan: free
-    runtime: docker
-    autoDeploy: false
-    envVars:
-      - fromGroup: mysql
-
+    # region: oregon
+    # postgresMajorVersion: "14"
+    ipAllowList: # allow external connections from everywhere
+      - source: 0.0.0.0/0
+        description: everywhere
+services:
   - type: web
     name: sao-web
     runtime: docker
@@ -15,18 +17,22 @@ services:
     envVars:
       - key: SAO_PROFILE
         value: prod
-      - fromGroup: mysql
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sao-postgres
+          property: connectionString
+      - fromGroup: postgres
 
 envVarGroups:
-  - name: mysql
+  - name: postgres
     envVars:
-      - key: MYSQL_DATABASE
+      - key: DB_DATABASE
         value: sao_db
-      - key: MYSQL_USER
+      - key: DB_USER
         value: saoadmin
-      - key: MYSQL_PASSWORD
+      - key: DB_PASSWORD
         value: saoadmin
-      - key: MYSQL_ROOT_PASSWORD
+      - key: DB_ROOT_PASSWORD
         generateValue: true
       - key: DB_HOST
-        value: sao-mysql # ← ホスト名をサービス名に
+        value: sao-db # ← ホスト名をサービス名に
