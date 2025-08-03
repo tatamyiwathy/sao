@@ -34,3 +34,5 @@ envVarGroups:
         value: sao-db
       - key: DB_PORT
         value: "5432"
+      - key: DB_PASSWORD
+        generateValue: true
