@@ -4,9 +4,6 @@ services:
     plan: free
     runtime: docker
     autoDeploy: false
-    disk:
-      name: mysql
-      mountPath: /var/lib/mysql
     envVars:
       - fromGroup: mysql
 
