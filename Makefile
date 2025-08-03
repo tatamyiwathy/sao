@@ -1,7 +1,6 @@
-SAO-PROFILE := dev
-# SAO-PROFILE := prod
+include .env
 
-DKC_OPT := --profile ${SAO-PROFILE}
+DKC_OPT := --profile ${SAO_PROFILE}
 DOCKER_COMPOSE_FILE := docker-compose.yml
 
 
