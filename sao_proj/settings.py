@@ -240,7 +240,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # loggerは各モジュールで取得して使う
-logger = logging.getLogger("sao")
+# logger = logging.getLogger("sao")
 # この場所ではloggerはまだ出力できない
 # logger.debug(
 #     "sao is running"

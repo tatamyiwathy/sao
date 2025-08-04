@@ -3,6 +3,7 @@ import datetime
 import itertools
 import re
 import json
+import logging
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
@@ -12,7 +13,6 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from . import calendar, core, forms, models, utils
-from sao_proj.settings import logger
 from .core import (
     get_office_hours,
     get_working_hours_tobe_applied,
@@ -22,6 +22,7 @@ from .const import Const
 from .attendance import Attendance
 from .working_status import WorkingStatus
 
+logger = logging.getLogger("sao")  # views専用のロガー
 
 @login_required
 def home(request):

@@ -1,16 +1,14 @@
-import os
+import logging
 
-import sao_proj
 from django import forms
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
-from sao_proj.settings import logger
-
 from .forms import SignupForm, UserForm
 
+logger = logging.getLogger("sao")
 
 @login_required
 def account_list(request):

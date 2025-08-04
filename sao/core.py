@@ -2,7 +2,7 @@ import datetime
 
 import sao.calendar
 import sao.utils
-from sao_proj.settings import logger
+import logging
 
 from .models import (
     TimeRecord,
@@ -17,6 +17,8 @@ from .const import Const
 from .calendar import is_holiday, is_legal_holiday
 from dateutil.relativedelta import relativedelta
 
+
+logger = logging.getLogger("sao")
 
 def adjust_working_hours(record: TimeRecord) -> tuple:
     """勤務の開始、終了時間を調整する
