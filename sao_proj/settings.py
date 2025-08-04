@@ -110,7 +110,7 @@ DATABASES = {
         "USER": os.environ.get('MYSQL_USER'),  # ユーザ名
         "PASSWORD": os.environ.get('MYSQL_PASSWORD'),  # ぱすわど
         "HOST": os.environ.get('MYSQL_HOST',''),  # Dockerでは別ホストで動いてる
-        "PORT": os.environ.get('PYSQL_PORT', '3306'),  # ポート番号",
+        "PORT": os.environ.get('MYSQL_PORT', '3306'),  # ポート番号",
         "TEST": {
             "NAME": "test_sao_db",  # テスト用のデータベース名
         },
