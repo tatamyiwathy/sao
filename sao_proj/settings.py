@@ -168,10 +168,13 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.SHA1PasswordHasher"]
 # ログの設定
 # LOGFILEDIR = "/var/log/"
 SAO_LOGDIR = os.environ.get("SAO_LOGDIR", "logs")
-LOGFILEDIR = os.path.join(BASE_DIR, SAO_LOGDIR)
-if not os.path.exists(LOGFILEDIR):
-    os.makedirs(LOGFILEDIR)
-    print(f"Created log directory: {LOGFILEDIR}")
+if os.environ.get("SAO_PROFILE") == "prod":
+    LOGFILEDIR = "/var/log"
+else:
+    LOGFILEDIR = os.path.join(BASE_DIR, SAO_LOGDIR)
+    if not os.path.exists(LOGFILEDIR):
+        os.makedirs(LOGFILEDIR)
+        print(f"Created log directory: {LOGFILEDIR}")
 
 LOGGING = {
     "version": 1,
@@ -184,15 +187,24 @@ LOGGING = {
                     "%(asctime)s",
                     "%(module)s",
                     "%(message)s",
-                    # "process:%(process)d",
-                    # "thread:%(thread)d",
                 ]
             )
         },
-        "syslog": {"format": "%(levelname)s %(module)s %(message)s"},
+        "prod": {
+            "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+        },
     },
     "handlers": {
         "file": {
+            "level": "INFO",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": os.path.join(LOGFILEDIR, "sao.log"),
+            "formatter": "prod",
+            "encoding": "utf-8",
+            # 本番環境用のローテーション設定
+            "maxBytes": 10 * 1024 * 1024,  # 10MB
+            "backupCount": 5,
+        } if os.environ.get('SAO_PROFILE') == 'prod' else { 
             "level": "DEBUG",
             "class": "logging.FileHandler",
             "filename": os.path.join(LOGFILEDIR, "sao.log"),
@@ -204,12 +216,6 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "dev",
         },
-        "syslog": {
-            "class": "logging.handlers.SysLogHandler",
-            "address": "/dev/log",
-            "facility": logging.handlers.SysLogHandler.LOG_LOCAL6,
-            "formatter": "syslog",
-        },
     },
     "loggers": {
         "sao": {
@@ -220,13 +226,13 @@ LOGGING = {
         # Django全体のログも取得したい場合
         "django": {
             "handlers": ["file"],
-            "level": "INFO",
+            "level": "WARNING" if os.environ.get('SAO_PROFILE') == 'prod' else "INFO",
             "propagate": False,
         },
     },
     # ルートロガーの設定
     "root": {
-        "handlers": ["console"],
+        "handlers": ["console"] if os.environ.get('SAO_PROFILE') != 'prod' else [],
         "level": "WARNING",
     },
 }

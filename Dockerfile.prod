@@ -18,10 +18,23 @@ RUN touch /app/sao.log
 RUN chmod -R 755 /app
 RUN chown -R www-data:www-data /app
 
+# /var/log への書き込み権限を設定
+RUN mkdir -p /var/log && chmod 755 /var/log
+
+# アプリユーザーを作成
+# RUN useradd -m -s /bin/bash appuser && \
+#     chown -R appuser:appuser /app
+
+# /var/log/sao.log への書き込み権限
+RUN touch /var/log/sao.log && \
+    chown www-data:www-data /var/log/sao.log
+
+
 # Apache設定ファイルを追加
 COPY ./apache/sao_proj.conf /etc/apache2/sites-available/000-default.conf
 
 
+# USER appuser
 
 # Apacheのモジュールを有効化
 ENTRYPOINT ["tools/docker-entrypoint.sh"]
