@@ -114,6 +114,10 @@ DATABASES = {
         "TEST": {
             "NAME": "test_sao_db",  # テスト用のデータベース名
         },
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
 }
 
