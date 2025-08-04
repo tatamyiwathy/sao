@@ -13,7 +13,7 @@ dn:
 	docker compose ${DKC_OPT} down
 
 shell:
-	docker exec -it sao-web-${SAO-PROFILE}-1 bash
+	docker exec -it sao-web-${SAO_PROFILE}-1 bash
 
 log:
 	docker compose logs -f
