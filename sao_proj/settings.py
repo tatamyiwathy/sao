@@ -165,10 +165,13 @@ LOGOUT_REDIRECT_URL = "sao:home"
 # django 1.10はデフォルトでSHA1をサポートしていない
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.SHA1PasswordHasher"]
 
+# ログの設定
 # LOGFILEDIR = "/var/log/"
-LOGFILEDIR = BASE_DIR
-if DEBUG:
-    LOGFILEDIR = BASE_DIR
+SAO_LOGDIR = os.environ.get("SAO_LOGDIR", "logs")
+LOGFILEDIR = os.path.join(BASE_DIR, SAO_LOGDIR)
+if not os.path.exists(LOGFILEDIR):
+    os.makedirs(LOGFILEDIR)
+    print(f"Created log directory: {LOGFILEDIR}")
 
 LOGGING = {
     "version": 1,
@@ -192,7 +195,6 @@ LOGGING = {
         "file": {
             "level": "DEBUG",
             "class": "logging.FileHandler",
-            # 'class': 'logging.handlers.SysLogHander',
             "filename": os.path.join(LOGFILEDIR, "sao.log"),
             "formatter": "dev",
             "encoding": "utf-8",  # これがないとユニコード文字列を出力してくれない
@@ -210,7 +212,22 @@ LOGGING = {
         },
     },
     "loggers": {
-        "sao": {"handlers": ["syslog", "console"], "level": "DEBUG", "propagate": True},
+        "sao": {
+            "handlers": ["file", "console"],  # ← syslogを除去、fileを追加
+            "level": "DEBUG", 
+            "propagate": True
+        },
+        # Django全体のログも取得したい場合
+        "django": {
+            "handlers": ["file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+    # ルートロガーの設定
+    "root": {
+        "handlers": ["console"],
+        "level": "WARNING",
     },
 }
 
@@ -222,7 +239,12 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 
+# loggerは各モジュールで取得して使う
 logger = logging.getLogger("sao")
+# この場所ではloggerはまだ出力できない
+# logger.debug(
+#     "sao is running"
+# )
 
 # ユーザーがアップロードしたファイルの保存先
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
