@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     libmariadb-dev \
     pkg-config \
     gcc \
+    gettext-base \
     && apt-get clean
 
 # Djangoアプリのコピーと依存関係のインストール

@@ -1,8 +1,12 @@
 #!/bin/bash
 # set -eu
+python manage.py makemigrations
 python manage.py migrate
-# python manage.py collectstatic
-# chown -R www-data:www-data /app/static
+
+if [ ${SAO_PROFILE} = "prod" ]; then
+    python manage.py collectstatic --noinput
+    chown -R www-data:www-data /app/static
+fi
 
 # $DJANGO_SUPERUSER_PASSWORDがなければエラーを出して終了
 if [ -z "${DJANGO_SUPERUSER_PASSWORD}" ]; then
@@ -10,11 +14,6 @@ if [ -z "${DJANGO_SUPERUSER_PASSWORD}" ]; then
     exit 1
 fi
 
-python /app/is-superuser.py
-if [ $? -ne 0 ]; then
-    echo "Creating superuser..."
-    python manage.py createsuperuser --noinput
-    echo "Superuser created."
-else
-    echo "Superuser already exists. Skipping creation."
-fi
+# setup inital data
+mkdir /docker-entrypoint-initdb.d
+envsubst < db-init/init.template.sql > /docker-entrypoint-initdb.d/init.sql

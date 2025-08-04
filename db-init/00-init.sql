@@ -1,5 +1,0 @@
---  CREATE DATABASE IF NOT EXISTS test_sao_db CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-
-GRANT ALL PRIVILEGES ON *.* TO 'saoadmin'@'%';
-
-FLUSH PRIVILEGES;

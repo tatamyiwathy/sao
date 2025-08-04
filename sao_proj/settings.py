@@ -107,8 +107,8 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": os.environ.get('MYSQL_DATABASE'),  # データベース名
-        "USER": os.environ.get('MYSQL_USER'),  # ユーザ名
-        "PASSWORD": os.environ.get('MYSQL_PASSWORD'),  # ぱすわど
+        "USER": os.environ.get('DJANGO_SUPERUSER_USERNAME'),  # ユーザ名
+        "PASSWORD": os.environ.get('DJANGO_SUPERUSER_PASSWORD'),  # ぱすわど
         "HOST": os.environ.get('MYSQL_HOST',''),  # Dockerでは別ホストで動いてる
         "PORT": os.environ.get('MYSQL_PORT', '3306'),  # ポート番号",
         "TEST": {
