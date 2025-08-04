@@ -166,12 +166,10 @@ LOGOUT_REDIRECT_URL = "sao:home"
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.SHA1PasswordHasher"]
 
 # ログの設定
-# LOGFILEDIR = "/var/log/"
-SAO_LOGDIR = os.environ.get("SAO_LOGDIR", "logs")
 if os.environ.get("SAO_PROFILE") == "prod":
-    LOGFILEDIR = "/var/log"
+    LOGFILEDIR = "/var/log/sao"
 else:
-    LOGFILEDIR = os.path.join(BASE_DIR, SAO_LOGDIR)
+    LOGFILEDIR = os.path.join(BASE_DIR, "logs")
     if not os.path.exists(LOGFILEDIR):
         os.makedirs(LOGFILEDIR)
         print(f"Created log directory: {LOGFILEDIR}")

@@ -27,6 +27,7 @@ static/
 *.db
 *.sock
 docker-compose.override.yml
+docker-entrypoint-initdb.d
 
 # OSごとの不要ファイル
 .DS_Store

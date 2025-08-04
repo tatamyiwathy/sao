@@ -5,7 +5,7 @@ python manage.py migrate
 
 if [ ${SAO_PROFILE} = "prod" ]; then
     python manage.py collectstatic --noinput
-    chown -R www-data:www-data /app/static
+    chown -R ${SAO_APPUSER}:${SAO_APPUSER} /app/static
 fi
 
 # $DJANGO_SUPERUSER_PASSWORDがなければエラーを出して終了
@@ -15,5 +15,5 @@ if [ -z "${DJANGO_SUPERUSER_PASSWORD}" ]; then
 fi
 
 # setup inital data
-mkdir /docker-entrypoint-initdb.d
-envsubst < db-init/init.template.sql > /docker-entrypoint-initdb.d/init.sql
+mkdir -p /app/docker-entrypoint-initdb.d
+envsubst < db-init/init.template.sql > /app/docker-entrypoint-initdb.d/init.sql

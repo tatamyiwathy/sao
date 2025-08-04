@@ -25,16 +25,14 @@ RUN useradd -m -s /bin/bash -u 1000 ${SAO_APPUSER}
 RUN chown -R ${SAO_APPUSER}:${SAO_APPUSER} /app && chmod -R 755 /app
 
 # ログディレクトリの設定
-RUN mkdir -p /var/log && \
-    touch /var/log/sao.log && \
-    chown ${SAO_APPUSER}:${SAO_APPUSER} /var/log/sao.log
+RUN mkdir -p /var/log/sao && \
+    touch /var/log/sao/app.log && \
+    touch /var/log/sao/sao-access.log && \
+    touch /var/log/sao/sao-error.log && \
+    chown -R ${SAO_APPUSER}:${SAO_APPUSER} /var/log/sao
 
 
-# Apache設定ファイルを追加
-COPY ./apache/sao_proj.conf /etc/apache2/sites-available/000-default.conf
-
-
-USER ${SAO_APPUSER}}
+USER ${SAO_APPUSER}
 
 # Apacheのモジュールを有効化
 ENTRYPOINT ["tools/docker-entrypoint.sh"]
