@@ -28,6 +28,11 @@ if [ "$SAO_PROFILE" == "dev" ]; then
     exec tools/run
     # exec bash
 elif [ "$SAO_PROFILE" == "prod" ]; then
+
+    echo "📦 Collecting static files..."
+    python manage.py collectstatic --noinput
+    chown -R ${SAO_APPUSER}:${SAO_APPUSER} /app/static
+
     echo "🚀 Starting Gunicorn server..."
     exec gunicorn sao_proj.wsgi:application \
         --bind 0.0.0.0:10000 \

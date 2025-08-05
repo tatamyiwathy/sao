@@ -9,13 +9,8 @@ if [ "${IS_TEST}" = "true" ] || [ "${DJANGO_SETTINGS_MODULE}" = "sao_proj.test_s
 fi
 
 
-python manage.py makemigrations --noinput
+# python manage.py makemigrations --noinput
 python manage.py migrate
-
-if [ ${SAO_PROFILE} = "prod" ]; then
-    python manage.py collectstatic --noinput
-    chown -R ${SAO_APPUSER}:${SAO_APPUSER} /app/static
-fi
 
 # $DJANGO_SUPERUSER_PASSWORDがなければエラーを出して終了
 if [ -z "${DJANGO_SUPERUSER_PASSWORD}" ]; then
