@@ -46,4 +46,4 @@ services:
     environment:
       SAO_PROFILE: prod
     ports:
-      - "80:80"
+      - "80:10000"
