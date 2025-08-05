@@ -10,8 +10,5 @@ django.setup()
 
 from django.contrib.auth.models import User
 
-if User.objects.filter(is_superuser=True).exists():
-    print("✅ Superuser exists")
-else:
-    print("❌ No superuser found")
+if not User.objects.filter(is_superuser=True).exists():
     sys.exit(1)

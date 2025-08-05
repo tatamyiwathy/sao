@@ -23,11 +23,9 @@ if [ -z "${DJANGO_SUPERUSER_PASSWORD}" ]; then
     exit 1
 fi
 
-python /app/is-superuser.py
-if [ $? -ne 0 ]; then
-    echo "Creating superuser..."
-    python manage.py createsuperuser --noinput
-    echo "Superuser created."
+if python /app/is-superuser.py; then
+    echo "✅ Superuser already exists. Skipping creation."
 else
-    echo "Superuser already exists. Skipping creation."
+    echo "🔨 Creating superuser..."
+    python manage.py createsuperuser --noinput
 fi
