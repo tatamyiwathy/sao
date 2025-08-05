@@ -4,7 +4,7 @@ DKC_OPT := --profile ${SAO_PROFILE}
 DOCKER_COMPOSE_FILE := docker-compose.yml
 SERVICE_NAME := web-${SAO_PROFILE}
 
-.PHONY: build dn up up-bg shell go log ps clean debug-db run-db mysql-shell \
+.PHONY: build dn deploy deploy-bg shell go log ps clean debug-db run-db mysql-shell \
 		test test-with-db test-verbose test-coverage test-app test-file \
 		coverage-report coverage-html clean-test clean-coverage
 		
@@ -23,10 +23,10 @@ log:
 ps:
 	docker compose ps
 
-up: build
+deploy: build
 	docker compose ${DKC_OPT} up
 
-up-bg: build
+deploy-bg: build
 	docker compose ${DKC_OPT} up -d
 
 clean:
@@ -50,8 +50,6 @@ debug-db:
 mysql-shell:
 	docker compose ${DKC_OPT} exec db mysql -u root -p
 
-
-# === テスト関連 ===
 
 # === テスト関連 ===
 
