@@ -10,7 +10,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - ./db-init:/docker-entrypoint-initdb.d
+      - ./docker/db-init:/docker-entrypoint-initdb.d
 
   web-dev:
     profiles:

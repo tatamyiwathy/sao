@@ -4,9 +4,16 @@ DKC_OPT := --profile ${SAO_PROFILE}
 DOCKER_COMPOSE_FILE := docker-compose.yml
 SERVICE_NAME := web-${SAO_PROFILE}
 
-.PHONY: build dn deploy deploy-bg shell go log ps clean debug-db run-db mysql-shell \
+
+# 環境変数をエクスポート
+export MYSQL_DATABASE
+export SAO_DB_USER
+export SAO_DB_PASSWORD
+
+
+.PHONY: build dn deploy deploy-bg shell log ps clean debug-db run-db stop-db db-shell \
 		test test-with-db test-verbose test-coverage test-app test-file \
-		coverage-report coverage-html clean-test clean-coverage
+		coverage-report coverage-html clean-test clean-coverage generate-db-init
 		
 build:
 	docker compose ${DKC_OPT} build
@@ -35,9 +42,40 @@ clean:
 	-docker builder prune -f
 	-docker network prune -f
 
+# Webサービスの起動（データベース依存関係付き）
+run-web: run-db
+	@echo "🚀 Starting web service..."
+	docker compose ${DKC_OPT} up ${SERVICE_NAME}
+	@echo "✅ Web service started"
 
+# Webサービスの停止
+stop-web:
+	@echo "🛑 Stopping web service..."
+	docker compose ${DKC_OPT} stop ${SERVICE_NAME}
+	@echo "✅ Web service stopped"
+
+# Webサービスの再起動
+restart-web:
+	@echo "🔄 Restarting web service..."
+	make stop-web
+	make start-web
+	
+# データベースサービスの起動
 run-db:
-	docker compose -f ${DOCKER_COMPOSE_FILE} run db
+	docker compose ${DKC_OPT} up -d db
+	@echo "✅ db service ready"
+
+# データベースサービスの停止
+stop-db:
+	docker compose ${DKC_OPT} stop db
+	@echo "✅ Database service stopped"
+
+# データベース初期化ファイルの生成
+# 	ファイル内で使用する変数は.envファイルから取得
+generate-db-init:
+	@echo "🔧 Generating database initialization file..."
+	envsubst < docker/db-init/init.template > docker/db-init/init.sql
+	@echo "✅ Generated docker/db-init/init.sql"
 
 # データベース接続デバッグ
 debug-db:
@@ -47,7 +85,7 @@ debug-db:
 	docker compose ${DKC_OPT} exec db mysql -u root -p${MYSQL_ROOT_PASSWORD} \
 		-e "SHOW DATABASES;"
 # MySQLに直接接続
-mysql-shell:
+db-shell:
 	docker compose ${DKC_OPT} exec db mysql -u root -p
 
 
