@@ -1,5 +1,15 @@
 #!/bin/bash
-# set -eu
+set -e
+
+# テスト環境フラグで判定
+if [ "${IS_TEST}" = "true" ] || [ "${DJANGO_SETTINGS_MODULE}" = "sao_proj.test_settings" ]; then
+    echo "🧪 Test environment detected - skipping database setup"
+    exec "$@"
+    exit 0
+fi
+
+
+python manage.py makemigrations --noinput
 python manage.py migrate
 
 if [ ${SAO_PROFILE} = "prod" ]; then

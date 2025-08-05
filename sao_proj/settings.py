@@ -37,9 +37,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: keep the secret key used in production secret!
 # *DJANGO_SECRET_KEY has been moved to .env file*
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    raise RuntimeError("DJANGO_SECRET_KEY environment variable is not set. Please set it in your .env file or environment.")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = IS_TEST or os.getenv("SAO_PROFILE")  == "dev"
+DEBUG = IS_TEST or (os.getenv("SAO_PROFILE", "") == "dev")
 ALLOWED_HOSTS = ["*"]
 
 
@@ -102,24 +104,31 @@ WSGI_APPLICATION = "sao_proj.wsgi.application"
 #     }
 # }
 
-
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": os.environ.get('MYSQL_DATABASE'),  # データベース名
-        "USER": os.environ.get('DJANGO_SUPERUSER_USERNAME'),  # ユーザ名
-        "PASSWORD": os.environ.get('DJANGO_SUPERUSER_PASSWORD'),  # ぱすわど
-        "HOST": os.environ.get('MYSQL_HOST',''),  # Dockerでは別ホストで動いてる
-        "PORT": os.environ.get('MYSQL_PORT', '3306'),  # ポート番号",
-        "TEST": {
-            "NAME": "test_sao_db",  # テスト用のデータベース名
-        },
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
+if IS_TEST:
+    DATABASES = {
+        "default": {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": os.environ.get('MYSQL_DATABASE'),  # データベース名
+            "USER": os.environ.get('DJANGO_SUPERUSER_USERNAME'),  # ユーザ名
+            "PASSWORD": os.environ.get('DJANGO_SUPERUSER_PASSWORD'),  # ぱすわど
+            "HOST": os.environ.get('MYSQL_HOST',''),  # Dockerでは別ホストで動いてる
+            "PORT": os.environ.get('MYSQL_PORT', '3306'),  # ポート番号",
+            "TEST": {
+                "NAME": "test_sao_db",  # テスト用のデータベース名
+            },
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+        }
+    }
 
 
 # Password validation
@@ -145,14 +154,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
 
 LANGUAGE_CODE = "ja"
-
 TIME_ZONE = "Asia/Tokyo"
-
 USE_I18N = True
-
 USE_L10N = True
-
-# USE_TZ = True
 USE_TZ = False
 
 
@@ -160,99 +164,143 @@ USE_TZ = False
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
 STATIC_URL = "/static/"
-STATICFILES_DIRS = (os.path.join(BASE_DIR, "assets/"),)
-STATIC_ROOT = os.path.join(BASE_DIR, "static/")
+if os.environ.get("SAO_PROFILE") == "prod":
+    # 本番環境：Nginx等のWebサーバーが静的ファイルを配信
+    STATIC_ROOT = "/app/static/"  # Dockerボリュームマウント先
+else:
+    STATIC_URL = "/static/"
+    STATICFILES_DIRS = (os.path.join(BASE_DIR, "assets/"),)
+    STATIC_ROOT = os.path.join(BASE_DIR, "static/")
 
+
+# 
 LOGIN_URL = "accounts:login"
 LOGOUT_REDIRECT_URL = "sao:home"
 
-# django 1.10はデフォルトでSHA1をサポートしていない
-PASSWORD_HASHERS = ["django.contrib.auth.hashers.SHA1PasswordHasher"]
 
-# ログの設定
+# パスワードハッシュの設定
+if IS_TEST:
+    PASSWORD_HASHERS = [
+        'django.contrib.auth.hashers.MD5PasswordHasher',
+
+    ]
+else:
+    PASSWORD_HASHERS = [
+        'django.contrib.auth.hashers.PBKDF2PasswordHasher',      # Django 1.10のデフォルト
+        'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',  # 代替案
+        'django.contrib.auth.hashers.BCryptPasswordHasher',      # bcrypt（要ライブラリ）
+    ]
+
+# ログファイル
 if os.environ.get("SAO_PROFILE") == "prod":
     LOGFILEDIR = "/var/log/sao"
 else:
-    LOGFILEDIR = os.path.join(BASE_DIR, "logs")
+    if IS_TEST:
+        LOGFILEDIR = os.path.join(BASE_DIR, "test_logs")
+    else:
+        LOGFILEDIR = os.path.join(BASE_DIR, "logs")
     if not os.path.exists(LOGFILEDIR):
         os.makedirs(LOGFILEDIR)
-        print(f"Created log directory: {LOGFILEDIR}")
+        print(f"✏Created log directory: {LOGFILEDIR}")
 
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "dev": {
-            "format": "\t".join(
-                [
-                    "[%(levelname)s]",
-                    "%(asctime)s",
-                    "%(module)s",
-                    "%(message)s",
-                ]
-            )
-        },
-        "prod": {
-            "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-        },
-    },
-    "handlers": {
-        "file": {
-            "level": "INFO",
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": os.path.join(LOGFILEDIR, "sao.log"),
-            "formatter": "prod",
-            "encoding": "utf-8",
-            # 本番環境用のローテーション設定
-            "maxBytes": 10 * 1024 * 1024,  # 10MB
-            "backupCount": 5,
-        } if os.environ.get('SAO_PROFILE') == 'prod' else { 
-            "level": "DEBUG",
-            "class": "logging.FileHandler",
-            "filename": os.path.join(LOGFILEDIR, "sao.log"),
-            "formatter": "dev",
-            "encoding": "utf-8",  # これがないとユニコード文字列を出力してくれない
-        },
-        "console": {
-            "level": "DEBUG",
-            "class": "logging.StreamHandler",
-            "formatter": "dev",
-        },
-    },
-    "loggers": {
-        "sao": {
-            "handlers": ["file", "console"],  # ← syslogを除去、fileを追加
-            "level": "DEBUG", 
-            "propagate": True
-        },
-        # Django全体のログも取得したい場合
-        "django": {
-            "handlers": ["file"],
-            "level": "WARNING" if os.environ.get('SAO_PROFILE') == 'prod' else "INFO",
-            "propagate": False,
-        },
-    },
-    # ルートロガーの設定
-    "root": {
-        "handlers": ["console"] if os.environ.get('SAO_PROFILE') != 'prod' else [],
-        "level": "WARNING",
-    },
-}
+
+# ログの使い方
+# loggerは各モジュールで取得して使う
+#  import logging
+#  logger = logging.getLogger(sao)
+# ※settings.pyの中では使用できない
+
 
 if IS_TEST:
-    LOGGING["loggers"]['sao']['handlers'] = []
+    # テスト用LOGGING設定
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "handlers": {
+            "null": {
+                "class": "logging.NullHandler",
+            },
+        },
+        "root": {
+            "handlers": ["null"],
+            "level": "WARNING",
+        },
+        "loggers": {
+            "sao": {
+                "handlers": ["null"],
+                "level": "ERROR",  # エラーのみ
+                "propagate": False,
+            },
+        },
+    }
+else:
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "dev": {
+                "format": "\t".join(
+                    [
+                        "[%(levelname)s]",
+                        "%(asctime)s",
+                        "%(module)s",
+                        "%(message)s",
+                    ]
+                )
+            },
+            "prod": {
+                "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+            },
+        },
+        "handlers": {
+            "file": {
+                "level": "INFO",
+                "class": "logging.handlers.RotatingFileHandler",
+                "filename": os.path.join(LOGFILEDIR, "sao.log"),
+                "formatter": "prod",
+                "encoding": "utf-8",
+                # 本番環境用のローテーション設定
+                "maxBytes": 10 * 1024 * 1024,  # 10MB
+                "backupCount": 5,
+            } if os.environ.get('SAO_PROFILE') == 'prod' else { 
+                "level": "DEBUG",
+                "class": "logging.FileHandler",
+                "filename": os.path.join(LOGFILEDIR, "sao.log"),
+                "formatter": "dev",
+                "encoding": "utf-8",  # これがないとユニコード文字列を出力してくれない
+            },
+            "console": {
+                "level": "DEBUG",
+                "class": "logging.StreamHandler",
+                "formatter": "dev",
+            },
+        },
+        "loggers": {
+            "sao": {
+                "handlers": ["file", "console"],  # ← syslogを除去、fileを追加
+                "level": "DEBUG", 
+                "propagate": True
+            },
+            # Django全体のログも取得したい場合
+            "django": {
+                "handlers": ["file"],
+                "level": "WARNING" if os.environ.get('SAO_PROFILE') == 'prod' else "INFO",
+                "propagate": False,
+            },
+        },
+        # ルートロガーの設定
+        "root": {
+            "handlers": ["console"] if os.environ.get('SAO_PROFILE') != 'prod' else [],
+            "level": "WARNING",
+        },
+    }
 
 
+# 認証バックエンドの設定
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 
-# loggerは各モジュールで取得して使う
-# logger = logging.getLogger("sao")
-# この場所ではloggerはまだ出力できない
-# logger.debug(
-#     "sao is running"
-# )
 
 # ユーザーがアップロードしたファイルの保存先
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
