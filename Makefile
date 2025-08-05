@@ -4,7 +4,7 @@ DKC_OPT := --profile ${SAO_PROFILE}
 DOCKER_COMPOSE_FILE := docker-compose.yml
 
 
-.phony: build dn up shell go log ps clean debug-db run-db mysql-shell
+.phony: build dn up up-bg shell go log ps clean debug-db run-db mysql-shell
 
 build:
 	docker compose ${DKC_OPT} build
@@ -23,6 +23,9 @@ ps:
 
 up: build
 	docker compose ${DKC_OPT} up
+
+up-bg: build
+	docker compose ${DKC_OPT} up -d
 
 clean:
 	-docker compose --profile dev --profile prod down --volumes --remove-orphans
