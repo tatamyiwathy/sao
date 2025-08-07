@@ -3,7 +3,6 @@ services:
     name: sao-postgres
     plan: free
     region: oregon
-    ipAllowList: []
 
   - type: web
     name: sao-web
