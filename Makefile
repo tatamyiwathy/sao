@@ -3,17 +3,21 @@ include .env
 DKC_OPT := --profile ${SAO_PROFILE}
 DOCKER_COMPOSE_FILE := docker-compose.yml
 SERVICE_NAME := web-${SAO_PROFILE}
-
+DB_CMD := psql
+# DB_CMD := mysql
 
 # 環境変数をエクスポート
-export MYSQL_DATABASE
+export DB_NAME
+export DB_HOST
+export DB_PORT
 export SAO_DB_USER
 export SAO_DB_PASSWORD
 
 
 .PHONY: build dn deploy deploy-bg shell log ps clean debug-db run-db stop-db db-shell \
 		test test-with-db test-verbose test-coverage test-app test-file \
-		coverage-report coverage-html clean-test clean-coverage generate-db-init
+		coverage-report coverage-html clean-test clean-coverage generate-db-init \
+		makemigrations help run-web stop-web restart-web
 		
 build:
 	docker compose ${DKC_OPT} build
@@ -77,17 +81,19 @@ generate-db-init:
 	envsubst < docker/db-init/init.template > docker/db-init/init.sql
 	@echo "✅ Generated docker/db-init/init.sql"
 
+makemigrations:
+	docker compose ${DKC_OPT} run --rm ${SERVICE_NAME} \
+		python manage.py makemigrations --noinput
+
 # データベース接続デバッグ
 debug-db:
 	@echo "🔍 Debugging database connection..."
-	docker compose ${DKC_OPT} exec db mysql -u root -p${MYSQL_ROOT_PASSWORD} \
-		-e "SELECT User, Host FROM mysql.user WHERE User='saoadmin';"
-	docker compose ${DKC_OPT} exec db mysql -u root -p${MYSQL_ROOT_PASSWORD} \
-		-e "SHOW DATABASES;"
+	docker compose ${DKC_OPT} exec db psql -U ${SAO_DB_USER} -d ${DB_NAME} \
+		-c "SELECT usename FROM pg_user WHERE usename='${SAO_DB_USER}';"
+
 # MySQLに直接接続
 db-shell:
-	docker compose ${DKC_OPT} exec db mysql -u root -p
-
+	docker compose ${DKC_OPT} exec db psql -U ${SAO_DB_USER} -d ${DB_NAME}
 
 # === テスト関連 ===
 
@@ -96,7 +102,6 @@ test:
 	@echo "🧪 Running Django tests (fast mode)..."
 	docker compose ${DKC_OPT} run --rm --no-deps \
 		-e IS_TEST=true \
-		-e MYSQL_HOST="" \
 		${SERVICE_NAME} python manage.py test
 
 # データベース付きテスト
@@ -117,7 +122,7 @@ test-coverage:
 	@echo "🧪 Running Django tests with coverage..."
 	docker compose ${DKC_OPT} run --rm --no-deps \
 		-e IS_TEST=true \
-		-e MYSQL_HOST="" \
+		-e DB_HOST="" \
 		${SERVICE_NAME} \
 		bash -c "coverage run --source='.' manage.py test && coverage report && coverage html"
 

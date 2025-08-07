@@ -20,13 +20,13 @@ services:
 envVarGroups:
   - name: mysql
     envVars:
-      - key: MYSQL_DATABASE
+      - key: DB_NAME
         value: sao_db
-      - key: MYSQL_USER
+      - key: DB_USER
         value: saoadmin
-      - key: MYSQL_PASSWORD
+      - key: DB_PASSWORD
         value: saoadmin
-      - key: MYSQL_ROOT_PASSWORD
+      - key: DB_ROOT_PASSWORD
         generateValue: true
       - key: DB_HOST
         value: sao-mysql # ← ホスト名をサービス名に

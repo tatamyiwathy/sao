@@ -2,7 +2,11 @@
 
 echo "###################Starting Docker entrypoint script..."
 # Wait for the database to be ready and then run the setup script
-set -e
+set -eu
+
+# IS_TESTがなければ作る
+export IS_TEST=${IS_TEST:-false}
+
 
 # 権限確認
 echo "🔍 Current user: $(whoami)"
@@ -15,9 +19,9 @@ if [ "${IS_TEST}" = "true" ]; then
     exit 0
 fi
 
-if [ -n "${MYSQL_HOST}" ] && [ "${MYSQL_HOST}" != "" ]; then
+if [ -n "${DB_HOST}" ] && [ "${DB_HOST}" != "" ]; then
     # データベース接続を待つ
-    tools/wait-for-it.sh ${MYSQL_HOST}:${MYSQL_PORT} \
+    tools/wait-for-it.sh ${DB_HOST}:${DB_PORT} \
         --strict --timeout=60 -- tools/docker-setup-db.sh
 else
     echo "⚠️  No MySQL host specified - skipping database setup"

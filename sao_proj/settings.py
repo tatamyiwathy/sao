@@ -114,18 +114,16 @@ if IS_TEST:
 else:
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.backends.mysql",
-            "NAME": os.environ.get('MYSQL_DATABASE'),  # データベース名
-            "USER": os.environ.get('DJANGO_SUPERUSER_USERNAME'),  # ユーザ名
-            "PASSWORD": os.environ.get('DJANGO_SUPERUSER_PASSWORD'),  # ぱすわど
-            "HOST": os.environ.get('MYSQL_HOST',''),  # Dockerでは別ホストで動いてる
-            "PORT": os.environ.get('MYSQL_PORT', '3306'),  # ポート番号",
+            "ENGINE": "django.db.backends.postgresql",  # PostgreSQLに変更
+            "NAME": os.environ.get('DB_NAME'),  # データベース名
+            "USER": os.environ.get('SAO_DB_USER'),  # ユーザ名
+            "PASSWORD": os.environ.get('SAO_DB_PASSWORD'),  # ぱすわど
+            "HOST": os.environ.get('DB_HOST',''),  # Dockerでは別ホストで動いてる
+            "PORT": os.environ.get('DB_PORT', '3306'),  # ポート番号",
             "TEST": {
                 "NAME": "test_sao_db",  # テスト用のデータベース名
             },
             'OPTIONS': {
-                'charset': 'utf8mb4',
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
             },
         }
     }

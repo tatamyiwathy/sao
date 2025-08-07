@@ -2,9 +2,9 @@ FROM python:3.11-slim
 
 # 必要なパッケージをインストール
 RUN apt-get update && apt-get install -y \
-    libmariadb-dev \
+    libpq-dev \
+    postgresql-client \
     pkg-config \
-    default-mysql-client \
     gcc \
     gettext-base \
     && apt-get clean

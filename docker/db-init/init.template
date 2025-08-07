@@ -1,4 +1,32 @@
-CREATE DATABASE IF NOT EXISTS ${MYSQL_DATABASE} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER IF NOT EXISTS '${SAO_DB_USER}'@'%' IDENTIFIED BY '${SAO_DB_PASSWORD}';
-GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO '${SAO_DB_USER}'@'%';
-FLUSH PRIVILEGES;
+-- PostgreSQL initialization script for SAO application
+
+-- Create database (already created by POSTGRES_DB)
+-- CREATE DATABASE ${DB_NAME};
+
+-- Create user (already created by POSTGRES_USER)
+-- CREATE USER ${SAO_DB_USER} WITH PASSWORD '${SAO_DB_PASSWORD}';
+
+-- Grant privileges
+GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${SAO_DB_USER};
+
+-- Connect to the application database
+\c ${DB_NAME}
+
+-- Grant schema privileges
+GRANT ALL ON SCHEMA public TO ${SAO_DB_USER};
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${SAO_DB_USER};
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ${SAO_DB_USER};
+
+-- Create any initial tables or data here
+-- Example:
+-- CREATE TABLE IF NOT EXISTS test_table (
+--     id SERIAL PRIMARY KEY,
+--     name VARCHAR(100) NOT NULL,
+--     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+-- );
+
+-- Insert initial data if needed
+-- INSERT INTO test_table (name) VALUES ('Initial data');
+
+-- Display confirmation
+SELECT 'PostgreSQL initialization completed successfully' AS status;

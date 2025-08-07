@@ -5,9 +5,8 @@ ARG SAO_APPUSER=saouser
 
 # 必要なパッケージをインストール
 RUN apt-get update && apt-get install -y \
-    apache2 \
-    libapache2-mod-wsgi-py3 \
-    libmariadb-dev \
+    libpq-dev \
+    postgresql-client \
     pkg-config \
     gcc \
     gettext-base \
