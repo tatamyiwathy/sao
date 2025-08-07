@@ -1,9 +1,4 @@
 services:
-  - type: pserv
-    name: sao-postgres
-    plan: free
-    region: oregon
-
   - type: web
     name: sao-web
     runtime: docker
