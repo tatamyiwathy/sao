@@ -2,8 +2,6 @@ services:
   - type: pserv
     name: sao-postgres
     plan: free
-    databaseName: sao_db
-    user: saoadmin
     region: oregon
     ipAllowList: []
 
