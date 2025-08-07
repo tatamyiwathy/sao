@@ -1,11 +1,11 @@
 services:
   - type: pserv
-    name: sao-mysql
+    name: sao-postgres
     plan: free
-    runtime: docker
-    autoDeploy: false
-    envVars:
-      - fromGroup: mysql
+    databaseName: sao_db
+    user: saoadmin
+    region: oregon
+    ipAllowList: []
 
   - type: web
     name: sao-web
@@ -15,18 +15,27 @@ services:
     envVars:
       - key: SAO_PROFILE
         value: prod
-      - fromGroup: mysql
-
-envVarGroups:
-  - name: mysql
-    envVars:
-      - key: DB_NAME
-        value: sao_db
-      - key: DB_USER
-        value: saoadmin
-      - key: DB_PASSWORD
-        value: saoadmin
-      - key: DB_ROOT_PASSWORD
-        generateValue: true
       - key: DB_HOST
-        value: sao-mysql # ← ホスト名をサービス名に
+        fromService:
+          type: pserv
+          name: sao-postgres
+          property: host
+      - key: DB_NAME
+        fromService:
+          type: pserv
+          name: sao-postgres
+          property: database
+      - key: SAO_DB_USER
+        fromService:
+          type: pserv
+          name: sao-postgres
+          property: user
+      - key: SAO_DB_PASSWORD
+        fromService:
+          type: pserv
+          name: sao-postgres
+          property: password
+      - key: DB_PORT
+        value: "5432"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true

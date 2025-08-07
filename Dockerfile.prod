@@ -1,37 +1,26 @@
+# Dockerfile (本番用)
 FROM python:3.11-slim
 
-# 環境変数をビルド引数として受け取る
-ARG SAO_APPUSER=saouser
+WORKDIR /app
 
-# 必要なパッケージをインストール
+# システムパッケージ
 RUN apt-get update && apt-get install -y \
     libpq-dev \
-    postgresql-client \
-    pkg-config \
     gcc \
-    gettext-base \
-    && apt-get clean
+    && rm -rf /var/lib/apt/lists/*
 
-# Djangoアプリのコピーと依存関係のインストール
-WORKDIR /app
-COPY . /app
-RUN pip install -r requirements.txt
+# Python依存関係
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# アプリユーザーを作成
-RUN useradd -m -s /bin/bash -u 1000 ${SAO_APPUSER}
+# アプリケーションコード
+COPY . .
 
-# /appの所有者をappuserに設定
-RUN chown -R ${SAO_APPUSER}:${SAO_APPUSER} /app && chmod -R 755 /app
+# 静的ファイル収集
+RUN python manage.py collectstatic --noinput
 
-# ログディレクトリの設定
-RUN mkdir -p /var/log/sao && \
-    touch /var/log/sao/app.log && \
-    touch /var/log/sao/sao-access.log && \
-    touch /var/log/sao/sao-error.log && \
-    chown -R ${SAO_APPUSER}:${SAO_APPUSER} /var/log/sao
+# ポート公開
+EXPOSE 10000
 
-
-USER ${SAO_APPUSER}
-
-# Apacheのモジュールを有効化
-ENTRYPOINT ["tools/docker-entrypoint.sh"]
+# Gunicorn起動
+CMD ["gunicorn", "sao_proj.wsgi:application", "--bind", "0.0.0.0:10000"]
