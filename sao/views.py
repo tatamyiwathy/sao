@@ -922,18 +922,6 @@ def holiday_settings(request):
     )
 
 
-@login_required
-def setup(request):
-    """ユーザアカウント一括作成"""
-    User.objects.exclude(username="saoadmin").delete()
-    models.WorkingHour.objects.all().delete()
-    models.Employee.objects.all().delete()
-
-    utils.first_configuration()
-
-    return HttpResponseRedirect(reverse("sao:home"))
-
-
 def req_test(request):
     return HttpResponse(r"POST") if request.method == "POST" else HttpResponse(r"GET")
 

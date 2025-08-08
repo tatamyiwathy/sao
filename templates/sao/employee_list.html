@@ -21,39 +21,41 @@
 
 <div class="container">
 	<div class="row mt-3">
-		<div class="col"><h4>スタッフ一覧</h4></div>
+		<div class="col">
+			<h4>スタッフ一覧</h4>
+		</div>
 		<div class="col">
 			<div class="float-end">
-				
+
 				<a href={% url 'sao:add_employee' %} class="btn btn-info">スタッフを追加する</a>
 			</div>
 		</div>
-	
+
 	</div>
-	
+
 
 	<div class="col mt-3">
-			<table>
-				<tr>
-					<td>在籍</td>
-					<td>{{current_staff.0}}</td>
-					<td>正：{{current_staff.1}}</td>
-					<td>派：{{current_staff.2}}</td>
-					<td>委：{{current_staff.3}}</td>
-				</tr>
-				<tr>
-					<td>全</td>
-					<td>{{whole_staff.0}}</td>
-					<td>正：{{whole_staff.1}}</td>
-					<td>派：{{whole_staff.2}}</td>
-					<td>委：{{whole_staff.3}}</td>
-				</tr>
-			</table>
+		<table>
+			<tr>
+				<td>在籍</td>
+				<td>{{current_staff.0}}</td>
+				<td>正：{{current_staff.1}}</td>
+				<td>派：{{current_staff.2}}</td>
+				<td>委：{{current_staff.3}}</td>
+			</tr>
+			<tr>
+				<td>全</td>
+				<td>{{whole_staff.0}}</td>
+				<td>正：{{whole_staff.1}}</td>
+				<td>派：{{whole_staff.2}}</td>
+				<td>委：{{whole_staff.3}}</td>
+			</tr>
+		</table>
 	</div>
 
 	<div class="col checkbox">
-			<input id="id_filter_deactive" type="checkbox" name="filter-staff" onchange=change_filter()
-				{{checked}}>在籍スタッフ以外は非表示
+		<input id="id_filter_deactive" type="checkbox" name="filter-staff" onchange=change_filter()
+			{{checked}}>在籍スタッフ以外は非表示
 	</div>
 
 	<table class="table table-striped table-bordered mt-3">
@@ -90,7 +92,7 @@
 				{% endif %}
 			</td>
 
-			<th>
+			<td>
 				<a href="{% url 'sao:edit_employee' a.id %}" class="btn btn-default" title="編集">
 					<span class="oi oi-pencil"></span>
 				</a>
@@ -102,7 +104,7 @@
 				<a href="{% url 'sao:leave_from_company' a.id %}" class="btn btn-default" title="退社">
 					<span class="oi oi-eject"></span>
 				</a>
-			</th>
+			</td>
 		</tr>
 
 		{% endfor %}

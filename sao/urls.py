@@ -74,6 +74,5 @@ urlpatterns = [
     path("change_stamp_id", views.change_stamp_id, name="change_stamp_id"),
     path("get_employee_json", views.get_employee_json, name="get_employee_json"),
     path("fix_holiday", views.fix_holiday, name="fix_holiday"),
-    path("setup/", views.setup, name="setup"),
     path("req_test/", views.req_test),
 ]
