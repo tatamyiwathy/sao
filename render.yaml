@@ -1,12 +1,4 @@
 services:
-  - type: pserv
-    name: sao-mysql
-    plan: free
-    runtime: docker
-    autoDeploy: false
-    envVars:
-      - fromGroup: mysql
-
   - type: web
     name: sao-web
     runtime: docker
@@ -15,18 +7,5 @@ services:
     envVars:
       - key: SAO_PROFILE
         value: prod
-      - fromGroup: mysql
-
-envVarGroups:
-  - name: mysql
-    envVars:
-      - key: DB_NAME
-        value: sao_db
-      - key: DB_USER
-        value: saoadmin
-      - key: DB_PASSWORD
-        value: saoadmin
-      - key: DB_ROOT_PASSWORD
+      - key: DJANGO_SECRET_KEY
         generateValue: true
-      - key: DB_HOST
-        value: sao-mysql # ← ホスト名をサービス名に
