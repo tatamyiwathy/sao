@@ -74,7 +74,7 @@
 <body>
 		{% block menu %}
 		<nav class="navbar navbar-expand-lg bg-light">
-
+			
 			{% if user.is_authenticated %}
 				<div class="collapse navbar-collapse" id="navbar">
 					<ul class="nav navbar-nav me-auto">
@@ -140,10 +140,6 @@
 			
 					</ul>
 				</div>
-			{% else %}
-				<ul class="nav navbar-nav ms-auto">
-					<button class="dropdown-toggle btn btn-default navbar-btn" onclick="location.href={% url 'accounts:signup' %}" >サインアップ </button>
-				</ul>
 			{% endif %}
 		</nav>
 		{% endblock %}
