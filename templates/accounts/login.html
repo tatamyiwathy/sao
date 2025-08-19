@@ -14,7 +14,7 @@
 
             <div class="card">
                 <div class="card-header">
-                    ログイン
+                    <h3 class="card-title text-center">ログイン</h3>
                 </div>
                 {% if form.errors %}
                 <div class="text-danger text-center">
@@ -25,12 +25,18 @@
                 <div class="card-body">
                     <form class="form" method="post" action="{% url 'accounts:login' %}">
                         {% csrf_token %}
-                        <label class="form-label mt-3">{{form.username.label}}</label>
-                        {{form.username|attr:"class:form-control"}}
-                        <label class="form-label mt-3">{{form.password.label}}</label>
-                        {{form.password|attr:"class:form-control"}}
-                        <button class="btn btn-primary mt-3" type="submit">ログイン</button>
-                        <input type="hidden" name="next" value="{{ next }}" />
+                        <div class="mb-3">
+                            <label class="form-label">{{form.username.label}}</label>
+                            {{form.username|attr:"class:form-control"}}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{form.password.label}}</label>
+                            {{form.password|attr:"class:form-control"}}
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" type="submit">ログイン</button>
+                            <input type="hidden" name="next" value="{{ next }}" />
+                        </div>
                     </form>
                 </div>
             </div>
