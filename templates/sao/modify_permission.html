@@ -14,12 +14,9 @@
 	<div class="row">
 		<div class="col"></div>
 		<div class="col">
-			<div class="page-header">
-				<h4>ユーザーの権限の変更</h4>
-			</div>
 			<div class="card card-default">
 				<div class="card-header">
-					{{user.username}}
+					<h3 class="card-title">権限の変更 ({{user.username}}) </h3>
 				</div>
 				<div class="card-body">
 					<form class="form" method="post" action={% url 'sao:modify_permission' user.id %}>
@@ -28,7 +25,9 @@
 						{{form.as_table}}
 						<input type='hidden' name='id' value={{u.id}} />
 
+						<div class="d-grid gap-2">
 						<button class="btn btn-primary" type='submit'>変更</button>
+						</div>
 					</form>
 				</div>
 			</div>

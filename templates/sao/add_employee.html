@@ -9,26 +9,30 @@
 	</div>
 	<div class="row">
 		<div class="col"></div>
-		<div class="col card">
-			<div class="card-header">
-				スタッフの追加
-			</div>
-
-			<div class="card-body">
-				{%if form.non_field_errors%}
-				<div class="aleart alert-danger">
-					{% for err in form.non_field_errors %}
-					{{err}}
-					{%endfor%}
+		<div class="col">
+			<div class="card">
+				<div class="card-header">
+					<h3 class="card-title text-center">スタッフの追加</h3>
 				</div>
-				{%endif%}
 
-				<form class="form" method="post" action={% url 'sao:add_employee' %}>
-					{% csrf_token %}
-					{{form.as_p}}
-					<button class="btn btn-primary" type="submit">追加 </button>
-				</form>
-			</div>		
+				<div class="card-body">
+					{%if form.non_field_errors%}
+					<div class="aleart alert-danger">
+						{% for err in form.non_field_errors %}
+						{{err}}
+						{%endfor%}
+					</div>
+					{%endif%}
+
+					<form class="form" method="post" action={% url 'sao:add_employee' %}>
+						{% csrf_token %}
+						{{form.as_p}}
+						<div class="d-grid">
+							<button class="btn btn-primary" type="submit">追加 </button>
+						</div>
+					</form>
+				</div>		
+			</div>
 		</div>
 		<div class="col"></div>
 	</div>

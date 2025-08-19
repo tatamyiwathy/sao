@@ -8,34 +8,39 @@
 
 	<div class="row">
 		<div class="col"></div>
-		<div class="col card">
-			<div class="card-header">
-				{{employee.name}}の基本情報の修正
-			</div>
-			
-			<div class="card-body">
-
-			{% if errors %}
-			<div class="alert alert-danger">
-				{{errors}}
-			</div>
-			{% endif %}
-			
-			{% if form.errors %}
-			<div class="alert alert-danger">
-				{{form.errors}}
-			</div>
-			{% endif %}
-			
-			<form class="form" method="post" action={% url 'sao:edit_employee' employee.pk %}>
-				{% csrf_token %}
-
-				{{ form.as_p }}
-
-				<button  class="btn btn-primary mb-3" type="submit">保存</button>
+		<div class="col">	
+			<div class="card">
+				<div class="card-header">
+					<h3 class="card-title text-center">
+					基本情報の修正
+					</h3>
+				</div>
 				
-				<input type="hidden" name="employee_no" value="{{employee.employee_no}}" />
-			</form>
+				<div class="card-body">
+
+				{% if errors %}
+				<div class="alert alert-danger">
+					{{errors}}
+				</div>
+				{% endif %}
+				
+				{% if form.errors %}
+				<div class="alert alert-danger">
+					{{form.errors}}
+				</div>
+				{% endif %}
+				
+				<form class="form" method="post" action={% url 'sao:edit_employee' employee.pk %}>
+					{% csrf_token %}
+
+					{{ form.as_p }}
+
+					<div class="d-grid">
+						<button  class="btn btn-primary mb-3" type="submit">保存</button>
+					</div>
+					<input type="hidden" name="employee_no" value="{{employee.employee_no}}" />
+				</form>
+				</div>
 			</div>
 		</div>
 		<div class="col-lg-4"></div>
