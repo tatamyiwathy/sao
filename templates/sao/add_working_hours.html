@@ -60,6 +60,17 @@
 							{% endif %}
 						</div>
 
+						<!-- 有効フィールド -->
+						<div class="mb-3">
+							<label for="{{ form.is_active.id_for_label }}" class="form-label">{{ form.is_active.label }}</label>
+							{{ form.is_active }}
+							{% if form.is_active.errors %}
+								<div class="text-danger small">
+									{% for error in form.is_active.errors %}{{ error }}{% endfor %}
+								</div>
+							{% endif %}
+						</div>
+
 						<div class="d-grid">
 							<button class="btn btn-primary" type="submit">追加</button>
 						</div>

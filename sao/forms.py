@@ -362,6 +362,9 @@ class WorkingHourForm(forms.ModelForm):
                 'class': 'form-control', 
                 'type': 'time',
                 'step': '300'  # 5分刻み
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
             })
         }
         labels = {
