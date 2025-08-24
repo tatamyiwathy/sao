@@ -1300,7 +1300,7 @@ def update_working_hours(request, id):
     if request.method == "POST":
         form = forms.WorkingHourForm(request.POST, instance=workinghour)
         if form.is_valid():
-            workinghour.save()
+            form.save()
         return redirect('sao:working_hours_view')
     else:
         form = forms.WorkingHourForm(instance=workinghour)
