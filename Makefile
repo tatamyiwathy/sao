@@ -17,7 +17,8 @@ export SAO_DB_PASSWORD
 .PHONY: build dn deploy deploy-bg shell log ps clean debug-db run-db stop-db db-shell \
 		test test-with-db test-verbose test-coverage test-app test-file \
 		coverage-report coverage-html clean-test clean-coverage generate-db-init \
-		makemigrations migrate help run-web stop-web restart-web
+		makemigrations migrate help run-web stop-web restart-web \
+		merge-to-main create-branch finish-branch git-status
 		
 build:
 	docker compose ${DKC_OPT} build
@@ -180,7 +181,8 @@ clean-test:
 # ヘルプ
 
 help:
-	@echo "🚀 SAO Application Commands:"
+	@echo ""
+	@echo "SAO Django Application Make Commands"
 	@echo ""
 	@echo "  Build/Deploy:"
 	@echo "    make build       - Build Docker images"
@@ -217,6 +219,12 @@ help:
 	@echo "    make coverage-html     - Generate HTML coverage report"
 	@echo "    make clean-test        - Clean test-related files"
 	@echo ""
+	@echo "  Git Operations:"
+	@echo "    make git-status        - Show git status and recent commits"
+	@echo "    make create-branch     - Create and switch to new feature branch"
+	@echo "    make merge-to-main     - Merge current branch to main (manual)"
+	@echo "    make finish-branch     - Complete feature branch (merge + cleanup)"
+	@echo ""
 	@echo "  Examples:"
 	@echo "    make test-app APP=sao"
 	@echo "    make test-file FILE=sao.tests.test_models.TestTimecard"
@@ -225,3 +233,51 @@ help:
 	@echo "    1. make build"
 	@echo "    2. make generate-db-init"
 	@echo "    3. make run-web"
+
+
+# Git Operations
+git-status:
+	@echo "=== Git Status ==="
+	@git status --short
+	@echo ""
+	@echo "=== Current Branch ==="
+	@git branch --show-current
+	@echo ""
+	@echo "=== Recent Commits ==="
+	@git log --oneline -5
+
+create-branch:
+	@read -p "Enter new branch name: " branch; \
+	git checkout -b "$$branch" && \
+	echo "Created and switched to branch: $$branch"
+
+merge-to-main:
+	@echo "=== Current Branch Status ==="
+	@current_branch=$$(git branch --show-current); \
+	if [ "$$current_branch" = "main" ]; then \
+		echo "Already on main branch. Nothing to merge."; \
+		exit 1; \
+	fi; \
+	echo "Current branch: $$current_branch"; \
+	echo ""; \
+	@git status --porcelain | wc -l | xargs -I {} test {} -eq 0 || (echo "Uncommitted changes found. Please commit or stash first." && exit 1)
+	@echo "=== Switching to main branch ==="
+	@git checkout main
+	@echo "=== Merging feature branch ==="
+	@git merge --no-ff $(shell git branch --show-current 2>/dev/null || echo "main")
+	@echo "=== Pushing to remote ==="
+	@git push origin main
+	@echo "=== Merge completed successfully! ==="
+
+finish-branch:
+	@echo "=== Finishing current feature branch ==="
+	@current_branch=$$(git branch --show-current); \
+	if [ "$$current_branch" = "main" ]; then \
+		echo "Cannot finish main branch."; \
+		exit 1; \
+	fi; \
+	echo "Finishing branch: $$current_branch"; \
+	$(MAKE) merge-to-main; \
+	echo "=== Cleaning up local branch ==="
+	git branch -d "$$current_branch" && \
+	echo "Branch $$current_branch has been merged and deleted."
