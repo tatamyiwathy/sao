@@ -1273,7 +1273,7 @@ def fix_holiday(request):
     return HttpResponse("done")
 
 @login_required
-def working_hours_view(request):
+def workinghourssettings(request):
     return render(
         request,
         "sao/working_hours_list.html",
@@ -1283,26 +1283,25 @@ def working_hours_view(request):
     )
 
 @login_required
-def create_working_hours(request):
+def add_workinghour(request):
     if request.method == 'POST':
         form = forms.WorkingHourForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('sao:working_hours_view')
+            return redirect('sao:workinghourssettings')
     else:
         form = forms.WorkingHourForm()
-        form.fields['is_active'].initial = True
-    return render(request, 'sao/add_working_hours.html', {'form': form})
+    return render(request, 'sao/add_working_hour.html', {'form': form})
 
 @login_required
-def update_working_hours(request, id):
+def update_workinghour(request, id):
     workinghour = get_object_or_404(models.WorkingHour, id=id)
 
     if request.method == "POST":
         form = forms.WorkingHourForm(request.POST, instance=workinghour)
         if form.is_valid():
             workinghour.save()
-        return redirect('sao:working_hours_view')
+        return redirect('sao:workinghourssettings')
     else:
         form = forms.WorkingHourForm(instance=workinghour)
-    return render(request, 'sao/edit_working_hours.html', {'form': form})
+    return render(request, 'sao/edit_workinghour.html', {'form': form})

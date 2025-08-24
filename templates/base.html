@@ -107,7 +107,7 @@
 							<ul class="dropdown-menu">
 								<li><a class="dropdown-item" href={% url 'sao:permission' %}>ユーザー権限</a></li>
 								<li><a class="dropdown-item" href={% url 'sao:holiday_settings' %}>公休日設定</a></li>
-								<li><a class="dropdown-item" href={% url 'sao:working_hours_view' %}>勤務時間設定</a></li>
+								<li><a class="dropdown-item" href={% url 'sao:workinghourssettings' %}>勤務時間設定</a></li>
 								{% if user.is_staff %}
 								{% endif %}
 							</ul>

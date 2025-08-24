@@ -14,7 +14,7 @@
 		<div class="col">
 			<div class="float-end">
 
-				<a href={% url 'sao:add_working_hours' %} class="btn btn-info">勤務時間を追加する</a>
+				<a href={% url 'sao:addworkinghour' %} class="btn btn-info">勤務時間を追加する</a>
 			</div>
 		</div>
 
@@ -34,7 +34,7 @@
 				<td>{{w.begin_time}}</td>
 				<td>{{w.end_time}}</td>
 				<td>
-					<a href="{% url 'sao:update_working_hours' w.id %}" class="btn btn-default" title="編集">
+					<a href="{% url 'sao:updateworkinghour' w.id %}" class="btn btn-default" title="編集">
 						<span class="oi oi-pencil"></span>
 						編集
 					</a>
