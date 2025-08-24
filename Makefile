@@ -42,7 +42,7 @@ deploy-bg: build
 	docker compose ${DKC_OPT} up -d
 
 clean:
-	-docker compose --profile dev --profile prod down --volumes --remove-orphans
+	-docker compose --profile dev --profile prod down --remove-orphans
 	-docker image prune -f
 	-docker builder prune -f
 	-docker network prune -f
