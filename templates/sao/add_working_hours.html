@@ -24,7 +24,7 @@
 					</div>
 					{%endif%}
 
-					<form class="form" method="post" action={% url 'sao:addworkinghour' %}>
+					<form class="form" method="post" action={% url 'sao:add_working_hours' %}>
 						{% csrf_token %}
 						
 						<!-- 区分フィールド -->
