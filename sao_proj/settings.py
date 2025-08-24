@@ -163,11 +163,11 @@ USE_TZ = False
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
 STATIC_URL = "/static/"
+STATICFILES_DIRS = (os.path.join(BASE_DIR, "assets/"),)
 if os.environ.get("SAO_PROFILE") == "prod":
     # 本番環境：Nginx等のWebサーバーが静的ファイルを配信
     STATIC_ROOT = "/app/static/"  # Dockerボリュームマウント先
 else:
-    STATICFILES_DIRS = (os.path.join(BASE_DIR, "assets/"),)
     STATIC_ROOT = os.path.join(BASE_DIR, "static/")
 
 

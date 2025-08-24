@@ -34,10 +34,5 @@ RUN mkdir -p /var/log/sao && \
 
 USER ${SAO_APPUSER}
 
-# ビルド時用のダミー環境変数で静的ファイル収集
-RUN DJANGO_SECRET_KEY=build-secret-key \
-    SAO_PROFILE=prod \
-    python manage.py collectstatic --noinput
-
 # Apacheのモジュールを有効化
 ENTRYPOINT ["tools/docker-entrypoint.sh"]
