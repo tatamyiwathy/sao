@@ -17,7 +17,7 @@ export SAO_DB_PASSWORD
 .PHONY: build dn deploy deploy-bg shell log ps clean debug-db run-db stop-db db-shell \
 		test test-with-db test-verbose test-coverage test-app test-file \
 		coverage-report coverage-html clean-test clean-coverage generate-db-init \
-		makemigrations help run-web stop-web restart-web
+		makemigrations migrate help run-web stop-web restart-web
 		
 build:
 	docker compose ${DKC_OPT} build
@@ -84,6 +84,10 @@ generate-db-init:
 makemigrations:
 	docker compose ${DKC_OPT} run --rm ${SERVICE_NAME} \
 		python manage.py makemigrations --noinput
+
+migrate:
+	docker compose ${DKC_OPT} run --rm ${SERVICE_NAME} \
+		python manage.py migrate
 
 # データベース接続デバッグ
 debug-db:

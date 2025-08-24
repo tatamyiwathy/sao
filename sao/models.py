@@ -134,6 +134,7 @@ class WorkingHour(models.Model):
     category = models.CharField(r"区分", max_length=10, unique=True)
     begin_time = models.TimeField(r"出社時間")
     end_time = models.TimeField(r"退社時間")
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return (
@@ -145,6 +146,8 @@ class WorkingHour(models.Model):
         )
 
     def is_valid(self):
+        if not self.is_active:
+            return False
         if self.begin_time is None:
             return False
         if self.end_time is None:

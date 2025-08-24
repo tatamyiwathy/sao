@@ -2,7 +2,7 @@ import re
 import datetime
 from django import forms
 from django.core.exceptions import ObjectDoesNotExist
-from .models import Employee, AppliedOfficeHours, Holiday, TimeRecord
+from .models import Employee, AppliedOfficeHours, Holiday, TimeRecord, WorkingHour
 from .working_status import WorkingStatus
 
 
@@ -338,4 +338,46 @@ class AddSteppingOutForm(forms.Form):
             raise forms.ValidationError(
                 "外出と戻りの時間が同じか、戻りの時間が外出時間より速いです"
             )
+        return cleaned_data
+
+
+class WorkingHourForm(forms.ModelForm):
+    """勤務時間フォーム"""
+    
+    class Meta:
+        model = WorkingHour
+        fields = ('category', 'begin_time', 'end_time','is_active')
+        widgets = {
+            'category': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '例: 通常勤務',
+                'maxlength': '10'
+            }),
+            'begin_time': forms.TimeInput(attrs={
+                'class': 'form-control',
+                'type': 'time',
+                'step': '300'  # 5分刻み
+            }),
+            'end_time': forms.TimeInput(attrs={
+                'class': 'form-control', 
+                'type': 'time',
+                'step': '300'  # 5分刻み
+            })
+        }
+        labels = {
+            'category': '区分',
+            'begin_time': '出社時間',
+            'end_time': '退社時間',
+            'is_active': '有効'
+        }
+        
+    def clean(self):
+        cleaned_data = super().clean()
+        begin_time = cleaned_data.get('begin_time')
+        end_time = cleaned_data.get('end_time')
+        
+        if begin_time and end_time:
+            if begin_time >= end_time:
+                raise forms.ValidationError('出社時間は退社時間より前である必要があります。')
+                
         return cleaned_data

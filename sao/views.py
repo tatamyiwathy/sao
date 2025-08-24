@@ -12,6 +12,7 @@ from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
+from django.views.generic.edit import CreateView
 from . import calendar, core, forms, models, utils
 from .core import (
     get_office_hours,
@@ -1270,3 +1271,37 @@ def fix_holiday(request):
             r.save()
 
     return HttpResponse("done")
+
+@login_required
+def workinghourssettings(request):
+    return render(
+        request,
+        "sao/working_hours_list.html",
+        {
+            'working_hours': list(models.WorkingHour.objects.filter(is_active=True)),
+        },
+    )
+
+@login_required
+def add_workinghour(request):
+    if request.method == 'POST':
+        form = forms.WorkingHourForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('sao:workinghourssettings')
+    else:
+        form = forms.WorkingHourForm()
+    return render(request, 'sao/add_working_hour.html', {'form': form})
+
+@login_required
+def update_workinghour(request, id):
+    workinghour = get_object_or_404(models.WorkingHour, id=id)
+
+    if request.method == "POST":
+        form = forms.WorkingHourForm(request.POST, instance=workinghour)
+        if form.is_valid():
+            workinghour.save()
+        return redirect('sao:workinghourssettings')
+    else:
+        form = forms.WorkingHourForm(instance=workinghour)
+    return render(request, 'sao/edit_workinghour.html', {'form': form})

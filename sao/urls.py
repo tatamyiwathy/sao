@@ -75,4 +75,7 @@ urlpatterns = [
     path("get_employee_json", views.get_employee_json, name="get_employee_json"),
     path("fix_holiday", views.fix_holiday, name="fix_holiday"),
     path("req_test/", views.req_test),
+    path("workinghourssettings/", views.workinghourssettings, name="workinghourssettings"),
+    path("addworkinghour/", views.add_workinghour, name="addworkinghour"),
+    path("updateworkinghour/<int:id>/", views.update_workinghour, name="updateworkinghour"),
 ]
