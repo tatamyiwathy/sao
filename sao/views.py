@@ -1084,21 +1084,6 @@ def download_csv(request, employee_no, year, month):
 
 
 @login_required
-def update_working_hours(request):
-    """勤務時間の更新"""
-    employees = models.Employee.objects.filter(user__is_active=True, department=1)
-    hours = models.WorkingHour.objects.get(category="H")
-
-    for employee in employees:
-        models.AppliedOfficeHours(
-            employee=employee, date=datetime.date(2020, 3, 10), working_hours=hours
-        ).save()
-        print(employee)
-
-    return HttpResponse("できた")
-
-
-@login_required
 def web_timestamp_view(request, employee_no):
     """WEB打刻の閲覧"""
     employee = get_object_or_404(models.Employee, employee_no=employee_no)

@@ -49,9 +49,6 @@ urlpatterns = [
         name="download_csv",
     ),
     path(
-        "update_working_hours/", views.update_working_hours, name="update_working_hours"
-    ),
-    path(
         "webtimestamp/<int:employee_no>/",
         views.web_timestamp_view,
         name="web_timestamp_view",
