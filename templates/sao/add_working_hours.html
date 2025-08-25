@@ -2,85 +2,150 @@
 {% load widget_tweaks %}
 
 {% block content%}
-
 <div class="container">
+    <div class="row mt-3">
+    </div>
+    <div class="row">
+        <div class="col"></div>
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title text-center">🕐 勤務時間の追加</h3>
+                </div>
 
-	<div class="row mt-3">
-	</div>
-	<div class="row">
-		<div class="col"></div>
-		<div class="col">
-			<div class="card">
-				<div class="card-header">
-					<h3 class="card-title text-center">勤務時間の追加</h3>
-				</div>
+                <div class="card-body">
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for err in form.non_field_errors %}
+                        {{ err }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
 
-				<div class="card-body">
-					{%if form.non_field_errors%}
-					<div class="alert alert-danger">
-						{% for err in form.non_field_errors %}
-						{{err}}
-						{%endfor%}
-					</div>
-					{%endif%}
+                    <form class="form" method="post" action="{% url 'sao:add_working_hours' %}">
+                        {% csrf_token %}
+                        
+                        <!-- 区分フィールド -->
+                        <div class="mb-3">
+                            <label for="{{ form.category.id_for_label }}" class="form-label">
+                                <i class="bi bi-tag"></i> {{ form.category.label }}
+                            </label>
+                            {{ form.category|add_class:"form-control"|attr:"placeholder:例: 通常勤務" }}
+                            {% if form.category.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.category.errors %}
+                                        <i class="bi bi-exclamation-triangle"></i> {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
 
-					<form class="form" method="post" action={% url 'sao:add_working_hours' %}>
-						{% csrf_token %}
-						
-						<!-- 区分フィールド -->
-						<div class="mb-3">
-							<label for="{{ form.category.id_for_label }}" class="form-label">{{ form.category.label }}</label>
-							{{ form.category }}
-							{% if form.category.errors %}
-								<div class="text-danger small">
-									{% for error in form.category.errors %}{{ error }}{% endfor %}
-								</div>
-							{% endif %}
-						</div>
+                        <!-- 時間フィールド（横並び） -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <!-- 出社時間フィールド -->
+                                <div class="mb-3">
+                                    <label for="{{ form.begin_time.id_for_label }}" class="form-label">
+                                        <i class="bi bi-clock"></i> {{ form.begin_time.label }}(30分刻み)
+                                    </label>
+                                    {{ form.begin_time|add_class:"form-control" }}
+                                    {% if form.begin_time.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.begin_time.errors %}
+                                                <i class="bi bi-exclamation-triangle"></i> {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <!-- 退社時間フィールド -->
+                                <div class="mb-3">
+                                    <label for="{{ form.end_time.id_for_label }}" class="form-label">
+                                        <i class="bi bi-clock-history"></i> {{ form.end_time.label }}(30分刻み)
+                                    </label>
+                                    {{ form.end_time|add_class:"form-control" }}
+                                    {% if form.end_time.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.end_time.errors %}
+                                                <i class="bi bi-exclamation-triangle"></i> {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
 
-						<!-- 出社時間フィールド -->
-						<div class="mb-3">
-							<label for="{{ form.begin_time.id_for_label }}" class="form-label">{{ form.begin_time.label }}</label>
-							{{ form.begin_time }}
-							{% if form.begin_time.errors %}
-								<div class="text-danger small">
-									{% for error in form.begin_time.errors %}{{ error }}{% endfor %}
-								</div>
-							{% endif %}
-						</div>
+                        <!-- 有効フィールド -->
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                {{ form.is_active|add_class:"form-check-input" }}
+                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                    <i class="bi bi-toggle-on"></i> {{ form.is_active.label }}
+                                </label>
+                                {% if form.is_active.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.is_active.errors %}
+                                            <i class="bi bi-exclamation-triangle"></i> {{ error }}
+                                        {% endfor %}
+                                    {% endif %}
+                            </div>
+                        </div>
 
-						<!-- 退社時間フィールド -->
-						<div class="mb-3">
-							<label for="{{ form.end_time.id_for_label }}" class="form-label">{{ form.end_time.label }}</label>
-							{{ form.end_time }}
-							{% if form.end_time.errors %}
-								<div class="text-danger small">
-									{% for error in form.end_time.errors %}{{ error }}{% endfor %}
-								</div>
-							{% endif %}
-						</div>
-
-						<!-- 有効フィールド -->
-						<div class="mb-3">
-							<label for="{{ form.is_active.id_for_label }}" class="form-label">{{ form.is_active.label }}</label>
-							{{ form.is_active }}
-							{% if form.is_active.errors %}
-								<div class="text-danger small">
-									{% for error in form.is_active.errors %}{{ error }}{% endfor %}
-								</div>
-							{% endif %}
-						</div>
-
-						<div class="d-grid">
-							<button class="btn btn-primary" type="submit">追加</button>
-						</div>
-					</form>
-				</div>		
-			</div>
-		</div>
-		<div class="col"></div>
-	</div>
+                        <!-- 送信ボタン -->
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary btn-lg" type="submit">
+                                <i class="bi bi-plus-circle"></i> 勤務時間を追加
+                            </button>
+                            <a href="{% url 'sao:working_hours_view' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> 一覧に戻る
+                            </a>
+                        </div>
+                    </form>
+                </div>        
+            </div>
+        </div>
+        <div class="col"></div>
+    </div>
 </div>
+
+<script>
+// フォームバリデーション
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const beginTimeInput = document.querySelector('#{{ form.begin_time.id_for_label }}');
+    const endTimeInput = document.querySelector('#{{ form.end_time.id_for_label }}');
+    
+    // リアルタイムバリデーション
+    function validateTimes() {
+        const beginTime = beginTimeInput.value;
+        const endTime = endTimeInput.value;
+        
+        if (beginTime && endTime && beginTime >= endTime) {
+            endTimeInput.classList.add('is-invalid');
+            endTimeInput.classList.remove('is-valid');
+        } else if (endTime) {
+            endTimeInput.classList.remove('is-invalid');
+            endTimeInput.classList.add('is-valid');
+        }
+    }
+    
+    beginTimeInput.addEventListener('change', validateTimes);
+    endTimeInput.addEventListener('change', validateTimes);
+    
+    // フォーム送信時の確認
+    form.addEventListener('submit', function(e) {
+        const beginTime = beginTimeInput.value;
+        const endTime = endTimeInput.value;
+        
+        if (beginTime && endTime && beginTime >= endTime) {
+            e.preventDefault();
+            alert('出社時間は退社時間より前である必要があります。');
+        }
+    });
+});
+</script>
 {% endblock %}
 
 {% block footer %} 

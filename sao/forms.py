@@ -342,45 +342,31 @@ class AddSteppingOutForm(forms.Form):
 
 
 class WorkingHourForm(forms.ModelForm):
-    """勤務時間フォーム"""
-    
     class Meta:
         model = WorkingHour
-        fields = ('category', 'begin_time', 'end_time','is_active')
+        fields = ['category', 'begin_time', 'end_time', 'is_active']
         widgets = {
-            'category': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': '例: 通常勤務',
-                'maxlength': '10'
-            }),
             'begin_time': forms.TimeInput(attrs={
-                'class': 'form-control',
                 'type': 'time',
-                'step': '300'  # 5分刻み
+                'min': '07:00',
+                'max': '22:00',
+                'step': '1800'  # 30分刻み
             }),
             'end_time': forms.TimeInput(attrs={
-                'class': 'form-control', 
                 'type': 'time',
-                'step': '300'  # 5分刻み
+                'min': '07:00', 
+                'max': '22:00',
+                'step': '1800'  # 30分刻み
             }),
-            'is_active': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
-            })
         }
-        labels = {
-            'category': '区分',
-            'begin_time': '出社時間',
-            'end_time': '退社時間',
-            'is_active': '有効'
-        }
-        
+
     def clean(self):
         cleaned_data = super().clean()
         begin_time = cleaned_data.get('begin_time')
         end_time = cleaned_data.get('end_time')
-        
-        if begin_time and end_time:
-            if begin_time >= end_time:
-                raise forms.ValidationError('出社時間は退社時間より前である必要があります。')
-                
+
+        if begin_time and end_time and begin_time >= end_time:
+            raise forms.ValidationError('出社時間は退社時間より前である必要があります。')
+
         return cleaned_data
+    
