@@ -1272,7 +1272,8 @@ def add_working_hours(request):
     if request.method == 'POST':
         form = forms.WorkingHourForm(request.POST)
         if form.is_valid():
-            form.save()
+            working_hour = form.save()
+            messages.success(request, f'勤務時間「{working_hour.category}」を追加しました。')
             return redirect('sao:working_hours_view')
     else:
         form = forms.WorkingHourForm()

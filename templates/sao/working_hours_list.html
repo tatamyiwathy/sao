@@ -11,6 +11,7 @@
 		<div class="col">
 			<h4>勤務時間設定</h4>
 		</div>
+
 		<div class="col">
 			<div class="float-end">
 
@@ -28,19 +29,19 @@
 			<td>退社時間</td>
 			<td></td>
 		</tr>
+		{% for w in working_hours %}
 		<tr>
-			{% for w in working_hours %}
-				<td>{{w.category}}</td>
-				<td>{{w.begin_time}}</td>
-				<td>{{w.end_time}}</td>
-				<td>
-					<a href="{% url 'sao:edit_working_hours' w.id %}" class="btn btn-default" title="編集">
-						<span class="oi oi-pencil"></span>
-						編集
-					</a>
-				</td>
-			{% endfor %}
+			<td>{{w.category}}</td>
+			<td>{{w.begin_time}}</td>
+			<td>{{w.end_time}}</td>
+			<td>
+				<a href="{% url 'sao:edit_working_hours' w.id %}" class="btn btn-default" title="編集">
+					<span class="oi oi-pencil"></span>
+					編集
+				</a>
+			</td>
 		</tr>
+		{% endfor %}
 
 	</table>
 
