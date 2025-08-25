@@ -39,6 +39,9 @@
 					<span class="oi oi-pencil"></span>
 					編集
 				</a>
+				<a href="{% url 'sao:del_working_hours' w.id %}" class="btn btn-danger" title="削除" onclick="return confirm('本当に削除しますか？');">
+					<span class="oi oi-trash"></span>
+					削除
 			</td>
 		</tr>
 		{% endfor %}

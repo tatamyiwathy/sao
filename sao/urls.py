@@ -72,7 +72,8 @@ urlpatterns = [
     path("get_employee_json", views.get_employee_json, name="get_employee_json"),
     path("fix_holiday", views.fix_holiday, name="fix_holiday"),
     path("req_test/", views.req_test),
-    path("working_hours_view/", views.working_hours_view, name="working_hours_view"),
-    path("add_working_hours/", views.add_working_hours, name="add_working_hours"),
-    path("edit_working_hours/<int:id>/", views.update_working_hours, name="edit_working_hours"),
+    path("working_hours/", views.working_hours_view, name="working_hours_view"),
+    path("working_hours/add", views.add_working_hours, name="add_working_hours"),
+    path("working_hours/<int:id>/delete/", views.del_working_hours, name="del_working_hours"),
+    path("working_hours/<int:id>/update/", views.update_working_hours, name="edit_working_hours"),
 ]

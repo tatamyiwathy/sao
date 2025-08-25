@@ -1280,6 +1280,14 @@ def add_working_hours(request):
     return render(request, 'sao/add_working_hours.html', {'form': form})
 
 @login_required
+def del_working_hours(request, id):
+    working_hour = get_object_or_404(models.WorkingHour, id=id)
+    working_hour.is_active = False
+    working_hour.save()
+    messages.success(request, f'勤務時間「{working_hour.category}」を削除しました。')
+    return redirect('sao:working_hours_view')
+
+@login_required
 def update_working_hours(request, id):
     workinghour = get_object_or_404(models.WorkingHour, id=id)
 
