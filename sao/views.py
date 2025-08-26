@@ -1289,13 +1289,17 @@ def del_working_hours(request, id):
 
 @login_required
 def update_working_hours(request, id):
+    logger.info("update working hours")    
     workinghour = get_object_or_404(models.WorkingHour, id=id)
 
     if request.method == "POST":
         form = forms.WorkingHourForm(request.POST, instance=workinghour)
         if form.is_valid():
-            form.save()
-        return redirect('sao:working_hours_view')
-    else:
-        form = forms.WorkingHourForm(instance=workinghour)
-    return render(request, 'sao/edit_working_hours.html', {'form': form})
+            working_hour = form.save()
+            messages.success(request, f'勤務時間「{working_hour.category}」を更新しました。')
+        else:
+            # バリデーションエラー時
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
+    return redirect('sao:working_hours_view')

@@ -1,3 +1,4 @@
+<!-- templates/sao/working_hours_list.html -->
 {% extends "base.html" %}
 {% load widget_tweaks %}
 
@@ -5,56 +6,191 @@
 {% endblock %}
 
 {% block content %}
-
 <div class="container">
-	<div class="row mt-3">
-		<div class="col">
-			<h4>勤務時間設定</h4>
-		</div>
+    <div class="row mt-3">
+        <div class="col">
+            <h4>勤務時間設定</h4>
+        </div>
+        <div class="col">
+            <div class="float-end">
+                <a href={% url 'sao:add_working_hours' %} class="btn btn-info">勤務時間を追加する</a>
+            </div>
+        </div>
+    </div>
 
-		<div class="col">
-			<div class="float-end">
-
-				<a href={% url 'sao:add_working_hours' %} class="btn btn-info">勤務時間を追加する</a>
-			</div>
-		</div>
-
-	</div>
-
-
-	<table class="table table-striped table-bordered mt-3">
-		<tr>
-			<td>区分</td>
-			<td>出社時間</td>
-			<td>退社時間</td>
-			<td></td>
-		</tr>
-		{% for w in working_hours %}
-		<tr>
-			<td>{{w.category}}</td>
-			<td>{{w.begin_time}}</td>
-			<td>{{w.end_time}}</td>
-			<td>
-				<a href="{% url 'sao:edit_working_hours' w.id %}" class="btn btn-default" title="編集">
-					<span class="oi oi-pencil"></span>
-					編集
-				</a>
-				<a href="{% url 'sao:del_working_hours' w.id %}" class="btn btn-danger" title="削除" onclick="return confirm('本当に削除しますか？');">
-					<span class="oi oi-trash"></span>
-					削除
-			</td>
-		</tr>
-		{% endfor %}
-
-	</table>
-
-
-
+    <table class="table table-striped table-bordered mt-3">
+        <thead>
+            <tr>
+                <th>区分</th>
+                <th>出社時間</th>
+                <th>退社時間</th>
+                <th>有効</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for w in working_hours %}
+            <tr>
+                <td>{{w.category}}</td>
+                <td>{{w.begin_time}}</td>
+                <td>{{w.end_time}}</td>
+                <td>
+                    {% if w.is_active %}
+                        <span class="badge bg-success">有効</span>
+                    {% else %}
+                        <span class="badge bg-secondary">無効</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <!-- 🔥 編集ボタン -->
+                    <button type="button" 
+                            class="btn btn-sm btn-primary edit-btn" 
+                            data-id="{{ w.id }}"
+                            data-category="{{ w.category }}"
+                            data-begin-time="{{ w.begin_time|time:'H:i' }}"
+                            data-end-time="{{ w.end_time|time:'H:i' }}"
+                            data-is-active="{{ w.is_active|yesno:'true,false' }}"
+                            data-url="{% url 'sao:edit_working_hours' w.id %}">
+                        <i class="bi bi-pencil"></i> 編集
+                    </button>
+                    
+                    <a href="{% url 'sao:del_working_hours' w.id %}" 
+                       class="btn btn-sm btn-danger" 
+                       title="削除"
+                       onclick="return confirm('本当に削除しますか？');">
+                        <i class="bi bi-trash"></i> 削除
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
+
+<!-- モーダルをインクルード -->
+{% include 'sao/edit_working_hours_modal.html' %}
+
+<script>
+console.log('🕐 Working Hours List - Script loaded');
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🕐 DOM Content Loaded');
+    
+    // 要素の存在確認
+    const editButtons = document.querySelectorAll('.edit-btn');
+    const editModal = document.getElementById('editModal');
+    
+    console.log('Edit buttons found:', editButtons.length);
+    console.log('Edit modal found:', !!editModal);
+    
+    if (!editModal) {
+        console.error('❌ Edit modal not found!');
+        return;
+    }
+    
+    // Bootstrap Modal インスタンスを作成
+    let modalInstance;
+    try {
+        modalInstance = new bootstrap.Modal(editModal);
+        console.log('✅ Modal instance created');
+    } catch (error) {
+        console.error('❌ Failed to create modal instance:', error);
+        return;
+    }
+    
+    // 編集ボタンのイベントリスナー設定
+    editButtons.forEach(function(button, index) {
+        button.addEventListener('click', function() {
+            const data = {
+                id: this.getAttribute('data-id'),
+                category: this.getAttribute('data-category'),
+                beginTime: this.getAttribute('data-begin-time'),
+                endTime: this.getAttribute('data-end-time'),
+                isActive: this.getAttribute('data-is-active') === 'true',
+                url: this.getAttribute('data-url')
+            };
+            
+            console.log('🕐 Edit button clicked:', data);
+            
+            // フォーム要素を取得
+            const form = document.getElementById('editForm');
+            const categoryInput = document.getElementById('edit_category');
+            const beginTimeInput = document.getElementById('edit_begin_time');
+            const endTimeInput = document.getElementById('edit_end_time');
+            const isActiveInput = document.getElementById('edit_is_active');
+            const modalLabel = document.getElementById('editModalLabel');
+            
+            // 要素の存在確認
+            if (!form || !categoryInput || !beginTimeInput || !endTimeInput || !isActiveInput) {
+                console.error('❌ Form elements not found');
+                alert('フォーム要素が見つかりません。ページを再読み込みしてください。');
+                return;
+            }
+            
+            // フォームに値を設定
+            categoryInput.value = data.category;
+            beginTimeInput.value = data.beginTime;
+            endTimeInput.value = data.endTime;
+            isActiveInput.checked = data.isActive;
+            
+            // フォームのaction URLを設定
+            form.action = data.url;
+            
+            // モーダルタイトルを更新
+            if (modalLabel) {
+                modalLabel.textContent = `🕐 「${data.category}」の編集`;
+            }
+            
+            console.log('✅ Form populated with data');
+            
+            // モーダルを表示
+            try {
+                modalInstance.show();
+                console.log('✅ Modal shown');
+            } catch (error) {
+                console.error('❌ Failed to show modal:', error);
+                alert('モーダルの表示に失敗しました。');
+            }
+        });
+    });
+    
+    // フォーム送信時のバリデーション
+    const editForm = document.getElementById('editForm');
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            const beginTime = document.getElementById('edit_begin_time').value;
+            const endTime = document.getElementById('edit_end_time').value;
+            
+            console.log('🕐 Form validation:', { beginTime, endTime });
+            
+            // 時間の妥当性チェック
+            if (beginTime >= endTime) {
+                e.preventDefault();
+                alert('⚠️ 出社時間は退社時間より前である必要があります。');
+                console.log('❌ Validation failed: Invalid time range');
+                return false;
+            }
+            
+            console.log('✅ Form validation passed');
+        });
+    }
+    
+    // モーダルイベントリスナー
+    editModal.addEventListener('shown.bs.modal', function() {
+        console.log('🕐 Modal shown - focusing first input');
+        const firstInput = document.getElementById('edit_category');
+        if (firstInput) {
+            firstInput.focus();
+        }
+    });
+    
+    editModal.addEventListener('hidden.bs.modal', function() {
+        console.log('🕐 Modal hidden');
+    });
+});
+</script>
+
 {% endblock %}
 
-
-{% block footer%}
+{% block footer %}
 {% endblock %}
-
-</div><!-- // #footer -->
