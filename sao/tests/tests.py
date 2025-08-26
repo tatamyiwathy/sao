@@ -1472,6 +1472,7 @@ class UpdateWorkingHoursTest(TestCase):
         self.assertEqual(str(self.working_hour.end_time), '17:00:00')
         self.assertTrue(self.working_hour.is_active)
 
+    # 有効ではないデータで更新しようとした場合
     def test_update_working_hours_invalid(self):
         url = reverse('sao:edit_working_hours', args=[self.working_hour.id])
         data = {
@@ -1485,3 +1486,4 @@ class UpdateWorkingHoursTest(TestCase):
         # レコードは更新されていない
         self.assertNotEqual(self.working_hour.category, '')
         self.assertEqual(response.status_code, 302)  # エラーでもリダイレクト
+
