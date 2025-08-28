@@ -5,11 +5,19 @@ from . import views
 app_name = "sao"
 urlpatterns = [
     path("", views.home, name="home"),
+
+    # 雇用者に割り当てる勤務時間
     path(
-        "del_office_hours/<office_hours>/",
-        views.del_office_hours,
-        name="del_office_hours",
+        "employee_hour/<id>/delete",
+        views.del_employee_hour,
+        name="del_employee_hour",
     ),
+    path(
+        "employee_hour/<int:employee_no>",
+        views.employee_hour_view,
+        name="employee_hour_view",
+    ),
+
     path(
         "modify_record/<int:record_id>/<int:year>/<int:month>/",
         views.modify_record,
@@ -21,7 +29,7 @@ urlpatterns = [
     path("employee/", views.employee_list, name="employee_list"),
     path("employee/add", views.add_employee, name="add_employee"),
     path("employee/<int:employee_no>/edit", views.edit_employee, name="edit_employee"),
-    path("leave/<int:pk>", views.leave_from_company, name="leave_from_company"),
+    path("leave/<int:employee_no>", views.leave_from_company, name="leave_from_company"),
 
     path("employee_record/", views.employee_record, name="employee_record"),
     path(
@@ -37,11 +45,6 @@ urlpatterns = [
         name="modify_permission",
     ),
     path("holiday_settings/", views.holiday_settings, name="holiday_settings"),
-    path(
-        "office_hours_list/<int:employee_no>",
-        views.office_hours_list,
-        name="office_hours_list",
-    ),
     path(
         "progress/<int:pk>/", views.progress, name="progress"
     ),  # 進捗が表示されていくペー

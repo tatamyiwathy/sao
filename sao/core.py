@@ -8,7 +8,7 @@ from .models import (
     TimeRecord,
     Employee,
     SteppingOut,
-    AppliedOfficeHours,
+    EmployeeHour,
     WorkingHour,
 )
 from .attendance import Attendance
@@ -51,7 +51,7 @@ def adjust_working_hours(record: TimeRecord) -> tuple:
         clockout = record.get_clock_out()
         return (clockin, clockout)
 
-    officehour = get_office_hours(record.employee, record.date)
+    officehour = get_employee_hour(record.employee, record.date)
     return adjust_scheduled_time(
         record.status,
         (
@@ -670,7 +670,7 @@ def collect_timerecord_by_month(employee: Employee, date: datetime.date) -> list
     return timerecords
 
 
-def get_office_hours(employee: Employee, date: datetime.date) -> WorkingHour:
+def get_employee_hour(employee: Employee, date: datetime.date) -> WorkingHour:
     """☑
     所定労働時間をデータベースから引っ張ってくる
     取得できないときはNoSpecifiedWorkingHoursError例外が発生する
@@ -678,10 +678,9 @@ def get_office_hours(employee: Employee, date: datetime.date) -> WorkingHour:
         date    この日付の「既定の勤務時間」を検索
 
     """
-    query = AppliedOfficeHours.objects.filter(employee=employee).order_by("-date")
-    for office_hours in query:
-        if office_hours.date <= date:
-            return office_hours.working_hours
+    for hour in EmployeeHour.objects.filter(employee=employee).order_by("-date"):
+        if hour.date <= date:
+            return hour.working_hours
     raise NoSpecifiedWorkingHoursError(f"no specified working hour for {employee.name}")
 
 
@@ -690,14 +689,14 @@ def get_working_hours_by_category(category: str) -> WorkingHour:
     return WorkingHour.objects.get(category=category)
 
 
-def get_working_hours_tobe_applied(employee: Employee) -> WorkingHour:
+def get_working_hours_tobe_assign(employee: Employee) -> WorkingHour:
     """☑
     適用予定の勤務時間を取得する(すでに適用されているかもしれないがこの関数では考慮しない)
     引数:     employee
             date    この日付の「既定の勤務時間」を検索
     戻り値     WorkingHourオブジェクト
     """
-    query = AppliedOfficeHours.objects.filter(employee=employee).order_by("-date")
+    query = EmployeeHour.objects.filter(employee=employee).order_by("-date")
     if query:
         return query[0].working_hours
     raise ValueError("no specified working hour for %s" % employee.name)

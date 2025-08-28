@@ -2,7 +2,7 @@ import re
 import datetime
 from django import forms
 from django.core.exceptions import ObjectDoesNotExist
-from .models import Employee, AppliedOfficeHours, Holiday, TimeRecord, WorkingHour
+from .models import Employee, EmployeeHour, Holiday, TimeRecord, WorkingHour
 from .working_status import WorkingStatus
 
 
@@ -16,7 +16,7 @@ class ApplyWorkingHoursForm(forms.ModelForm):
     )
 
     class Meta:
-        model = AppliedOfficeHours
+        model = EmployeeHour
         fields = (
             "date",
             "working_hours",

@@ -285,8 +285,8 @@ class TimeRecord(models.Model):
         return True
 
 
-class AppliedOfficeHours(models.Model):
-    """適用済み勤務時間"""
+class EmployeeHour(models.Model):
+    """割り当てられた勤務時間"""
 
     employee = models.ForeignKey("Employee", on_delete=models.CASCADE)
     working_hours = models.ForeignKey("WorkingHour", on_delete=models.CASCADE)
@@ -426,7 +426,7 @@ class TimeRecordAdmin(admin.ModelAdmin):
     )
 
 
-class AppliedOfficeHoursAdmin(admin.ModelAdmin):
+class EmployeeHourAdmin(admin.ModelAdmin):
     """管理サイト"""
 
     list_display = ("employee", "date", "working_hours")
@@ -471,7 +471,7 @@ class SteppingOutAdmin(admin.ModelAdmin):
 admin.site.register(Employee, EmployeeAdmin)
 admin.site.register(WorkingHour, WorkingHourAdmin)
 admin.site.register(TimeRecord, TimeRecordAdmin)
-admin.site.register(AppliedOfficeHours, AppliedOfficeHoursAdmin)
+admin.site.register(EmployeeHour, EmployeeHourAdmin)
 admin.site.register(Notification, NotificationAdmin)
 admin.site.register(Manager, ManagerAdmin)
 admin.site.register(Permission, PermissionAdmin)

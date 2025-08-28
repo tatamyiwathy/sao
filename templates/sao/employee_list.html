@@ -79,7 +79,7 @@
 			<td>{{a.status}}</td>
 			<td>{{a.department}}</td>
 			<td>{{a.basic_info.join_date}}</td>
-			<td>{{a.office_hours}}</td>
+			<td>{{a.working_hour}}</td>
 			<td class="text-center">
 				{% if a.manager %}
 				<span class="oi oi-check"></span>
@@ -97,11 +97,11 @@
 					<span class="oi oi-pencil"></span>
 				</a>
 
-				<a href="{% url 'sao:office_hours_list' a.employee_no %}" class="btn btn-default" title="勤務時間の設定">
+				<a href="{% url 'sao:employee_hour_view' a.employee_no %}" class="btn btn-default" title="勤務時間の割り当て">
 					<span class="oi oi-clock"></span>
 				</a>
 
-				<a href="{% url 'sao:leave_from_company' a.employee_no %}" class="btn btn-default" title="退社">
+				<a href="{% url 'sao:leave_from_company' a.employee_no %}" class="btn btn-default" title="退社処理">
 					<span class="oi oi-eject"></span>
 				</a>
 			</td>

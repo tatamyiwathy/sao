@@ -13,10 +13,7 @@
 集計                tally
 正社員              full-time staff/permanent employee
 年次有給休暇	    anuual paied holiday
-
-https://www.active-connector.com/post/resources/payslip
-http://www.japaneselawtranslation.go.jp/law/detail_main?vm=&id=5#:~:text=%E5%8A%B4%E5%83%8D%E5%9F%BA%E6%BA%96%E6%B3%95%20%2F%20Labor%20Standards%20Act
-
+雇用者に割り当てられた勤務時間    EmplyeeHour
 
 時間外労働時間(Overtime work) = 労働時間 - 勤務時間
 労働時間(Actual woking hours) = (終業打刻 - 始業打刻)-外出時間 (ただし6h超なら1h短縮)

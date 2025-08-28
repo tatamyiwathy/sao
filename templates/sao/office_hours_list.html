@@ -23,8 +23,9 @@
 		<div class="col col-lg-6">
 			<div class="col page-header">
 				<h4>勤務時間設定の追加と削除</h4>
+				<h5>{{employee.name}} (社員番号: {{employee.employee_no}} )</h5>
 			</div>
-	
+
 			{% if errors %}
 			<div class="alert alert-danger">
 				{{errors}}
@@ -49,7 +50,7 @@
 							<td>{{oh.date}}</td>
 							<td>{{oh.working_hours}}</td>
 							<td>
-								<a id="link" href={% url 'sao:del_office_hours' %}?id={{oh.id}}
+								<a id="link" href="{% url 'sao:del_employee_hour' oh.id %}"
 									onclick="delete_office_hours(this); return false;">削除</a>
 							</td>
 						</tr>
@@ -64,7 +65,7 @@
 			<div class="card mt-3">
 				<div class="card-header">勤務時間の設定を新規追加する</div>
 				<div class="card-body">
-					<form class="form" method='POST' action="{% url 'sao:office_hours_list' employee.pk %}">
+					<form class="form" method='POST' action="{% url 'sao:employee_hour_view' employee.employee_no %}">
 						{% csrf_token %}
 
 						{{form.as_p}}
