@@ -1,122 +1,121 @@
 {% extends "base.html" %}
 {% load widget_tweaks %}
 
-{% block header %}
-{% endblock %}
-
 {% block content %}
+<div class="container">
+    <div class="row mt-3 align-items-center">
+        <div class="col">
+            <h4>雇用者一覧</h4>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'sao:add_employee' %}" class="btn btn-info">
+                <i class="oi oi-plus"></i> 雇用者を追加する
+            </a>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-md-6">
+            <table class="table table-bordered table-sm mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th></th>
+                        <th>人数</th>
+                        <th>正</th>
+                        <th>派</th>
+                        <th>委</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>在籍</td>
+                        <td>{{current_staff.0}}</td>
+                        <td>{{current_staff.1}}</td>
+                        <td>{{current_staff.2}}</td>
+                        <td>{{current_staff.3}}</td>
+                    </tr>
+                    <tr>
+                        <td>全</td>
+                        <td>{{whole_staff.0}}</td>
+                        <td>{{whole_staff.1}}</td>
+                        <td>{{whole_staff.2}}</td>
+                        <td>{{whole_staff.3}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-md-6 d-flex align-items-center">
+            <div class="form-check ms-3">
+                <input id="id_filter_deactive" type="checkbox" class="form-check-input" name="filter-staff"
+                    onchange="change_filter()" {{checked}}>
+                <label class="form-check-label" for="id_filter_deactive">
+                    在籍スタッフ以外は非表示
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive mt-4">
+        <table class="table table-striped table-bordered align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>社員番号</th>
+                    <th>氏名</th>
+                    <th>雇用形態</th>
+                    <th>ステータス</th>
+                    <th>所属</th>
+                    <th>入社日付</th>
+                    <th>勤務時間</th>
+                    <th>管理職</th>
+                    <th>固定残業制</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in employees %}
+                <tr {% if not a.is_active %}class="table-warning"{% endif %}>
+                    <td>{{a.basic_info.employee_no}}</td>
+                    <td>{{a.basic_info.name}}</td>
+                    <td>{{a.employee_type}}</td>
+                    <td>{{a.status}}</td>
+                    <td>{{a.department}}</td>
+                    <td>{{a.basic_info.join_date}}</td>
+                    <td>{{a.working_hour}}</td>
+                    <td class="text-center">
+                        {% if a.manager %}
+                        <span class="oi oi-check text-success"></span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if a.include_overtime_pay %}
+                        <span class="oi oi-check text-success"></span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'sao:edit_employee' a.employee_no %}" class="btn btn-outline-primary btn-sm" title="編集">
+                            <span class="oi oi-pencil"></span>
+                        </a>
+                        <a href="{% url 'sao:employee_hour_view' a.employee_no %}" class="btn btn-outline-secondary btn-sm" title="勤務時間の割り当て">
+                            <span class="oi oi-clock"></span>
+                        </a>
+                        <a href="{% url 'sao:leave_from_company' a.employee_no %}" class="btn btn-outline-danger btn-sm" title="退社処理">
+                            <span class="oi oi-eject"></span>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
 <script>
-	function change_filter() {
-		if (document.getElementById('id_filter_deactive').checked) {
-			location.href = "{% url 'sao:employee_list' %}\?filtered";
-		}
-		else {
-			location.href = "{% url 'sao:employee_list' %}";
-		}
-	}
-
-
+function change_filter() {
+    if (document.getElementById('id_filter_deactive').checked) {
+        location.href = "{% url 'sao:employee_list' %}?filtered";
+    } else {
+        location.href = "{% url 'sao:employee_list' %}";
+    }
+}
 </script>
-
-<div class="container">
-	<div class="row mt-3">
-		<div class="col">
-			<h4>スタッフ一覧</h4>
-		</div>
-		<div class="col">
-			<div class="float-end">
-
-				<a href={% url 'sao:add_employee' %} class="btn btn-info">スタッフを追加する</a>
-			</div>
-		</div>
-
-	</div>
-
-
-	<div class="col mt-3">
-		<table>
-			<tr>
-				<td>在籍</td>
-				<td>{{current_staff.0}}</td>
-				<td>正：{{current_staff.1}}</td>
-				<td>派：{{current_staff.2}}</td>
-				<td>委：{{current_staff.3}}</td>
-			</tr>
-			<tr>
-				<td>全</td>
-				<td>{{whole_staff.0}}</td>
-				<td>正：{{whole_staff.1}}</td>
-				<td>派：{{whole_staff.2}}</td>
-				<td>委：{{whole_staff.3}}</td>
-			</tr>
-		</table>
-	</div>
-
-	<div class="col checkbox">
-		<input id="id_filter_deactive" type="checkbox" name="filter-staff" onchange=change_filter()
-			{{checked}}>在籍スタッフ以外は非表示
-	</div>
-
-	<table class="table table-striped table-bordered mt-3">
-		<tr>
-			<th>社員番号</th>
-			<th>氏名</th>
-			<th>雇用形態</th>
-			<th>ステータス</th>
-			<th>所属</th>
-			<th>入社日付</th>
-			<th>勤務時間</th>
-			<th>管理職</th>
-			<th>固定残業制</th>
-			<th>操作</th>
-		</tr>
-		{% for a in employees %}
-		<tr {% if not a.is_active %}class="warning" {%endif%}>
-			<td>{{a.basic_info.employee_no}}</td>
-			<td>{{a.basic_info.name}}</td>
-			<td>{{a.employee_type}}</td>
-			<td>{{a.status}}</td>
-			<td>{{a.department}}</td>
-			<td>{{a.basic_info.join_date}}</td>
-			<td>{{a.working_hour}}</td>
-			<td class="text-center">
-				{% if a.manager %}
-				<span class="oi oi-check"></span>
-				{% endif %}
-			</td>
-
-			<td class="text-center">
-				{% if a.include_overtime_pay %}
-				<span class="oi oi-check"></span>
-				{% endif %}
-			</td>
-
-			<td>
-				<a href="{% url 'sao:edit_employee' a.employee_no %}" class="btn btn-default" title="編集">
-					<span class="oi oi-pencil"></span>
-				</a>
-
-				<a href="{% url 'sao:employee_hour_view' a.employee_no %}" class="btn btn-default" title="勤務時間の割り当て">
-					<span class="oi oi-clock"></span>
-				</a>
-
-				<a href="{% url 'sao:leave_from_company' a.employee_no %}" class="btn btn-default" title="退社処理">
-					<span class="oi oi-eject"></span>
-				</a>
-			</td>
-		</tr>
-
-		{% endfor %}
-	</table>
-
-
-
-</div>
 {% endblock %}
-
-
-{% block footer%}
-{% endblock %}
-
-</div><!-- // #footer -->
