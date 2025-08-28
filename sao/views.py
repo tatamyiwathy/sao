@@ -1277,7 +1277,7 @@ def add_working_hours(request):
             return redirect('sao:working_hours_view')
     else:
         form = forms.WorkingHourForm()
-    return render(request, 'sao/add_working_hours.html', {'form': form})
+    return redirect('sao:working_hours_view')
 
 @login_required
 def del_working_hours(request, id):

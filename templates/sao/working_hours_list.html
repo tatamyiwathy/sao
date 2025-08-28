@@ -13,7 +13,7 @@
         </div>
         <div class="col">
             <div class="float-end">
-                <a href={% url 'sao:add_working_hours' %} class="btn btn-info">勤務時間を追加する</a>
+                <a href="#" class="btn btn-info" id="add-btn">勤務時間を追加する</a>
             </div>
         </div>
     </div>
@@ -69,123 +69,123 @@
 
 <!-- モーダルをインクルード -->
 {% include 'sao/edit_working_hours_modal.html' %}
+{% include 'sao/add_working_hours_modal.html' %}
 
 <script>
 console.log('🕐 Working Hours List - Script loaded');
 
+// 汎用的なモーダルセットアップ関数
+function setupModal({
+    buttonSelector,
+    modalSelector,
+    formSelector,
+    fields,
+    getData,
+    setTitle,
+    validate
+}) {
+    const buttons = document.querySelectorAll(buttonSelector);
+    const modal = document.getElementById(modalSelector);
+    if (!modal) return;
+
+    let modalInstance = new bootstrap.Modal(modal);
+
+    buttons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            const data = getData(button);
+
+            // 各フィールドに値をセット
+            fields.forEach(f => {
+                const el = document.getElementById(f.id);
+                if (el) el.value = data[f.key];
+                if (f.type === 'checkbox' && el) el.checked = !!data[f.key];
+            });
+
+            // フォームaction
+            const form = document.getElementById(formSelector);
+            if (form && data.action) form.action = data.action;
+
+            // タイトル
+            if (setTitle) setTitle(data);
+
+            modalInstance.show();
+        });
+    });
+
+    // バリデーション
+    const form = document.getElementById(formSelector);
+    if (form && validate) {
+        form.addEventListener('submit', function(e) {
+            if (!validate()) {
+                e.preventDefault();
+            }
+        });
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🕐 DOM Content Loaded');
     
-    // 要素の存在確認
-    const editButtons = document.querySelectorAll('.edit-btn');
-    const editModal = document.getElementById('editModal');
-    
-    console.log('Edit buttons found:', editButtons.length);
-    console.log('Edit modal found:', !!editModal);
-    
-    if (!editModal) {
-        console.error('❌ Edit modal not found!');
-        return;
-    }
-    
-    // Bootstrap Modal インスタンスを作成
-    let modalInstance;
-    try {
-        modalInstance = new bootstrap.Modal(editModal);
-        console.log('✅ Modal instance created');
-    } catch (error) {
-        console.error('❌ Failed to create modal instance:', error);
-        return;
-    }
-    
-    // 編集ボタンのイベントリスナー設定
-    editButtons.forEach(function(button, index) {
-        button.addEventListener('click', function() {
-            const data = {
-                id: this.getAttribute('data-id'),
-                category: this.getAttribute('data-category'),
-                beginTime: this.getAttribute('data-begin-time'),
-                endTime: this.getAttribute('data-end-time'),
-                isActive: this.getAttribute('data-is-active') === 'true',
-                url: this.getAttribute('data-url')
-            };
-            
-            console.log('🕐 Edit button clicked:', data);
-            
-            // フォーム要素を取得
-            const form = document.getElementById('editForm');
-            const categoryInput = document.getElementById('edit_category');
-            const beginTimeInput = document.getElementById('edit_begin_time');
-            const endTimeInput = document.getElementById('edit_end_time');
-            const isActiveInput = document.getElementById('edit_is_active');
-            const modalLabel = document.getElementById('editModalLabel');
-            
-            // 要素の存在確認
-            if (!form || !categoryInput || !beginTimeInput || !endTimeInput || !isActiveInput) {
-                console.error('❌ Form elements not found');
-                alert('フォーム要素が見つかりません。ページを再読み込みしてください。');
-                return;
-            }
-            
-            // フォームに値を設定
-            categoryInput.value = data.category;
-            beginTimeInput.value = data.beginTime;
-            endTimeInput.value = data.endTime;
-            isActiveInput.checked = data.isActive;
-            
-            // フォームのaction URLを設定
-            form.action = data.url;
-            
-            // モーダルタイトルを更新
-            if (modalLabel) {
-                modalLabel.textContent = `🕐 「${data.category}」の編集`;
-            }
-            
-            console.log('✅ Form populated with data');
-            
-            // モーダルを表示
-            try {
-                modalInstance.show();
-                console.log('✅ Modal shown');
-            } catch (error) {
-                console.error('❌ Failed to show modal:', error);
-                alert('モーダルの表示に失敗しました。');
-            }
-        });
-    });
-    
-    // フォーム送信時のバリデーション
-    const editForm = document.getElementById('editForm');
-    if (editForm) {
-        editForm.addEventListener('submit', function(e) {
-            const beginTime = document.getElementById('edit_begin_time').value;
-            const endTime = document.getElementById('edit_end_time').value;
-            
-            console.log('🕐 Form validation:', { beginTime, endTime });
-            
-            // 時間の妥当性チェック
-            if (beginTime >= endTime) {
-                e.preventDefault();
+    // 編集モーダルのセットアップ
+    setupModal({
+        buttonSelector: '.edit-btn',
+        modalSelector: 'editModal',
+        formSelector: 'editForm',
+        fields: [
+            {id: 'edit_category', key: 'category'},
+            {id: 'edit_begin_time', key: 'beginTime'},
+            {id: 'edit_end_time', key: 'endTime'},
+            {id: 'edit_is_active', key: 'isActive', type: 'checkbox'}
+        ],
+        getData: (btn) => ({
+            category: btn.getAttribute('data-category'),
+            beginTime: btn.getAttribute('data-begin-time'),
+            endTime: btn.getAttribute('data-end-time'),
+            isActive: btn.getAttribute('data-is-active') === 'true',
+            action: btn.getAttribute('data-url')
+        }),
+        validate: () => {
+            const begin = document.getElementById('edit_begin_time').value;
+            const end = document.getElementById('edit_end_time').value;
+            if (begin >= end) {
                 alert('⚠️ 出社時間は退社時間より前である必要があります。');
-                console.log('❌ Validation failed: Invalid time range');
                 return false;
             }
-            
-            console.log('✅ Form validation passed');
-        });
-    }
-    
-    // モーダルイベントリスナー
-    editModal.addEventListener('shown.bs.modal', function() {
-        console.log('🕐 Modal shown - focusing first input');
-        const firstInput = document.getElementById('edit_category');
-        if (firstInput) {
-            firstInput.focus();
+            return true;
         }
     });
-    
-    editModal.addEventListener('hidden.bs.modal', function() {
-        console.log('🕐 Modal hidden');
+
+    // 追加モーダルのセットアップ
+    setupModal({
+        buttonSelector: '#add-btn',
+        modalSelector: 'addModal',
+        formSelector: 'addForm',
+        fields: [
+            {id: 'add_category', key: 'category'},
+            {id: 'add_begin_time', key: 'beginTime'},
+            {id: 'add_end_time', key: 'endTime'},
+            {id: 'add_is_active', key: 'isActive', type: 'checkbox'}
+        ],
+        getData: () => ({
+            category: '',
+            beginTime: '',
+            endTime: '',
+            isActive: true,
+            action: document.getElementById('addForm').getAttribute('action')
+        }),
+        setTitle: () => {
+            const label = document.getElementById('addModalLabel');
+            if (label) label.textContent = '🕐 勤務時間の追加';
+        },
+        validate: () => {
+            const begin = document.getElementById('add_begin_time').value;
+            const end = document.getElementById('add_end_time').value;
+            if (begin >= end) {
+                alert('⚠️ 出社時間は退社時間より前である必要があります。');
+                return false;
+            }
+            return true;
+        }
     });
 });
 </script>
