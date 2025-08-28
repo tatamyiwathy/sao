@@ -136,7 +136,6 @@ class EditEmployeeForm(forms.ModelForm):
             "employee_no",
             "name",
             "join_date",
-            "leave_date",
             "employee_type",
             "department",
             "include_overtime_pay",
@@ -146,7 +145,6 @@ class EditEmployeeForm(forms.ModelForm):
             "employee_no": "社員番号",
             "name": "氏名",
             "join_date": "入社日",
-            "leave_date": "退社日",
             "employee_type": "雇用種別",
             "department": "所属",
             "include_overtime_pay": "固定残業制",
@@ -155,13 +153,17 @@ class EditEmployeeForm(forms.ModelForm):
             "employee_no": forms.NumberInput(attrs={"class": "form-control"}),
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "join_date": forms.DateInput(attrs={"class": "datepicker form-control"}),
-            "leave_date": forms.DateInput(attrs={"class": "datepicker form-control"}),
             "employee_type": forms.Select(attrs={"class": "form-control"}),
             "department": forms.Select(attrs={"class": "form-control"}),
             "include_overtime_pay": forms.CheckboxInput(
                 attrs={"class": "form-check-input"}
             ),
         }
+
+    def clean(self):
+        cleaned_data = super(EditEmployeeForm, self).clean()
+
+        return cleaned_data
 
 
 class AddEmployeeForm(forms.Form):

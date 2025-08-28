@@ -30,7 +30,7 @@
 				</div>
 				{% endif %}
 				
-				<form class="form" method="post" action={% url 'sao:edit_employee' employee.pk %}>
+				<form class="form" method="post" action={% url 'sao:edit_employee' employee.employee_no %}>
 					{% csrf_token %}
 
 					{{ form.as_p }}
@@ -38,7 +38,6 @@
 					<div class="d-grid">
 						<button  class="btn btn-primary mb-3" type="submit">保存</button>
 					</div>
-					<input type="hidden" name="employee_no" value="{{employee.employee_no}}" />
 				</form>
 				</div>
 			</div>

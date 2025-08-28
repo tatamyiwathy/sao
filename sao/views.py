@@ -428,7 +428,7 @@ def employee_list(request):
             "office_hours": printable_office_hours,
             "manager": manager,
             "include_overtime_pay": e.include_overtime_pay,
-            "id": e.id,
+            "employee_no": e.employee_no,
             "is_active": e.user.is_active,
             "status": employee_status,
         }
@@ -638,6 +638,7 @@ def edit_employee(request, employee_no):
     employee = get_object_or_404(models.Employee, employee_no=employee_no)
     if request.method == "POST":
         form = forms.EditEmployeeForm(request.POST, instance=employee)
+        print("nande")
         if form.is_valid():
             is_manager = form.cleaned_data["manager"]
             employee = form.save()
