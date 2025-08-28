@@ -1,37 +1,156 @@
 {% extends "base.html" %}
 {% load widget_tweaks %}
 
-{% block content%}
-
+{% block content %}
 <div class="container">
-
-	<div class="row mt-3">
-	</div>
-	<div class="row">
+	<div class="row mt-4">
 		<div class="col"></div>
-		<div class="col">
-			<div class="card">
-				<div class="card-header">
-					<h3 class="card-title text-center">スタッフの追加</h3>
+		<div class="col-md-6">
+			<div class="card shadow-sm">
+				<div class="card-header bg-primary text-white">
+					<h3 class="card-title text-center mb-0">雇用者を登録する</h3>
 				</div>
-
 				<div class="card-body">
-					{%if form.non_field_errors%}
-					<div class="aleart alert-danger">
-						{% for err in form.non_field_errors %}
-						{{err}}
-						{%endfor%}
-					</div>
-					{%endif%}
-
-					<form class="form" method="post" action={% url 'sao:add_employee' %}>
+					<form method="post" action="{% url 'sao:add_employee' %}">
 						{% csrf_token %}
-						{{form.as_p}}
+
+						<div class="card mb-3">
+							<div class="card-header">雇用者情報</div>
+							<div class="card-body">
+								<div class="mb-3">
+									<label for="{{ form.employee_no.id_for_label }}" class="form-label">
+										<i class="bi bi-tag"></i> {{ form.employee_no.label }}
+									</label>
+									{{ form.employee_no|add_class:"form-control"|attr:"placeholder:例: 12345" }}
+									{% if form.employee_no.errors %}
+									<div class="invalid-feedback d-block">
+										{% for error in form.employee_no.errors %}
+										<i class="bi bi-exclamation-triangle"></i> {{ error }}
+										{% endfor %}
+									</div>
+									{% endif %}
+								</div>
+								<div class="mb-3">
+									<label for="{{ form.name.id_for_label }}" class="form-label">
+										<i class="bi bi-tag"></i> {{ form.name.label }}
+									</label>
+									{{ form.name|add_class:"form-control"|attr:"placeholder:例: 山田 太郎" }}
+									{% if form.name.errors %}
+									<div class="invalid-feedback d-block">
+										{% for error in form.name.errors %}
+										<i class="bi bi-exclamation-triangle"></i> {{ error }}
+										{% endfor %}
+									</div>
+									{% endif %}
+								</div>
+								<div class="mb-3">
+									<label for="{{ form.join_date.id_for_label }}" class="form-label">
+										<i class="bi bi-tag"></i> {{ form.join_date.label }}
+									</label>
+									{{ form.join_date|add_class:"form-control"|attr:"placeholder:例: 2020-01-01" }}
+									{% if form.join_date.errors %}
+									<div class="invalid-feedback d-block">
+										{% for error in form.join_date.errors %}
+										<i class="bi bi-exclamation-triangle"></i> {{ error }}
+										{% endfor %}
+									</div>
+									{% endif %}
+								</div>
+								<div class="mb-3">
+									<label for="{{ form.type.id_for_label }}" class="form-label">
+										<i class="bi bi-tag"></i> {{ form.type.label }}
+									</label>
+									{{ form.type|add_class:"form-control"|attr:"placeholder:例: 正社員" }}
+									{% if form.type.errors %}
+									<div class="invalid-feedback d-block">
+										{% for error in form.type.errors %}
+										<i class="bi bi-exclamation-triangle"></i> {{ error }}
+										{% endfor %}
+									</div>
+									{% endif %}
+								</div>
+								<div class="mb-3">
+									<label for="{{ form.department.id_for_label }}" class="form-label">
+										<i class="bi bi-tag"></i> {{ form.department.label }}
+									</label>
+									{{ form.department|add_class:"form-control"|attr:"placeholder:例: 営業部" }}
+									{% if form.department.errors %}
+									<div class="invalid-feedback d-block">
+										{% for error in form.department.errors %}
+										<i class="bi bi-exclamation-triangle"></i> {{ error }}
+										{% endfor %}
+									</div>
+									{% endif %}
+								</div>
+								<div class="mb-3">
+									<div class="form-check form-switch">
+										{{ form.manager|add_class:"form-check-input" }}
+										<label class="form-check-label" for="{{ form.manager.id_for_label }}">
+											<i class="bi bi-toggle-on"></i> {{ form.manager.label }}
+										</label>
+										{% if form.manager.errors %}
+										<div class="invalid-feedback d-block">
+											{% for error in form.manager.errors %}
+											<i class="bi bi-exclamation-triangle"></i> {{ error }}
+											{% endfor %}
+										</div>
+										{% endif %}
+									</div>
+								</div>
+							</div>
+						</div>
+
+
+						<div class="card mb-3">
+							<div class="card-header">アカウント情報</div>
+							<div class="card-body">
+								<div class="mb-3">
+									<label for="{{ form.accountname.id_for_label }}" class="form-label">
+										<i class="bi bi-tag"></i> {{ form.accountname.label }}
+									</label>
+									{{ form.accountname|add_class:"form-control"|attr:"placeholder:例: account123" }}
+									{% if form.accountname.errors %}
+									<div class="invalid-feedback d-block">
+										{% for error in form.accountname.errors %}
+										<i class="bi bi-exclamation-triangle"></i> {{ error }}
+										{% endfor %}
+									</div>
+									{% endif %}
+								</div>
+								<div class="mb-3">
+									<label for="{{ form.password.id_for_label }}" class="form-label">
+										<i class="bi bi-tag"></i> {{ form.password.label }}
+									</label>
+									{{ form.password|add_class:"form-control"|attr:"placeholder:例: password123" }}
+									{% if form.password.errors %}
+									<div class="invalid-feedback d-block">
+										{% for error in form.password.errors %}
+										<i class="bi bi-exclamation-triangle"></i> {{ error }}
+										{% endfor %}
+									</div>
+									{% endif %}
+								</div>
+								<div class="mb-3">
+									<label for="{{ form.email.id_for_label }}" class="form-label">
+										<i class="bi bi-tag"></i> {{ form.email.label }}
+									</label>
+									{{ form.email|add_class:"form-control"|attr:"placeholder:例: email@example.com" }}
+									{% if form.email.errors %}
+									<div class="invalid-feedback d-block">
+										{% for error in form.email.errors %}
+										<i class="bi bi-exclamation-triangle"></i> {{ error }}
+										{% endfor %}
+									</div>
+									{% endif %}
+								</div>
+							</div>
+						</div>
+
 						<div class="d-grid">
-							<button class="btn btn-primary" type="submit">追加 </button>
+							<button class="btn btn-primary" type="submit">追加</button>
 						</div>
 					</form>
-				</div>		
+				</div>
 			</div>
 		</div>
 		<div class="col"></div>
@@ -39,5 +158,5 @@
 </div>
 {% endblock %}
 
-{% block footer %} 
+{% block footer %}
 {% endblock %}

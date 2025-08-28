@@ -179,11 +179,6 @@ class AddEmployeeForm(forms.Form):
         widget=forms.TextInput(attrs={"class": "form-control"}),
         required=True,
     )
-    accountname = forms.CharField(
-        label="アカウント名",
-        widget=forms.TextInput(attrs={"class": "form-control"}),
-        required=True,
-    )
     join_date = forms.DateField(
         label="入社日",
         widget=forms.TextInput(attrs={"class": "datepicker-future form-control"}),
@@ -205,6 +200,25 @@ class AddEmployeeForm(forms.Form):
         label="管理職",
         required=False,
         widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
+    )
+
+    # 以下アカウント情報
+    accountname = forms.CharField(
+        label="アカウント名",
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+        required=True,
+    )
+
+    password = forms.CharField(
+        label="パスワード",
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+        required=True,
+    )
+    
+    email = forms.EmailField(
+        label="メールアドレス",
+        widget=forms.EmailInput(attrs={"class": "form-control"}),
+        required=True,
     )
 
     def clean(self):

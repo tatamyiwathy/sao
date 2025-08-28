@@ -683,7 +683,8 @@ def add_employee(request):
         employee_no = form.cleaned_data["employee_no"]
 
         # アカウント作成
-        user = utils.create_user(form.cleaned_data["accountname"], sei, mei)
+        user = utils.create_user(form.cleaned_data["accountname"], sei, mei, form.cleaned_data["accountname"], form.cleaned_data['email'])
+
         # スタッフ作成
         employee = utils.create_employee(
             employee_no=employee_no,

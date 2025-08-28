@@ -76,6 +76,7 @@ def create_user(username, last, first, password=None, email=None) -> User:
     ユーザー作成
     """
     try:
+        # すでにいた
         user = User.objects.get(username=username)
     except ObjectDoesNotExist:
         user = User.objects.create_user(
