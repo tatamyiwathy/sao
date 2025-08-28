@@ -10,9 +10,7 @@ from django.contrib import messages
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.generic.edit import CreateView
 from . import calendar, core, forms, models, utils
 from .core import (
     get_employee_hour,
