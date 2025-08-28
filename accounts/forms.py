@@ -22,9 +22,9 @@ class SignupForm(forms.ModelForm):
 class UserForm(forms.ModelForm):
     field_order = [
         "username",
+        "email",
         "last_name",
         "first_name",
-        "email",
         "is_active",
     ]
 
