@@ -1443,3 +1443,47 @@ class TestEnumlateDays(TestCase):
         ]  # 2024年はうるう年なので2月は29日まで
         actual_days = calendar.enumlate_days(date)
         self.assertEqual(actual_days, expected_days)
+
+class UpdateWorkingHoursTest(TestCase):
+    def setUp(self):
+        # テスト用ユーザーと勤務時間レコードを作成
+        self.user = User.objects.create_user(username='testuser', password='testpass')
+        self.client.login(username='testuser', password='testpass')
+        self.working_hour = models.WorkingHour.objects.create(
+            category='通常勤務',
+            begin_time='09:00',
+            end_time='18:00',
+            is_active=True
+        )
+
+    def test_update_working_hours_success(self):
+        url = reverse('sao:edit_working_hours', args=[self.working_hour.id])
+        data = {
+            'category': '早番',
+            'begin_time': '08:00',
+            'end_time': '17:00',
+            'is_active': True
+        }
+        response = self.client.post(url, data)
+        self.working_hour.refresh_from_db()
+        self.assertEqual(response.status_code, 302)  # リダイレクトされる
+        self.assertEqual(self.working_hour.category, '早番')
+        self.assertEqual(str(self.working_hour.begin_time), '08:00:00')
+        self.assertEqual(str(self.working_hour.end_time), '17:00:00')
+        self.assertTrue(self.working_hour.is_active)
+
+    # 有効ではないデータで更新しようとした場合
+    def test_update_working_hours_invalid(self):
+        url = reverse('sao:edit_working_hours', args=[self.working_hour.id])
+        data = {
+            'category': '',  # 空欄はバリデーションエラー
+            'begin_time': '08:00',
+            'end_time': '07:00',  # 開始 > 終了はバリデーションエラー
+            'is_active': True
+        }
+        response = self.client.post(url, data)
+        self.working_hour.refresh_from_db()
+        # レコードは更新されていない
+        self.assertNotEqual(self.working_hour.category, '')
+        self.assertEqual(response.status_code, 302)  # エラーでもリダイレクト
+

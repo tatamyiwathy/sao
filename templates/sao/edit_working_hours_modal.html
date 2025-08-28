@@ -1,0 +1,92 @@
+<!-- templates/sao/edit_working_hours_modal.html -->
+{% load widget_tweaks %}
+
+<!-- 編集用モーダル -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModalLabel">🕐 勤務時間の編集</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form method="post" id="editForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <!-- 区分フィールド -->
+                    <div class="mb-3">
+                        <label for="edit_category" class="form-label">
+                            <i class="bi bi-tag"></i> 区分
+                        </label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="edit_category" 
+                               name="category" 
+                               required
+                               placeholder="勤務時間の区分を入力">
+                    </div>
+
+                    <!-- 時間フィールド -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_begin_time" class="form-label">
+                                    <i class="bi bi-clock"></i> 出社時間
+                                </label>
+                                <input type="time" 
+                                       class="form-control" 
+                                       id="edit_begin_time" 
+                                       name="begin_time" 
+                                       min="07:00" 
+                                       max="22:00" 
+                                       step="300" 
+                                       required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_end_time" class="form-label">
+                                    <i class="bi bi-clock-history"></i> 退社時間
+                                </label>
+                                <input type="time" 
+                                       class="form-control" 
+                                       id="edit_end_time" 
+                                       name="end_time" 
+                                       min="07:00" 
+                                       max="22:00" 
+                                       step="300" 
+                                       required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 有効フィールド -->
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   id="edit_is_active" 
+                                   name="is_active" 
+                                   value="1">
+                            <label class="form-check-label" for="edit_is_active">
+                                <i class="bi bi-toggle-on"></i> 有効にする
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            無効にすると、この勤務時間は選択できなくなります。
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> キャンセル
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> 更新
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
