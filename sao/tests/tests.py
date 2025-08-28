@@ -140,13 +140,15 @@ class AddEmployeeViewTest(TestCase):
         self.client = create_client(TEST_USER)
         self.params = {
             "employee_no": 52,
-            "accountname": "morokoshi",
             "name": "もろこし 輪太郎",
             "join_date": datetime.date.today(),
             "leave_date": datetime.date(2199, 12, 31),
             "type": 0,
             "department": 0,
             "manager": False,
+            "accountname": "morokoshi",
+            "password": "password123",
+            "email": "morokoshi@example.com"
         }
         create_working_hours()
 
