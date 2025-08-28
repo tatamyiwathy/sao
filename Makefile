@@ -272,6 +272,10 @@ merge-to-main:
 finish-branch:
 	@echo "=== Finishing current feature branch ==="
 	@current_branch=$$(git branch --show-current); \
+	if [ "$$current_branch" = "" ]; then \
+		echo "❌ 現在のブランチ名が取得できません。git statusで確認してください。"; \
+		exit 1; \
+	fi; \
 	if [ "$$current_branch" = "main" ]; then \
 		echo "Cannot finish main branch."; \
 		exit 1; \
