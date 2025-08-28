@@ -31,7 +31,7 @@ def set_office_hours_to_employee(
     employee: models.Employee,
     date_from: datetime.date,
     working_hours: models.WorkingHour,
-) -> models.AppliedOfficeHours:
+) -> models.EmployeeHour:
     """
     スタッフに勤務時間を設定する
 
@@ -39,7 +39,7 @@ def set_office_hours_to_employee(
     有効になる日付を指定して設定する
 
     """
-    t = models.AppliedOfficeHours(
+    t = models.EmployeeHour(
         employee=employee, date=date_from, working_hours=working_hours
     )
     t.save()

@@ -2,7 +2,7 @@ import re
 import datetime
 from django import forms
 from django.core.exceptions import ObjectDoesNotExist
-from .models import Employee, AppliedOfficeHours, Holiday, TimeRecord, WorkingHour
+from .models import Employee, EmployeeHour, Holiday, TimeRecord, WorkingHour
 from .working_status import WorkingStatus
 
 
@@ -16,7 +16,7 @@ class ApplyWorkingHoursForm(forms.ModelForm):
     )
 
     class Meta:
-        model = AppliedOfficeHours
+        model = EmployeeHour
         fields = (
             "date",
             "working_hours",
@@ -136,7 +136,6 @@ class EditEmployeeForm(forms.ModelForm):
             "employee_no",
             "name",
             "join_date",
-            "leave_date",
             "employee_type",
             "department",
             "include_overtime_pay",
@@ -146,7 +145,6 @@ class EditEmployeeForm(forms.ModelForm):
             "employee_no": "社員番号",
             "name": "氏名",
             "join_date": "入社日",
-            "leave_date": "退社日",
             "employee_type": "雇用種別",
             "department": "所属",
             "include_overtime_pay": "固定残業制",
@@ -155,13 +153,17 @@ class EditEmployeeForm(forms.ModelForm):
             "employee_no": forms.NumberInput(attrs={"class": "form-control"}),
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "join_date": forms.DateInput(attrs={"class": "datepicker form-control"}),
-            "leave_date": forms.DateInput(attrs={"class": "datepicker form-control"}),
             "employee_type": forms.Select(attrs={"class": "form-control"}),
             "department": forms.Select(attrs={"class": "form-control"}),
             "include_overtime_pay": forms.CheckboxInput(
                 attrs={"class": "form-check-input"}
             ),
         }
+
+    def clean(self):
+        cleaned_data = super(EditEmployeeForm, self).clean()
+
+        return cleaned_data
 
 
 class AddEmployeeForm(forms.Form):
@@ -176,11 +178,6 @@ class AddEmployeeForm(forms.Form):
     )
     name = forms.CharField(
         label="氏名",
-        widget=forms.TextInput(attrs={"class": "form-control"}),
-        required=True,
-    )
-    accountname = forms.CharField(
-        label="アカウント名",
         widget=forms.TextInput(attrs={"class": "form-control"}),
         required=True,
     )
@@ -205,6 +202,25 @@ class AddEmployeeForm(forms.Form):
         label="管理職",
         required=False,
         widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
+    )
+
+    # 以下アカウント情報
+    accountname = forms.CharField(
+        label="アカウント名",
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+        required=True,
+    )
+
+    password = forms.CharField(
+        label="パスワード",
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+        required=True,
+    )
+    
+    email = forms.EmailField(
+        label="メールアドレス",
+        widget=forms.EmailInput(attrs={"class": "form-control"}),
+        required=True,
     )
 
     def clean(self):

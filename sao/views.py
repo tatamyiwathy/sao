@@ -8,15 +8,13 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import Http404, HttpResponse, HttpResponseRedirect
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.generic.edit import CreateView
 from . import calendar, core, forms, models, utils
 from .core import (
-    get_office_hours,
-    get_working_hours_tobe_applied,
+    get_employee_hour,
+    get_working_hours_tobe_assign,
     NoSpecifiedWorkingHoursError,
 )
 from .const import Const
@@ -190,11 +188,11 @@ def home(request):
 
     # 設定された勤務時間を取得する
     try:
-        office_hours = get_office_hours(employee, datetime.date.today())
+        office_hours = get_employee_hour(employee, datetime.date.today())
     except ValueError:
         # 合流前で勤務時間が取得できない
         try:
-            office_hours = get_working_hours_tobe_applied(employee)
+            office_hours = get_working_hours_tobe_assign(employee)
         except ValueError:
             raise Http404("勤務時間設定がない")
 
@@ -234,7 +232,7 @@ def staff_detail(request, employee, year, month):
     employee = models.Employee.objects.get(employee_no=employee)
     from_date = datetime.date(year=year, month=month, day=1)
     to_date = calendar.get_next_month_date(from_date)
-    office_hours = get_office_hours(employee, datetime.date.today())
+    office_hours = get_employee_hour(employee, datetime.date.today())
 
     query = (
         models.TimeRecord.objects.filter(employee=employee)
@@ -278,42 +276,42 @@ def staff_detail(request, employee, year, month):
 
 
 @login_required
-def del_office_hours(request, office_hours):
+def del_employee_hour(request, id):
     """
     ■勤務時間の削除ページ
     """
-    applied_office_hours = models.AppliedOfficeHours.objects.get(id=office_hours)
-    employee = applied_office_hours.employee
-    content = str(applied_office_hours)
-    applied_office_hours.delete()
+    employee_hour = models.EmployeeHour.objects.get(id=id)
+    employee = employee_hour.employee
+    content = str(employee_hour)
+    employee_hour.delete()
 
     logger.info("%sが%sを削除した" % (request.user, content))
 
-    return redirect("sao:office_hours_list", employee_no=employee.employee_no)
+    return redirect("sao:employee_hour_view", employee_no=employee.employee_no)
 
 
 @login_required
-def office_hours_list(request, employee_no):
+def employee_hour_view(request, employee_no):
     """
     ■勤務時間適用リストページ
     """
     errors = None
     employee = get_object_or_404(models.Employee, employee_no=employee_no)
     if request.method == "POST":
-        applied_office_hours = models.AppliedOfficeHours(employee=employee)
-        form = forms.ApplyWorkingHoursForm(request.POST, instance=applied_office_hours)
+        employee_hour = models.EmployeeHour(employee=employee)
+        form = forms.ApplyWorkingHoursForm(request.POST, instance=employee_hour)
         if form.is_valid():
             date = form.cleaned_data["date"]
             working_hours = form.cleaned_data["working_hours"]
             q = (
-                models.AppliedOfficeHours.objects.filter(employee=employee)
+                models.EmployeeHour.objects.filter(employee=employee)
                 .filter(date=date)
                 .filter(working_hours=working_hours)
             )
             if len(q) == 0:
                 form.save()
-                logger.info("%sが%sを追加した" % (request.user, applied_office_hours))
-                return HttpResponseRedirect(reverse("sao:employee_list"))
+                logger.info("%sが%sを追加した" % (request.user, employee_hour))
+                return redirect("sao:employee_list")
             else:
                 errors = "すでに設定されています"
 
@@ -321,7 +319,7 @@ def office_hours_list(request, employee_no):
         form = forms.ApplyWorkingHoursForm(
             instance=employee, initial={"date": datetime.date.today()}
         )
-    working_hours = models.AppliedOfficeHours.objects.filter(
+    employee_hours = models.EmployeeHour.objects.filter(
         employee=employee
     ).order_by("-date")
     return render(
@@ -329,7 +327,7 @@ def office_hours_list(request, employee_no):
         "sao/office_hours_list.html",
         {
             "employee": employee,
-            "office_hours": working_hours,
+            "office_hours": employee_hours,
             "form": form,
             "errors": errors,
         },
@@ -410,14 +408,14 @@ def employee_list(request):
         employee_type = utils.get_employee_type(e.employee_type)
         department = utils.get_department(e.department)
         try:
-            recently = get_working_hours_tobe_applied(e)  # 直近から適用される勤務時間
+            recently = get_working_hours_tobe_assign(e)  # 直近から適用される勤務時間
             try:
-                oh = get_office_hours(e, datetime.date.today())
-                printable_office_hours = str(oh)
+                oh = get_employee_hour(e, datetime.date.today())
+                working_hour = str(oh)
             except ValueError:
-                printable_office_hours = "* %s" % recently
+                working_hour = "* %s" % recently
         except ValueError:
-            printable_office_hours = "未設定"
+            working_hour = "未設定"
 
         employee_status = utils.get_employee_status(e, datetime.date.today())
 
@@ -425,10 +423,10 @@ def employee_list(request):
             "department": department,
             "employee_type": employee_type,
             "basic_info": e,
-            "office_hours": printable_office_hours,
+            "working_hour": working_hour,
             "manager": manager,
             "include_overtime_pay": e.include_overtime_pay,
-            "id": e.id,
+            "employee_no": e.employee_no,
             "is_active": e.user.is_active,
             "status": employee_status,
         }
@@ -468,7 +466,7 @@ def modify_record(request, record_id, year, month):
         if form.is_valid():
             form.save()
             logger.info(f"{request.user}が変更した: {record} {record.status}")
-            return HttpResponseRedirect(reverse("sao:employee_record"))
+            return redirect("sao:employee_record")
     else:
         record = get_object_or_404(models.TimeRecord, id=record_id)
         form = forms.ModifyRecordForm(instance=record)
@@ -638,6 +636,7 @@ def edit_employee(request, employee_no):
     employee = get_object_or_404(models.Employee, employee_no=employee_no)
     if request.method == "POST":
         form = forms.EditEmployeeForm(request.POST, instance=employee)
+        print("nande")
         if form.is_valid():
             is_manager = form.cleaned_data["manager"]
             employee = form.save()
@@ -654,7 +653,7 @@ def edit_employee(request, employee_no):
                     manager.delete()
 
             logger.info("%s: %sの情報を変更しました" % (request.user, employee))
-            return HttpResponseRedirect(reverse("sao:employee_list"))
+            return redirect("sao:employee_list")
     else:
         # get
         is_manager = employee.is_manager()
@@ -683,7 +682,8 @@ def add_employee(request):
         employee_no = form.cleaned_data["employee_no"]
 
         # アカウント作成
-        user = utils.create_user(form.cleaned_data["accountname"], sei, mei)
+        user = utils.create_user(form.cleaned_data["accountname"], sei, mei, form.cleaned_data["accountname"], form.cleaned_data['email'])
+
         # スタッフ作成
         employee = utils.create_employee(
             employee_no=employee_no,
@@ -707,11 +707,11 @@ def add_employee(request):
     return render(request, "sao/add_employee.html", {"form": form})
 
 
-def leave_from_company(request, pk):
+def leave_from_company(request, employee_no):
     """退社処理"""
-    employee = get_object_or_404(models.Employee, pk=pk)
     form = forms.LeaveFromCompanyForm(request.POST or None)
     if form.is_valid():
+        employee = get_object_or_404(models.Employee, employee_no=employee_no)
         # 退社日を設定する
         employee.leave_date = request.POST["leave_date"]
         employee.save()
@@ -723,7 +723,8 @@ def leave_from_company(request, pk):
             "%sが%sを%sに退職するように処理した"
             % (request.user, employee, employee.leave_date)
         )
-        return HttpResponseRedirect(reverse("sao:employee_list"))
+        return redirect("sao:employee_list")
+    
     form = forms.LeaveFromCompanyForm()
     return render(request, "sao/leave.html", {"form": form, "employee": employee})
 
@@ -835,7 +836,7 @@ def password(request):
             user.set_password(password)
             user.save()
             success = True
-            return HttpResponseRedirect(reverse("sao:home"))
+            return redirect("sao:home")
         else:
             message = "入力されたパスワードと確認の文字列が一致しません"
 
@@ -882,7 +883,7 @@ def modify_permission(request, user_id):
             user.permission.save()
             user.save()
             logger.info("%sが%sの権限を変更しました" % (request.user, user))
-        return HttpResponseRedirect(reverse("sao:permission"))
+        return redirect("sao:permission")
     else:
         form = forms.ModifyPermissionForm(
             {

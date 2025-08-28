@@ -30,7 +30,7 @@ shell:
 	docker exec -it sao-web-${SAO_PROFILE}-1 bash
 
 log:
-	docker compose logs -f
+	docker compose ${DKC_OPT} logs -f
 
 ps:
 	docker compose ps

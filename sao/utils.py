@@ -76,6 +76,7 @@ def create_user(username, last, first, password=None, email=None) -> User:
     ユーザー作成
     """
     try:
+        # すでにいた
         user = User.objects.get(username=username)
     except ObjectDoesNotExist:
         user = User.objects.create_user(
@@ -144,7 +145,17 @@ def collect_webstamp(employee_no: int, date: datetime.date):
 def make_sesamo_form_stamp(employee: Employee, stamp: datetime.datetime):
     """セサモ形式の打刻データを生成する"""
     # 出退勤管理, 0-03-#-01-#, アクセス制御 , 打刻時刻, 000 区画外, 002 出退勤管理, カード番号, ユーザー, 雇用者番号
-    return ['"出退勤管理"', "", "", '"%s"' % stamp, "", "", "", "", '"%d"' % employee]
+    return [
+        '"出退勤管理"',
+        "",
+        "",
+        f'"{stamp.strftime("%Y-%m-%d %H:%M:%S")}"',
+        "",
+        "",
+        "",
+        "",
+        f'"{employee.employee_no}"'
+    ]
 
 
 def print_strip_sec(total_sec, empty):

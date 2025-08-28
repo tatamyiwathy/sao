@@ -5,19 +5,32 @@ from . import views
 app_name = "sao"
 urlpatterns = [
     path("", views.home, name="home"),
+
+    # 雇用者に割り当てる勤務時間
     path(
-        "del_office_hours/<office_hours>/",
-        views.del_office_hours,
-        name="del_office_hours",
+        "employee_hour/<id>/delete",
+        views.del_employee_hour,
+        name="del_employee_hour",
     ),
-    path("employee/", views.employee_list, name="employee_list"),
+    path(
+        "employee_hour/<int:employee_no>",
+        views.employee_hour_view,
+        name="employee_hour_view",
+    ),
+
     path(
         "modify_record/<int:record_id>/<int:year>/<int:month>/",
         views.modify_record,
         name="modify_record",
     ),
     path("overview/", views.overview, name="overview"),
-    path("add_employee/", views.add_employee, name="add_employee"),
+
+    # 雇用者管理
+    path("employee/", views.employee_list, name="employee_list"),
+    path("employee/add", views.add_employee, name="add_employee"),
+    path("employee/<int:employee_no>/edit", views.edit_employee, name="edit_employee"),
+    path("leave/<int:employee_no>", views.leave_from_company, name="leave_from_company"),
+
     path("employee_record/", views.employee_record, name="employee_record"),
     path(
         "staff_detail/<employee>/<int:year>/<int:month>/",
@@ -32,13 +45,6 @@ urlpatterns = [
         name="modify_permission",
     ),
     path("holiday_settings/", views.holiday_settings, name="holiday_settings"),
-    path("edit_employee/<int:employee_no>/", views.edit_employee, name="edit_employee"),
-    path(
-        "office_hours_list/<int:employee_no>",
-        views.office_hours_list,
-        name="office_hours_list",
-    ),
-    path("leave/<int:pk>", views.leave_from_company, name="leave_from_company"),
     path(
         "progress/<int:pk>/", views.progress, name="progress"
     ),  # 進捗が表示されていくペー

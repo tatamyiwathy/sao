@@ -35,9 +35,9 @@ from ..core import (
     get_recent_day_of_annual_leave_update,
     is_need_break_time,
     collect_timerecord_by_month,
-    get_office_hours,
+    get_employee_hour,
     get_working_hours_by_category,
-    get_working_hours_tobe_applied,
+    get_working_hours_tobe_assign,
     calc_actual_working_time,
 )
 from ..const import Const
@@ -530,7 +530,7 @@ class TestGetOfficeHours(TestCase):
             emp, date(1901, 1, 1), get_working_hours_by_category("A")
         )
 
-        office_hours = get_office_hours(emp, date(2021, 8, 1))
+        office_hours = get_employee_hour(emp, date(2021, 8, 1))
         self.assertEqual(office_hours.begin_time, Const.OCLOCK_1000)
         self.assertEqual(office_hours.end_time, Const.OCLOCK_1900)
 
@@ -543,8 +543,8 @@ class TestGetWorkingHoursByCategory(TestCase):
         self.assertEqual(working_hours.end_time, Const.OCLOCK_1900)
 
 
-class TestGetWorkingHoursToBeApplied(TestCase):
-    def test_get_working_hours_tobe_applied(self):
+class TestGetWorkingHoursToBeAssign(TestCase):
+    def test_get_working_hours_tobe_assign(self):
         emp = create_employee(create_user(), include_overtime_pay=True)
         create_time_stamp_data(emp)
         create_working_hours()
@@ -552,6 +552,6 @@ class TestGetWorkingHoursToBeApplied(TestCase):
             emp, date(1901, 1, 1), get_working_hours_by_category("A")
         )
 
-        working_hours = get_working_hours_tobe_applied(emp)
+        working_hours = get_working_hours_tobe_assign(emp)
         self.assertEqual(working_hours.begin_time, Const.OCLOCK_1000)
         self.assertEqual(working_hours.end_time, Const.OCLOCK_1900)
