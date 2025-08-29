@@ -155,7 +155,7 @@ def home(request):
 
         return render(
             request,
-            "sao/worker_detail.html",
+            "sao/attendance_detail.html",
             {
                 "form": form,
                 "duty_result": attendances,
@@ -181,7 +181,7 @@ def home(request):
         # Employeeが存在しない場合（スーパーユーザー）
         return render(
             request,
-            "sao/worker_detail_empty.html",
+            "sao/attendance_detail_empty.html",
             {"message": "スーパーユーザーでログイン中"},
         )
 
@@ -200,7 +200,7 @@ def home(request):
             rounded = core.round_result(sumup)
             return render(
                 request,
-                "sao/worker_detail.html",
+                "sao/attendance_detail.html",
                 {
                     "employee": employee,
                     "year": today.year,
@@ -258,7 +258,7 @@ def staff_detail(request, employee, year, month):
     except NoAssignedWorkingHourError:
         return render(
             request,
-            "sao/worker_detail_empty.html",
+            "sao/attendance_detail_empty.html",
             {
                 "message": f"{employee}の勤務時間が設定されていないため勤怠が表示できません"
             },
@@ -271,7 +271,7 @@ def staff_detail(request, employee, year, month):
 
     return render(
         request,
-        "sao/worker_detail.html",
+        "sao/attendance_detail.html",
         {
             "duty_result": calculated,
             "total_result": summed_up,
@@ -545,7 +545,7 @@ def employee_record(request):
                 except NoAssignedWorkingHourError:
                     return render(
                         request,
-                        "sao/worker_detail_empty.html",
+                        "sao/attendance_detail_empty.html",
                         {
                             "message": f"{employee}の勤務時間が設定されていないため勤怠が表示できません"
                         },
@@ -605,7 +605,7 @@ def employee_record(request):
         except NoAssignedWorkingHourError:
             return render(
                 request,
-                "sao/worker_detail_empty.html",
+                "sao/attendance_detail_empty.html",
                 {
                     "message": f"{employee}の勤務時間が設定されていないため勤怠が表示できません"
                 },
@@ -780,7 +780,7 @@ def overview(request):
             except NoAssignedWorkingHourError:
                 return render(
                     request,
-                    "sao/worker_detail_empty.html",
+                    "sao/attendance_detail_empty.html",
                     {
                         "message": f"{employee}の勤務時間が設定されていないため勤怠が表示できません"
                     },
@@ -1012,7 +1012,7 @@ def download_csv(request, employee_no, year, month):
     except NoAssignedWorkingHourError:
         return render(
             request,
-            "sao/worker_detail_empty.html",
+            "sao/attendance_detail_empty.html",
             {
                 "message": f"{employee}の勤務時間が設定されていないため勤怠が表示できません"
             },
