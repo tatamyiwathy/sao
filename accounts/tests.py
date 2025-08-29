@@ -11,7 +11,6 @@ class AccountTest(TestCase):
         self.user = create_user()
 
         self.urls_with_authed = [
-            reverse("accounts:signup"),
         ]
 
         self.urls_with_noauth = [
@@ -106,8 +105,3 @@ class SignupTest(TestCase):
             "password",
             "この値が少なくとも 6 文字以上であることを確認してください (4 文字になっています)。",
         )
-
-    def test_signup(self):
-        client = Client()
-        response = client.post(reverse("accounts:signup"), self.context)
-        self.assertRedirects(response, reverse("accounts:login"))

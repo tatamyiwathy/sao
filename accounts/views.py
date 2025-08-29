@@ -46,23 +46,3 @@ def edit_account(request, username):
     )
 
 
-def signup(request):
-    if request.method == "POST":
-        form = SignupForm(request.POST)
-        if form.is_valid():
-            logger.info("%sのaccountが作られた" % (form.cleaned_data["username"]))
-            form.save()
-
-            username = form.cleaned_data["username"]
-            user = get_object_or_404(User, username=username)
-            password = form.cleaned_data["password"]
-            user.set_password(password)
-            if user.check_password(password):
-                return redirect("accounts:login")
-            user.save()
-            raise forms.ValidationError("パスワード登録失敗")
-
-    else:
-        form = SignupForm()
-
-    return render(request, "accounts/signup.html", {"form": form})
