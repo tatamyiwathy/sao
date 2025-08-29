@@ -875,21 +875,9 @@ def modify_permission(request, user_id):
         form = forms.ModifyPermissionForm(request.POST)
         if form.is_valid():
             user.is_staff = form.cleaned_data["is_staff"]
-            user.permission.enable_view_temporary_staff_record = form.cleaned_data[
-                "enable_view_temporary_staff_record"
-            ]
-            user.permission.enable_view_outsource_staff_record = form.cleaned_data[
-                "enable_view_outsource_staff_record"
-            ]
-            user.permission.enable_view_dev_staff_record = form.cleaned_data[
-                "enable_view_dev_staff_record"
-            ]
             user.permission.enable_view_detail = form.cleaned_data["enable_view_detail"]
             user.permission.enable_stamp_on_web = form.cleaned_data[
                 "enable_stamp_on_web"
-            ]
-            user.permission.enable_regist_event = form.cleaned_data[
-                "enable_regist_event"
             ]
             user.permission.enable_add_staff = form.cleaned_data["enable_add_staff"]
             user.permission.save()
@@ -900,12 +888,8 @@ def modify_permission(request, user_id):
         form = forms.ModifyPermissionForm(
             {
                 "is_staff": user.is_staff,
-                "enable_view_temporary_staff_record": user.permission.enable_view_temporary_staff_record,
-                "enable_view_outsource_staff_record": user.permission.enable_view_outsource_staff_record,
-                "enable_view_dev_staff_record": user.permission.enable_view_dev_staff_record,
                 "enable_view_detail": user.permission.enable_view_detail,
                 "enable_stamp_on_web": user.permission.enable_stamp_on_web,
-                "enable_regist_event": user.permission.enable_regist_event,
                 "enable_add_staff": user.permission.enable_add_staff,
             }
         )

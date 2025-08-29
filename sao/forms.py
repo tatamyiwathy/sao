@@ -277,33 +277,13 @@ class ModifyPermissionForm(forms.Form):
         required=False,
         widget=forms.CheckboxInput(attrs={"class": "form-check"}),
     )
-    enable_view_temporary_staff_record = forms.BooleanField(
-        label="派遣スタッフの勤務実績の閲覧",
-        required=False,
-        widget=forms.CheckboxInput(attrs={"class": "form-check"}),
-    )
-    enable_view_outsource_staff_record = forms.BooleanField(
-        label="業務委託スタッフの勤務実績の閲覧",
-        required=False,
-        widget=forms.CheckboxInput(attrs={"class": "form-check"}),
-    )
-    enable_view_dev_staff_record = forms.BooleanField(
-        label="開発所属スタッフの「時間外」時間の閲覧",
-        required=False,
-        widget=forms.CheckboxInput(attrs={"class": "form-check"}),
-    )
     enable_view_detail = forms.BooleanField(
-        label="自分の勤務実績詳細",
+        label="自身の勤務実績詳細",
         required=False,
         widget=forms.CheckboxInput(attrs={"class": "form-check"}),
     )
     enable_stamp_on_web = forms.BooleanField(
         label="WEBで打刻",
-        required=False,
-        widget=forms.CheckboxInput(attrs={"class": "form-check"}),
-    )
-    enable_regist_event = forms.BooleanField(
-        label="スケジュールの登録",
         required=False,
         widget=forms.CheckboxInput(attrs={"class": "form-check"}),
     )
