@@ -135,10 +135,8 @@ def home(request):
         try:
             attendances = core.tally_monthly_attendance(view_date.month, records)
         except NoAssignedWorkingHourError:
-            # return render(
-            #     request, "sao/worker_detail_empty.html", {"empolyee": employee}
-            # )
-            pass
+            # 勤務時間が割り当てられていない
+            attendances = []
 
         # messageで警告を表示する
         if employee.employee_type == models.Employee.TYPE_PERMANENT_STAFF:
