@@ -40,7 +40,7 @@ urlpatterns = [
     path("time_clock/", views.time_clock, name="time_clock"),
     path("permission/", views.permission, name="permission"),
     path(
-        "modify_permission/<int:user_id>/",
+        "permission/<int:user_id>/edit",
         views.modify_permission,
         name="modify_permission",
     ),
