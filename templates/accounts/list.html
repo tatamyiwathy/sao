@@ -2,52 +2,58 @@
 {% load widget_tweaks %}
 {% load static %}
 
-{% block title%}アカウント管理{% endblock %}
+{% block title %}アカウント管理{% endblock %}
 
-{% block content%}
-
+{% block content %}
 <div class="container">
-
-    <div class="row mt-3">
-        <div class="col">
+    <div class="row mt-4 mb-2">
+        <div class="col text-center">
+            <h3>スタッフリスト</h3>
         </div>
     </div>
 
-    <div class="row mt-3">
-        <div class="col"></div>
-        <div class="col">
-            <div class="page-header">
-                <h4>スタッフリスト</h4>
-            </div>
-            <table class="table table-hover" style="">
-                <th>アカウント</th>
-                <th>氏名</th>
-                <th>メール</th>
-                <th></th>
+    <div class="row mb-3">
+        <div class="col text-end">
+            {% if user.is_staff %}
+            <a href="" class="btn btn-info btn-sm">
+                <span class="oi oi-plus"></span> 新規アカウント追加
+            </a>
+            {% endif %}
+        </div>
+    </div>
 
-                {% for account in accounts %}
-                <tr {% if not account.user.is_active %} class="warning" } {% endif %}>
-                    <td>{{ account.username }}</td>
-                    <td>{{ account.last_name }}{{ account.first_name }}</td>
-                    <td>{{ account.email }}</td>
-
-                    <td>
-                        {% if user.is_staff or user.permission.enable_regist_event %}
-                        <a href="{%url 'accounts:edit' account.username %}" class=""><span class="oi oi-pencil"></span>
-                        </a>
-                        {%endif%}
-                    </td>
-                </tr>
-                {% endfor %}
-
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <table class="table table-striped table-bordered align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>アカウント</th>
+                        <th>氏名</th>
+                        <th>メール</th>
+                        <th class="text-center">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for account in accounts %}
+                    <tr {% if not account.user.is_active %}class="table-warning"{% endif %}>
+                        <td>{{ account.username }}</td>
+                        <td>{{ account.last_name }} {{ account.first_name }}</td>
+                        <td>{{ account.email }}</td>
+                        <td class="text-center">
+                            {% if user.is_staff or user.permission.enable_regist_event %}
+                            <a href="{% url 'accounts:edit' account.username %}" class="btn btn-outline-primary btn-sm" title="編集">
+                                <span class="oi oi-pencil"></span>
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
             </table>
         </div>
-        <div class="col"></div>
     </div>
 </div>
-
 {% endblock %}
-
 
 {% block footer %}
 {% endblock %}

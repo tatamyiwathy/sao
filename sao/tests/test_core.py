@@ -552,6 +552,6 @@ class TestGetWorkingHoursToBeAssign(TestCase):
             emp, date(1901, 1, 1), get_working_hours_by_category("A")
         )
 
-        working_hours = get_working_hours_tobe_assign(emp)
+        working_hours = get_working_hours_tobe_assign(emp).working_hours
         self.assertEqual(working_hours.begin_time, Const.OCLOCK_1000)
         self.assertEqual(working_hours.end_time, Const.OCLOCK_1900)

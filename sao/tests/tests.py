@@ -21,7 +21,7 @@ from ..core import (
     calc_actual_working_time,
     adjust_working_hours,
     eval_record,
-    NoSpecifiedWorkingHoursError,
+    NoAssignedWorkingHourError,
 )
 from ..const import Const
 from ..working_status import WorkingStatus
@@ -663,7 +663,7 @@ class TimeCalculationTest(TestCase):
         print(sys._getframe().f_code.co_name)
         """working_hourが取得できないと例外が発生する"""
         r = create_timerecord(employee=self.emp, date=self.today, stamp=[None, None])
-        with self.assertRaises(NoSpecifiedWorkingHoursError):
+        with self.assertRaises(NoAssignedWorkingHourError):
             adjust_working_hours(r)
 
     def test_adjust_working_hours_on_holiday(self):

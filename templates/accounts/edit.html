@@ -1,26 +1,90 @@
 {% extends "base.html" %}
 {% load widget_tweaks %}
 
-{% block title%}アカウント管理{% endblock %}
+{% block title %}アカウント管理{% endblock %}
 
-{% block content%}
-
+{% block content %}
 <div class="container">
-    <div class="row mt-3">
+    <div class="row mt-4">
         <div class="col"></div>
-        <div class="col">
-            <form action="{% url 'accounts:edit' edituser.username %}" method="POST" style="font-size:11px;">
-                {% csrf_token %}
-                {{form.as_p}}
-                <input class="btn btn-primary" type="submit" value="更新">
-            </form>
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0 text-center">アカウント編集</h4>
+                </div>
+                <div class="card-body">
+                    <form action="{% url 'accounts:edit' edituser.username %}" method="POST">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label" for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+                            {% render_field form.username class="form-control" %}
+                            {% if form.username.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.username.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+                            {% render_field form.email class="form-control" %}
+                            {% if form.email.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.email.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col">
+                                <label class="form-label" for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
+                                {% render_field form.last_name class="form-control" %}
+                                {% if form.last_name.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.last_name.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col">
+                                <label class="form-label" for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
+                                {% render_field form.first_name class="form-control" %}
+                                {% if form.first_name.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.first_name.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="{{ form.is_active.id_for_label }}">{{ form.is_active.label }}</label>
+                            <div class="form-check">
+                                {% render_field form.is_active class="form-check-input" %}
+                            </div>
+                            {% if form.is_active.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.is_active.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="d-grid">
+                            <button class="btn btn-primary" type="submit">更新</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
         <div class="col"></div>
     </div>
 </div>
-
 {% endblock %}
-
 
 {% block footer %}
 {% endblock %}
