@@ -38,3 +38,32 @@ class UserForm(forms.ModelForm):
             "email": forms.EmailInput(attrs={"class": "form-control"}),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check"}),
         }
+
+class SaoChangePasswordForm(forms.Form):
+    """
+    パスワード変更フォーム
+    """
+
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={"class": "form-control"}),
+        label="新しいパスワード",
+    )
+    confirm = forms.CharField(
+        widget=forms.PasswordInput(attrs={"class": "form-control"}),
+        label="確認",
+    )
+
+    def clean(self):
+        cleaned_data = super(SaoChangePasswordForm, self).clean()
+        password = cleaned_data.get("password")
+        confirm = cleaned_data.get("confirm")
+
+        if not password:
+            self.add_error("password", "パスワードを入力してください")
+        if not confirm:
+            self.add_error("confirm", "確認用パスワードを入力してください")
+
+        if password != confirm:
+            raise forms.ValidationError("パスワードが一致しません")
+        
+        return cleaned_data

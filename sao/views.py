@@ -835,31 +835,6 @@ def time_clock(request):
 
 
 @login_required
-def password(request):
-    """パスワード変更"""
-    message = None
-    success = False
-    form = forms.ChangePasswordForm(request.POST)
-    if form.is_valid():
-        password = request.POST["password"]
-        confirm = request.POST["confirm"]
-        if password == confirm:
-            user = request.user
-            user.set_password(password)
-            user.save()
-            success = True
-            return redirect("sao:home")
-        else:
-            message = "入力されたパスワードと確認の文字列が一致しません"
-
-    return render(
-        request,
-        "sao/change_password.html",
-        {"form": form, "message": message, "success": success},
-    )
-
-
-@login_required
 def permission(request):
     """権限設定"""
     staffs = models.Employee.objects.filter(user__is_active=True)

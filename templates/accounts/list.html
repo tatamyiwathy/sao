@@ -12,15 +12,6 @@
         </div>
     </div>
 
-    <div class="row mb-3">
-        <div class="col text-end">
-            {% if user.is_staff %}
-            <a href="" class="btn btn-info btn-sm">
-                <span class="oi oi-plus"></span> 新規アカウント追加
-            </a>
-            {% endif %}
-        </div>
-    </div>
 
     <div class="row justify-content-center">
         <div class="col-md-8">
@@ -43,6 +34,9 @@
                             {% if user.is_staff or user.permission.enable_regist_event %}
                             <a href="{% url 'accounts:edit' account.username %}" class="btn btn-outline-primary btn-sm" title="編集">
                                 <span class="oi oi-pencil"></span>
+                            </a>
+                            <a href="{% url 'accounts:change_password' account.username %}" class="btn btn-outline-primary btn-sm" title="パスワード変更">
+                                <span class="oi oi-key"></span>
                             </a>
                             {% endif %}
                         </td>

@@ -1,12 +1,13 @@
 import logging
 
 from django import forms
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
-from .forms import SignupForm, UserForm
+from .forms import UserForm, SaoChangePasswordForm
 
 logger = logging.getLogger("sao")
 
@@ -43,6 +44,29 @@ def edit_account(request, username):
         request,
         "accounts/edit.html",
         {"form": form, "edituser": u},
+    )
+
+
+@login_required
+def change_password(request, username):
+    """パスワード変更"""
+    target_user = get_object_or_404(User, username=username)
+    
+    form = SaoChangePasswordForm(request.POST or None)
+    if request.method == "POST":
+        if form.is_valid():
+            print("form is valid")
+            password = form.cleaned_data["password"]
+            target_user.set_password(password)
+            target_user.save()
+            messages.success(request, "パスワードを変更しました")
+            logger.info("%sが%sのパスワードを変更しました" % (request.user, target_user.username))
+            return redirect("accounts:list")
+
+    return render(
+        request,
+        "accounts/change_password.html",
+        {"form": form, "target_user": target_user},
     )
 
 

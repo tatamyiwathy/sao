@@ -240,21 +240,6 @@ class AddEmployeeForm(forms.Form):
         return cleaned_data
 
 
-class ChangePasswordForm(forms.Form):
-    """
-    パスワード変更フォーム
-    """
-
-    password = forms.CharField(
-        widget=forms.PasswordInput(attrs={"class": "form-control"}),
-        label="あたらしいパスワードを入力してください",
-    )
-    confirm = forms.CharField(
-        widget=forms.PasswordInput(attrs={"class": "form-control"}),
-        label="確認",
-    )
-
-
 class LeaveFromCompanyForm(forms.Form):
     """
     退社処理
