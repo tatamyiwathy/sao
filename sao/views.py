@@ -988,33 +988,32 @@ def update_annual_leave(request):
 def download_csv(request, employee_no, year, month):
     """csvダウンロード"""
 
-    def set_if_noexist(ary, key, val_else):
-        if not key in ary:
-            ary[key] = val_else
-
     def make_filename(employee, year, month):
         return employee.user.username + "-" + str(year) + "-" + str(month)
 
     csv_date = datetime.date(year=year, month=month, day=1)
     employee = get_object_or_404(models.Employee, employee_no=employee_no)
-
     filename = make_filename(employee, year, month)
-
     response = HttpResponse(content_type="text/csv; charset=Shift-JIS")
     response["Content-Disposition"] = 'attachment; filename="' + filename + '.csv"'
-
-    records = core.collect_timerecord_by_month(employee.id, csv_date)
-    if records is None:
-        return Http404
-
+    records = core.collect_timerecord_by_month(employee, csv_date)
     try:
         calculated = core.tally_monthly_attendance(csv_date.month, records)
     except NoAssignedWorkingHourError:
+        sumup = core.sumup_attendances([])
+        rounded = core.round_result(sumup)
+        messages.warning(request, f"・{employee}の打刻データが存在しないためCVSの出力ができません")
         return render(
             request,
-            "sao/attendance_detail_empty.html",
+            "sao/attendance_detail.html",
             {
-                "message": f"{employee}の勤務時間が設定されていないため勤怠が表示できません"
+                "employee": employee,
+                "year": datetime.date.today().year,
+                "month": datetime.date.today().month,
+                "total_result": sumup,
+                "rounded_result": rounded,
+                "today": datetime.date.today(),
+                "mypage": True,
             },
         )
 

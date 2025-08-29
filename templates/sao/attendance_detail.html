@@ -2,330 +2,266 @@
 {% load widget_tweaks %}
 {% load sao_tags %}
 
-
-
 {% block content %}
-
-<script>
-
-{% if mypage and user.permission.enable_stamp_on_web %}
-	function onload_func() {
-		dd = new Date();
-		year = dd.getYear(); if (year < 2000) year += 1900;
-		mon = dd.getMonth() + 1; if (mon < 10) mon = "0" + mon;
-		date = dd.getDate(); if (date < 10) date = "0" + date;
-		hour = dd.getHours(); if (hour < 10) hour = "0" + hour;
-		min = dd.getMinutes(); if (min < 10) min = "0" + min;
-		sec = dd.getSeconds(); if (sec < 10) sec = "0" + sec;
-		document.getElementById("clock_box").innerHTML =
-		year + "/" + mon + "/" + date + " " +
-		hour + ":" + min + ":" + sec;
-		setTimeout("onload_func()", 1000);
-	}
-
-	window.onload = onload_func;
-{% endif %}
-
-</script>
-
-
-
-
 <div class="container">
-
-
-	<div class="row mt-3">
-
-
-		<div class="col">
-			<div class="card card-default">
-				<div class="card-header">
-					基本データ
-				</div>
-				<div class="card-body">
-					<table class="table table-condensed">
-						<tr>
-							<th>氏名</th>
-							<th>管理番号</th>
-							<th>勤務時間</th>
-						</tr>
-						<tr>
-							<td>{{employee.name}}</td>
-							<td>{{employee.employee_no}}</td>
-							<td>{{office_hours}}</td>
-						</tr>
-					</table>
-				</div>
-			</div>
-		</div>
-
-		<div class="col">
-			{% if mypage and user.permission.enable_stamp_on_web %}
-			<div class="card card-default">
-				<div class="card-header">
-					WEB打刻
-				</div>
-
-				<div class="card-body">
-					<form method='GET' action={% url 'sao:time_clock' %}>
-						<div>
-							<div>
-                                <table class="table">
-                                    <tr>
-                                        <div id="clock_box" style="font-size: 20px;"></div>
-                                    </tr>
-                                    <tr>
-                                        <th>in</th>
-                                        <td>{{fromTime}}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>out</th>
-                                        <td>{{toTime}}</td>
-                                    </tr>
-                                </table>
-							</div>
-						</div>
-						<br>
-						<p>
-							<button class="btn btn-primary" type="submit"/>打刻ページへ</button>
-						</p>
-					</form>
-				</div>
-			</div>
-			{% endif %}
-
-		</div>
-
-	</div>
-
-	<div class="row mt-3"></div>
-	{% if user.permission.enable_view_detail or user.is_staff %}
-	<div class="row">
-        <div class="col">
-			{{year}}年 {{month}}月 勤務データ
-		</div>
-		<div class="col">
-			{% if form %}
-			<div class="float-end">
-			<form class="form-inline" method="post" action="{% url "sao:home" %}">
-				{% csrf_token %}
-				<div class="row">			
-					<div class="col">
-						{{ form }}
-						<input type='hidden' name='employee' value='{{employee.id}}' />
-					</div>
-					<div class="col-auto">
-						<button class="btn btn-primary" type='submit' name='calc'>表示</button>
-					</div>
-				</div>
-			</form>
-			</div>
-			{% endif %}
-		</div>
+    <div class="row mt-3">
+        <!-- 基本データ -->
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <strong>基本データ</strong>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm mb-0">
+                        <tr>
+                            <th>氏名</th>
+                            <th>管理番号</th>
+                            <th>勤務時間</th>
+                        </tr>
+                        <tr>
+                            <td>{{ employee.name }}</td>
+                            <td>{{ employee.employee_no }}</td>
+                            <td>{{ office_hours }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- WEB打刻 -->
+        {% if mypage and user.permission.enable_stamp_on_web %}
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <strong>WEB打刻</strong>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{% url 'sao:time_clock' %}">
+                        <table class="table table-borderless mb-2">
+                            <tr>
+                                <td colspan="2">
+                                    <div id="clock_box" style="font-size: 20px;"></div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>in</th>
+                                <td>{{ fromTime }}</td>
+                            </tr>
+                            <tr>
+                                <th>out</th>
+                                <td>{{ toTime }}</td>
+                            </tr>
+                        </table>
+                        <div class="d-grid">
+                            <button class="btn btn-primary" type="submit">打刻ページへ</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
-	<div class="row mt-3">
-    <!--メッセージ-->
+    {% if user.permission.enable_view_detail or user.is_staff %}
+    <div class="row mt-4">
+        <div class="col">
+            <h5>{{ year }}年 {{ month }}月 勤務データ</h5>
+        </div>
+        <div class="col-auto">
+            {% if form %}
+            <form class="form-inline" method="post" action="{% url 'sao:home' %}">
+                {% csrf_token %}
+                <div class="row g-2">
+                    <div class="col">
+                        {{ form }}
+                        <input type="hidden" name="employee" value="{{ employee.id }}" />
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-primary" type="submit" name="calc">表示</button>
+                    </div>
+                </div>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- メッセージ表示 -->
     {% if messages %}
-        {% for message in messages %}
+    <div class="row mt-2">
+        <div class="col">
+            {% for message in messages %}
             <div class="alert alert-danger" role="alert">
-                <span class="label label-warning">{{message.tags}}</span>
+                <span class="label label-warning">{{ message.tags }}</span>
                 {{ message }}
             </div>
-        {% endfor %}
-    {% endif %}
-	</div>
-
-    <table class="table table-bordered table-condensed">
-		<tr>
-			<th style="background:#000"><span class="text-muted">所定勤務日数</span></th>
-			<th style="background:#000"><span class="text-muted">出勤日数</span></th>
-			<th style="background:#000"><span class="text-muted">有休日数</span></th>
-			<th style="background:#000"><span class="text-muted">代休日数</span></th>
-			<th style="background:#000"><span class="text-muted">欠勤日数</span></th>
-			<th style="background:#000"><span class="text-muted">特休日数</span></th>
-			<th style="background:#000"><span class="text-muted">遅刻回数</span></th>
-			<th style="background:#000"><span class="text-muted">早退回数</span></th>
-			<th style="background:#000"><span class="text-muted">休日出勤日数</span></th>
-		</tr>
-			{% for d in daycount %}
-				<td>{{d}}</td>
-			{% endfor %}
-	</table>
-
-
-	<table class="table table-bordered table-condensed table-striped table-hover">
-
-		<tr>
-		<th style="background:#000"><span class="text-muted">日</span></th>
-		<th style="background:#000"><span class="text-muted">曜日</span></th>
-		<th style="background:#000"><span class="text-muted">区分</span></th>
-		<th style="background:#000"><span class="text-muted">出社時刻</span></th>
-		<th style="background:#000"><span class="text-muted">退社時刻</span></th>
-		<th style="background:#000"><span class="text-muted">実働時間</span></th>
-		<th style="background:#000"><span class="text-muted">遅刻</span></th>
-		<th style="background:#000"><span class="text-muted">早退</span></th>
-		<th style="background:#000"><span class="text-muted">外出</span></th>
-		<th style="background:#000"><span class="text-muted">時間外</span></th>
-		<th style="background:#000"><span class="text-muted">深夜</span></th>
-		<th style="background:#000"><span class="text-muted">法定休日</span></th>
-		<th style="background:#000"><span class="text-muted">所定休日</span></th>
-		<th style="background:#000"><span class="text-muted">届け</span></th>
-		<!--
-		{% if mypage %}
-		<th style="background:#000"><span class="text-muted"></span></th>
-		{% endif %}
-		-->
-		</tr>
-	{% for r in duty_result %}
-		<tr class="{{r|row_bg_color:today}}">
-		{#----曜日----#}
-		
-		{% if r.date|is_saturday %}
-			<td class="text-right" style="color:#0000ff;background:#c0c0c0">{{r.date.day }}</td>
-			<td class="text-right" style="color:#0000ff;background:#c0c0c0">{{r.date|date:"D" }}</td>
-		{% elif r.date|is_holiday %}
-			<td class="text-right" style="color:#ff0000;background:#c0c0c0">{{r.date.day }}</td>
-			<td class="text-right" style="color:#ff0000;background:#c0c0c0">{{r.date|date:"D" }}</td>
-		{% else %}
-			<td class="text-right" style="background:#c0c0c0">{{r.date.day }}</td>
-			<td class="text-right" style="background:#c0c0c0">{{r.date|date:"D" }}</td>
-		{% endif %}
-
-		<td> {{r.flag}} </td>
-
-		<td class="text-right {% missed_stamp_color r.clock_out r.clock_in %}">
-		{% if r.clock_in %}
-			{{r.clock_in}}
-		{% endif %}
-		</td>
-
-		<td class="text-right {% missed_stamp_color r.clock_in r.clock_out %}">
-		{% if r.clock_out %}
-            <div style = "{% warning_midnight r.clock_out r %}">
-                {{r.clock_out}}
-            </div>
-		{% endif %}
-		</td>
-
-		<td class="text-right">
-			{{r.work|strip_seconds:""}}
-		</td>
-
-		{% if not mypage %}
-			<td class="text-right {{r.late|color_ifnot:'cream_bg'}}">
-				{{r.late|strip_seconds:"" }}
-			</td>
-			<td class="text-right {{r.before|color_ifnot:'cream_bg'}}">
-				{{r.before|strip_seconds:""}}
-			</td>
-
-			<td class="text-right">
-				{{r.steppingout|strip_seconds:"" }}
-			</td>
-
-            {% if employee.is_included_overtime_pay %}
-                <td class="text-right {{r|warning_overtime}}">
-                    {{r.out_of_time|strip_seconds:""}} <span class="font-size: 0.5em;">{{r|overtime_hours}}</span>
-                </td>
-            {% else %}
-                <td class="text-right">
-                    {{r.out_of_time|strip_seconds:""}}
-                </td>
-            {% endif %}
-			<td class="text-right {{r.night|color_ifnot:'cream_bg'}}">
-				{{r.night|strip_seconds:"" }}
-			</td>
-			<td class="text-right {{r.legal_holiday|color_ifnot:'cream_bg']]">
-				{{r.legal_holiday|strip_seconds:"" }}
-			</td>
-			<td class="text-right {{r.holiday|color_ifnot:'cream_bg'}}">
-				{{r.holiday|strip_seconds:""}}
-			</td>
-			<td> 
-				{% if r.remark %} {{r.remark}} {% endif %}
-			</td> 
-		{% else %}
-			<td class="text-right {{r|set_warning_color:'tardy'}}">
-				{{r.late|strip_seconds:""}}
-			</td>
-			<td class="text-right {{r|set_warning_color:'leave_early'}}">
-				{{r.before|strip_seconds:"" }}
-			</td>
-
-			<td class="text-right {{r|set_warning_color:'steppingout'}}">
-				{{r.steppingout|strip_seconds:"" }}
-			</td>
-
-            {% if employee.is_included_overtime_pay %}
-                <td title="{{r|tooltip_overtime}}" class="text-right {{r|warning_overtime}}">
-                    {{r.out_of_time|strip_seconds:""}}  <span class="font-size: 0.5em;">{{r|overtime_hours}}</span>
-                </td>
-            {% else %}
-                <td class="text-right">
-                    {{r.out_of_time|strip_seconds:""}}
-                </td>
-            {% endif %}
-			<td class="text-right {{r|set_warning_color:'midnight_work'}}">
-				{{r.night|strip_seconds:""}}
-			</td>
-			<td class="text-right {{r|set_warning_color:'legal_holiday'}}">
-				{{r.legal_holiday|strip_seconds:""}}
-			</td>
-			<td class="text-right" {{r|set_warning_color:'holiday'}}>
-				{{r.holiday|strip_seconds:""}}
-			</td>
-			<td class="{{r|set_any_warning_color}}"> 
-				{% if r.remark%} {{r.remark}} {% endif %}
-			</td> 
-			
-		{% endif %}
-		</tr>
-	{% endfor %}
-
-		<tr>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td class="orange_bg">合計時間</td>
-			<td class="text-right">{{total_result.work|strip_seconds:"0:00" }}</td>
-			<td class="text-right">{{total_result.late|strip_seconds:"0:00" }}</td>
-			<td class="text-right">{{total_result.before|strip_seconds:"0:00" }}</td>
-			<td class="text-right">{{total_result.steppingout|strip_seconds:"0:00" }}</td>
-			<td class="text-right {{warn}}">
-				{{total_result.out_of_time|strip_seconds:"0:00"}}
-			</td>
-			<td class="text-right">{{total_result.night|strip_seconds:"0:00" }}</td>
-			<td class="text-right">{{total_result.legal_holiday|strip_seconds:"0:00" }}</td>
-			<td class="text-right">{{total_result.holiday|strip_seconds:"0:00" }}</td>
-		</tr>
-
-		<tr>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td></td>
-			<td class="orange_bg">まるめ処理</td>
-			<td class="text-right">{{rounded_result.work|strip_seconds:"0:00" }}</td>
-			<td class="text-right">{{rounded_result.late|strip_seconds:"0:00" }}</td>
-			<td class="text-right">{{rounded_result.before|strip_seconds:"0:00" }}</td>
-			<td class="text-right">{{rounded_result.steppingout|strip_seconds:"0:00" }}</td>
-			<td class="text-right {{warn}}">
-				{{rounded_result.out_of_time|strip_seconds:"0:00" }}
-			</td>
-			<td class="text-right">{{rounded_result.night|strip_seconds:"0:00" }}</td>
-			<td class="text-right">{{rounded_result.legal_holiday|strip_seconds:"0:00" }}</td>
-			<td class="text-right">{{rounded_result.holiday|strip_seconds:"0:00" }}</td>
-
-		</tr>
-	</table>
-	<a href="{% url 'sao:download_csv' employee.employee_no year month%}" class="btn btn-primary">CSVダウンロード</a>
-{% endif %}
+            {% endfor %}
+        </div>
     </div>
-</div>
-{% endblock %}
+    {% endif %}
 
+    <!-- 集計テーブル -->
+    <div class="row mt-3">
+        <div class="col">
+            <table class="table table-bordered table-sm mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>所定勤務日数</th>
+                        <th>出勤日数</th>
+                        <th>有休日数</th>
+                        <th>代休日数</th>
+                        <th>欠勤日数</th>
+                        <th>特休日数</th>
+                        <th>遅刻回数</th>
+                        <th>早退回数</th>
+                        <th>休日出勤日数</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        {% for d in daycount %}
+                        <td>{{ d }}</td>
+                        {% endfor %}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 勤務詳細テーブル -->
+    <div class="table-responsive mt-4">
+        <table class="table table-bordered table-striped table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>日</th>
+                    <th>曜日</th>
+                    <th>区分</th>
+                    <th>出社時刻</th>
+                    <th>退社時刻</th>
+                    <th>実働時間</th>
+                    <th>遅刻</th>
+                    <th>早退</th>
+                    <th>外出</th>
+                    <th>時間外</th>
+                    <th>深夜</th>
+                    <th>法定休日</th>
+                    <th>所定休日</th>
+                    <th>届け</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in duty_result %}
+                <tr class="{{ r|row_bg_color:today }}">
+                    <!-- 日・曜日の色分け -->
+                    {% if r.date|is_saturday %}
+                        <td class="text-end text-primary bg-light">{{ r.date.day }}</td>
+                        <td class="text-end text-primary bg-light">{{ r.date|date:"D" }}</td>
+                    {% elif r.date|is_holiday %}
+                        <td class="text-end text-danger bg-light">{{ r.date.day }}</td>
+                        <td class="text-end text-danger bg-light">{{ r.date|date:"D" }}</td>
+                    {% else %}
+                        <td class="text-end bg-light">{{ r.date.day }}</td>
+                        <td class="text-end bg-light">{{ r.date|date:"D" }}</td>
+                    {% endif %}
+                    <td>{{ r.flag }}</td>
+                    <td class="text-end {% missed_stamp_color r.clock_out r.clock_in %}">
+                        {% if r.clock_in %}{{ r.clock_in }}{% endif %}
+                    </td>
+                    <td class="text-end {% missed_stamp_color r.clock_in r.clock_out %}">
+                        {% if r.clock_out %}
+                        <div style="{% warning_midnight r.clock_out r %}">
+                            {{ r.clock_out }}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">{{ r.work|strip_seconds:"" }}</td>
+                    {% if not mypage %}
+                        <td class="text-end {{ r.late|color_ifnot:'cream_bg' }}">{{ r.late|strip_seconds:"" }}</td>
+                        <td class="text-end {{ r.before|color_ifnot:'cream_bg' }}">{{ r.before|strip_seconds:"" }}</td>
+                        <td class="text-end">{{ r.steppingout|strip_seconds:"" }}</td>
+                        {% if employee.is_included_overtime_pay %}
+                            <td class="text-end {{ r|warning_overtime }}">
+                                {{ r.out_of_time|strip_seconds:"" }} <span class="small">{{ r|overtime_hours }}</span>
+                            </td>
+                        {% else %}
+                            <td class="text-end">{{ r.out_of_time|strip_seconds:"" }}</td>
+                        {% endif %}
+                        <td class="text-end {{ r.night|color_ifnot:'cream_bg' }}">{{ r.night|strip_seconds:"" }}</td>
+                        <td class="text-end {{ r.legal_holiday|color_ifnot:'cream_bg' }}">{{ r.legal_holiday|strip_seconds:"" }}</td>
+                        <td class="text-end {{ r.holiday|color_ifnot:'cream_bg' }}">{{ r.holiday|strip_seconds:"" }}</td>
+                        <td>{% if r.remark %}{{ r.remark }}{% endif %}</td>
+                    {% else %}
+                        <td class="text-end {{ r|set_warning_color:'tardy' }}">{{ r.late|strip_seconds:"" }}</td>
+                        <td class="text-end {{ r|set_warning_color:'leave_early' }}">{{ r.before|strip_seconds:"" }}</td>
+                        <td class="text-end {{ r|set_warning_color:'steppingout' }}">{{ r.steppingout|strip_seconds:"" }}</td>
+                        {% if employee.is_included_overtime_pay %}
+                            <td title="{{ r|tooltip_overtime }}" class="text-end {{ r|warning_overtime }}">
+                                {{ r.out_of_time|strip_seconds:"" }} <span class="small">{{ r|overtime_hours }}</span>
+                            </td>
+                        {% else %}
+                            <td class="text-end">{{ r.out_of_time|strip_seconds:"" }}</td>
+                        {% endif %}
+                        <td class="text-end {{ r|set_warning_color:'midnight_work' }}">{{ r.night|strip_seconds:"" }}</td>
+                        <td class="text-end {{ r|set_warning_color:'legal_holiday' }}">{{ r.legal_holiday|strip_seconds:"" }}</td>
+                        <td class="text-end {{ r|set_warning_color:'holiday' }}">{{ r.holiday|strip_seconds:"" }}</td>
+                        <td class="{{ r|set_any_warning_color }}">{% if r.remark %}{{ r.remark }}{% endif %}</td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+                <!-- 合計行 -->
+                <tr>
+                    <td colspan="4"></td>
+                    <td class="orange_bg">合計時間</td>
+                    <td class="text-end">{{ total_result.work|strip_seconds:"0:00" }}</td>
+                    <td class="text-end">{{ total_result.late|strip_seconds:"0:00" }}</td>
+                    <td class="text-end">{{ total_result.before|strip_seconds:"0:00" }}</td>
+                    <td class="text-end">{{ total_result.steppingout|strip_seconds:"0:00" }}</td>
+                    <td class="text-end {{ warn }}">{{ total_result.out_of_time|strip_seconds:"0:00" }}</td>
+                    <td class="text-end">{{ total_result.night|strip_seconds:"0:00" }}</td>
+                    <td class="text-end">{{ total_result.legal_holiday|strip_seconds:"0:00" }}</td>
+                    <td class="text-end">{{ total_result.holiday|strip_seconds:"0:00" }}</td>
+                </tr>
+                <!-- まるめ処理行 -->
+                <tr>
+                    <td colspan="4"></td>
+                    <td class="orange_bg">まるめ処理</td>
+                    <td class="text-end">{{ rounded_result.work|strip_seconds:"0:00" }}</td>
+                    <td class="text-end">{{ rounded_result.late|strip_seconds:"0:00" }}</td>
+                    <td class="text-end">{{ rounded_result.before|strip_seconds:"0:00" }}</td>
+                    <td class="text-end">{{ rounded_result.steppingout|strip_seconds:"0:00" }}</td>
+                    <td class="text-end {{ warn }}">{{ rounded_result.out_of_time|strip_seconds:"0:00" }}</td>
+                    <td class="text-end">{{ rounded_result.night|strip_seconds:"0:00" }}</td>
+                    <td class="text-end">{{ rounded_result.legal_holiday|strip_seconds:"0:00" }}</td>
+                    <td class="text-end">{{ rounded_result.holiday|strip_seconds:"0:00" }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="mt-3">
+        <a href="{% url 'sao:download_csv' employee.employee_no year month %}" class="btn btn-success">
+            <i class="oi oi-data-transfer-download"></i> CSVダウンロード
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+{% if mypage and user.permission.enable_stamp_on_web %}
+function clock_func() {
+    const dd = new Date();
+    let year = dd.getFullYear();
+    let mon = String(dd.getMonth() + 1).padStart(2, '0');
+    let date = String(dd.getDate()).padStart(2, '0');
+    let hour = String(dd.getHours()).padStart(2, '0');
+    let min = String(dd.getMinutes()).padStart(2, '0');
+    let sec = String(dd.getSeconds()).padStart(2, '0');
+    document.getElementById("clock_box").innerHTML =
+        year + "/" + mon + "/" + date + " " +
+        hour + ":" + min + ":" + sec;
+    setTimeout(clock_func, 1000);
+}
+window.onload = clock_func;
+{% endif %}
+</script>
+{% endblock %}
 
 {% block footer %}
 {% endblock %}
