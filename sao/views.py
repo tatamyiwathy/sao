@@ -196,7 +196,7 @@ def home(request):
     except NoAssignedWorkingHourError:
         # 合流前で勤務時間が取得できない
         try:
-            office_hours = get_working_hours_tobe_assign(employee)
+            office_hours = get_working_hours_tobe_assign(employee).working_hours
         except ValueError:
             sumup = core.sumup_attendances([])
             rounded = core.round_result(sumup)
@@ -213,11 +213,6 @@ def home(request):
                     "mypage": True,
                 },
             )
-
-            # return render(request,"sao/worker_detail_empty.html")
-
-            return make_view(employee, today, today)
-            # raise Http404("勤務時間設定がない")
 
     # 本日の打刻を取得する
     (fromTime, toTime) = utils.get_today_stamp(employee, today)
@@ -431,8 +426,8 @@ def employee_list(request):
             try:
                 oh = get_employee_hour(e, datetime.date.today())
                 working_hour = str(oh)
-            except ValueError:
-                working_hour = "* %s" % recently
+            except NoAssignedWorkingHourError:
+                working_hour = "%s (%s～)" % (recently.working_hours, recently.date)
         except ValueError:
             working_hour = "未設定"
 

@@ -689,14 +689,14 @@ def get_working_hours_by_category(category: str) -> WorkingHour:
     return WorkingHour.objects.get(category=category)
 
 
-def get_working_hours_tobe_assign(employee: Employee) -> WorkingHour:
+def get_working_hours_tobe_assign(employee: Employee) -> EmployeeHour:
     """☑
     適用予定の勤務時間を取得する(すでに適用されているかもしれないがこの関数では考慮しない)
     引数:     employee
             date    この日付の「既定の勤務時間」を検索
     戻り値     WorkingHourオブジェクト
     """
-    query = EmployeeHour.objects.filter(employee=employee).order_by("-date")
-    if query:
-        return query[0].working_hours
+    employee_hours = EmployeeHour.objects.filter(employee=employee).order_by("-date")
+    if employee_hours:
+        return employee_hours[0]
     raise ValueError("no specified working hour for %s" % employee.name)
