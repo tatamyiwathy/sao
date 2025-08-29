@@ -15,7 +15,7 @@ from . import calendar, core, forms, models, utils
 from .core import (
     get_employee_hour,
     get_working_hours_tobe_assign,
-    NoSpecifiedWorkingHoursError,
+    NoAssignedWorkingHourError,
 )
 from .const import Const
 from .attendance import Attendance
@@ -134,10 +134,11 @@ def home(request):
         records = core.collect_timerecord_by_month(employee, view_date)
         try:
             attendances = core.tally_monthly_attendance(view_date.month, records)
-        except NoSpecifiedWorkingHoursError:
-            return render(
-                request, "sao/worker_detail_empty.html", {"empolyee": employee}
-            )
+        except NoAssignedWorkingHourError:
+            # return render(
+            #     request, "sao/worker_detail_empty.html", {"empolyee": employee}
+            # )
+            pass
 
         # messageで警告を表示する
         if employee.employee_type == models.Employee.TYPE_PERMANENT_STAFF:
@@ -186,33 +187,51 @@ def home(request):
             {"message": "スーパーユーザーでログイン中"},
         )
 
+    # 今日の出退勤時刻を取得する
+    today = utils.get_today()
+
     # 設定された勤務時間を取得する
     try:
         office_hours = get_employee_hour(employee, datetime.date.today())
-    except ValueError:
+    except NoAssignedWorkingHourError:
         # 合流前で勤務時間が取得できない
         try:
             office_hours = get_working_hours_tobe_assign(employee)
         except ValueError:
-            raise Http404("勤務時間設定がない")
+            sumup = core.sumup_attendances([])
+            rounded = core.round_result(sumup)
+            return render(
+                request,
+                "sao/worker_detail.html",
+                {
+                    "employee": employee,
+                    "year": today.year,
+                    "month": today.month,
+                    "total_result": sumup,
+                    "rounded_result": rounded,
+                    "today": today,
+                    "mypage": True,
+                },
+            )
 
-    # 今日の出退勤時刻を取得する
-    today = datetime.date.today()
-    if datetime.datetime.now().hour < 5:
-        # 日を跨いでる
-        today = (datetime.datetime.now() - datetime.timedelta(days=1)).date()
+            # return render(request,"sao/worker_detail_empty.html")
 
+            return make_view(employee, today, today)
+            # raise Http404("勤務時間設定がない")
+
+    # 本日の打刻を取得する
     (fromTime, toTime) = utils.get_today_stamp(employee, today)
 
+    # 表示月を決定する
     if request.method == "POST":
         form = forms.YearMonthForm(request.POST)
         if form.is_valid():
-            # employee = get_object_or_404(models.Employee, id=request.POST['employee'])
             date_on_view = datetime.datetime.strptime(
                 form.cleaned_data["yearmonth"], "%Y-%m"
             ).date()
             return make_view(employee, date_on_view, today)
         logger.warning("form is invalid %s" % request.POST)
+
     """GET"""
     form = forms.YearMonthForm()
     viewdate = datetime.date.today()
@@ -243,7 +262,7 @@ def staff_detail(request, employee, year, month):
 
     try:
         calculated = core.tally_monthly_attendance(from_date.month, query)
-    except NoSpecifiedWorkingHoursError:
+    except NoAssignedWorkingHourError:
         return render(
             request,
             "sao/worker_detail_empty.html",
@@ -530,7 +549,7 @@ def employee_record(request):
             else:
                 try:
                     calculated = core.tally_monthly_attendance(from_date.month, records)
-                except NoSpecifiedWorkingHoursError:
+                except NoAssignedWorkingHourError:
                     return render(
                         request,
                         "sao/worker_detail_empty.html",
@@ -590,7 +609,7 @@ def employee_record(request):
 
         try:
             calculated = core.tally_monthly_attendance(from_date.month, records)
-        except NoSpecifiedWorkingHoursError:
+        except NoAssignedWorkingHourError:
             return render(
                 request,
                 "sao/worker_detail_empty.html",
@@ -765,7 +784,7 @@ def overview(request):
 
             try:
                 calculated = core.tally_monthly_attendance(from_date.month, records)
-            except NoSpecifiedWorkingHoursError:
+            except NoAssignedWorkingHourError:
                 return render(
                     request,
                     "sao/worker_detail_empty.html",
@@ -997,7 +1016,7 @@ def download_csv(request, employee_no, year, month):
 
     try:
         calculated = core.tally_monthly_attendance(csv_date.month, records)
-    except NoSpecifiedWorkingHoursError:
+    except NoAssignedWorkingHourError:
         return render(
             request,
             "sao/worker_detail_empty.html",

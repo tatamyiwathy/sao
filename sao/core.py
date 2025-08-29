@@ -123,7 +123,7 @@ def eval_record(record: TimeRecord) -> Attendance:
     return attn
 
 
-class NoSpecifiedWorkingHoursError(Exception):
+class NoAssignedWorkingHourError(Exception):
     def __init__(self, arg=""):
         self.arg = arg
 
@@ -681,7 +681,7 @@ def get_employee_hour(employee: Employee, date: datetime.date) -> WorkingHour:
     for hour in EmployeeHour.objects.filter(employee=employee).order_by("-date"):
         if hour.date <= date:
             return hour.working_hours
-    raise NoSpecifiedWorkingHoursError(f"no specified working hour for {employee.name}")
+    raise NoAssignedWorkingHourError(f"no specified working hour for {employee.name}")
 
 
 def get_working_hours_by_category(category: str) -> WorkingHour:
