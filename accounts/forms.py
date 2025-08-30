@@ -45,11 +45,11 @@ class SaoChangePasswordForm(forms.Form):
     """
 
     password = forms.CharField(
-        widget=forms.PasswordInput(attrs={"class": "form-control"}),
+        widget=forms.PasswordInput(),
         label="新しいパスワード",
     )
     confirm = forms.CharField(
-        widget=forms.PasswordInput(attrs={"class": "form-control"}),
+        widget=forms.PasswordInput(),
         label="確認",
     )
 
