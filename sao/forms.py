@@ -289,7 +289,12 @@ class RegisterHolidayForm(forms.ModelForm):
     class Meta:
         model = Holiday
         fields = ["date"]
-        widgets = {"date": forms.DateInput(attrs={"class": "form-control"})}
+        widgets = {
+            "date": forms.DateInput(attrs={
+                "type": "date",
+                "class": "form-control"
+            })
+        }
         labels = {"date": "日付"}
 
     def clean(self):

@@ -891,7 +891,8 @@ def holiday_settings(request):
         form = forms.RegisterHolidayForm()
     holidays = models.Holiday.objects.all().order_by("date")
     return render(
-        request, "sao/holiday_settings.html", {"form": form, "holidays": holidays}
+        request, "sao/holiday_settings.html", 
+            {"form": form, "holidays": holidays}
     )
 
 

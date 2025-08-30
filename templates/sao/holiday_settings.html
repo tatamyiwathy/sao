@@ -20,66 +20,64 @@
 
 
 <div class="container">
-    <div class="row mt-3">
-
-        <div class="col"></div>
-
-        <div class="col">
-
-            <div class="page-header">
-                <h4>
-                    公休日の設定
-                </h4>
-            </div>
-
-            <div>
-                「国民の祝日」以外の会社公式の休日を設定します
-            </div>
-
-            <div>
-            {% if form.message %}
-            <div class="alert alert-danger" role="alert">
-                {{form.message}}
-            </div>
-            {% endif %}
-            </div>
-
-            <form class="form" method='POST' action={% url 'sao:holiday_settings' %}>
-                <div class="row mt-3">
-                    {% csrf_token %}
-                    <div class="col col-auto">
-                        {{ form }}
-                    </div>
-                    <div class="col col-auto">
-                        <button class="btn btn-primary" type="submit" />追加</button>
-                    </div>
+    <div class="row mt-3 justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">公休日の設定</h4>
                 </div>
-            </form>
-            <br>
-            <br>
+                <div class="card-body">
+                    <p class="card-text">「国民の祝日」以外の会社公式の休日を設定します</p>
+                    {% if form.message %}
+                        <div class="alert alert-danger" role="alert">
+                            {{form.message}}
+                        </div>
+                    {% endif %}
 
+                    <form class="form" method='POST' action={% url 'sao:holiday_settings' %}>
+    <div class="d-flex align-items-center mt-3 gap-2">
+                            {% csrf_token %}
+                            <label for="id_date" class="form-label mb-0 me-2">日付</label>
+                            {{ form.date|add_class:"form-control-sm w-auto" }}
+                            <button class="btn btn-primary" type="submit">追加</button>
+                        </div>
+                    </form>
+
+                </div>
+
+
+            </div>
+
+
+            <hr>
             {% if holidays %}
-            <table class="table table-striped">
-                <tr>
-                    <th>公休日</th>
-                    <th></th>
-                </tr>
-                {% for h in holidays %}
-                <tr>
-                    <td>{{h.holiday}}</td>
-                    <td><a onclick="jump(this); return false;" class=""
-                            href="{% url 'sao:holiday_settings' %}?del={{h.id}}">削除</a></td>
-                </tr>
-
-                {% endfor %}
-            </table>
+                <table class="table table-striped mt-3">
+                    <thead>
+                        <tr>
+                            <th>公休日</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for h in holidays %}
+                        <tr>
+                            <td>{{h.holiday}}</td>
+                            <td>
+                                <a onclick="jump(this); return false;" class="btn btn-sm btn-danger"
+                                    href="{% url 'sao:holiday_settings' %}?del={{h.id}}">削除</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             {% else %}
-                設定されていません
+                <div class="text-muted">休日は設定されていません</div>
             {% endif %}
+
         </div>
-        <div class="col"></div>
     </div>
 </div>
+
 {% endblock %}
 
 
