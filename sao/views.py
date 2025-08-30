@@ -805,13 +805,13 @@ def attendance_summary(request):
             "month": from_date.month,
         }
         params["checked"] = "checked" if hide_deactive_staff else ""
-        response = render(request, "sao/overview.html", params)
+        response = render(request, "sao/attendance_summary.html", params)
         response.set_cookie("hide_deactive_staff", hide_deactive_staff)
         return response
     else:
         # 年月指定
         form = forms.YearMonthForm()
-    return render(request, "sao/overview.html", {"form": form})
+    return render(request, "sao/attendance_summary.html", {"form": form})
 
 
 def time_clock(request):
