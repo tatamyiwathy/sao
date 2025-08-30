@@ -1,7 +1,23 @@
 {% extends "base.html" %}
 {% load widget_tweaks %}
 
+
+
 {% block content %}
+
+<style>
+.vertical-header {
+    writing-mode: vertical-rl;
+    text-align: center;
+	vertical-align: bottom;
+    white-space: nowrap;
+    padding: 8px 2px;
+    font-size: 13px;
+    min-width: 30px;
+}
+</style>
+
+
 <div class="container">
     <div class="row mt-3 align-items-center">
         <div class="col">
@@ -59,16 +75,16 @@
         <table class="table table-striped table-bordered align-middle">
             <thead class="table-light">
                 <tr>
-                    <th>社員番号</th>
-                    <th>氏名</th>
-                    <th>雇用形態</th>
-                    <th>ステータス</th>
-                    <th>所属</th>
-                    <th>入社日付</th>
-                    <th>勤務時間</th>
-                    <th>管理職</th>
-                    <th>固定残業制</th>
-                    <th>操作</th>
+                    <th class="vertical-header">管理番号</th>
+                    <th class="vertical-header">氏名</th>
+                    <th class="vertical-header">雇用形態</th>
+                    <th class="vertical-header">ステータス</th>
+                    <th class="vertical-header">所属</th>
+                    <th class="vertical-header">入社日付</th>
+                    <th class="vertical-header">勤務時間</th>
+                    <th class="vertical-header">管理職</th>
+                    <th class="vertical-header">固定残業制</th>
+                    <th class="vertical-header">操作</th>
                 </tr>
             </thead>
             <tbody>
