@@ -742,7 +742,7 @@ def leave_from_company(request, employee_no):
 
 
 @login_required
-def overview(request):
+def attendance_summary(request):
     """■勤務実績一覧"""
     if request.method == "GET":
         form = forms.YearMonthForm(request.GET)
