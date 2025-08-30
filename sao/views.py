@@ -307,25 +307,21 @@ def employee_hour_view(request, employee_no):
     """
     ■勤務時間適用リストページ
     """
-    errors = None
     employee = get_object_or_404(models.Employee, employee_no=employee_no)
     if request.method == "POST":
         employee_hour = models.EmployeeHour(employee=employee)
         form = forms.WorkingHourAssignForm(request.POST, instance=employee_hour)
         if form.is_valid():
             date = form.cleaned_data["date"]
-            working_hours = form.cleaned_data["working_hours"]
-            q = (
+            if 0 == len(
                 models.EmployeeHour.objects.filter(employee=employee)
                 .filter(date=date)
-                .filter(working_hours=working_hours)
-            )
-            if len(q) == 0:
+            ):
                 form.save()
                 logger.info("%sが%sを追加した" % (request.user, employee_hour))
-                return redirect("sao:employee_list")
+                # return redirect("sao:employee_list")
             else:
-                errors = "すでに設定されています"
+                messages.error(request, "すでに設定されています")
 
     else:
         form = forms.WorkingHourAssignForm(
@@ -341,7 +337,6 @@ def employee_hour_view(request, employee_no):
             "employee": employee,
             "office_hours": employee_hours,
             "form": form,
-            "errors": errors,
         },
     )
 
