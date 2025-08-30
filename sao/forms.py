@@ -9,21 +9,25 @@ from .working_status import WorkingStatus
 class ApplyWorkingHoursForm(forms.ModelForm):
     """勤務時間を適用するフォーム"""
 
-    date = forms.DateField(
-        required=False,
-        label="適用開始日",
-        widget=forms.TextInput(attrs={"class": "datepicker-future form-control"}),
-    )
-
     class Meta:
         model = EmployeeHour
         fields = (
             "date",
             "working_hours",
         )
-        widgets = {"working_hours": forms.Select(attrs={"class": "form-select"})}
-        labels = {"working_hours": "勤務時間"}
+        widgets = {
+            "working_hours": forms.Select(attrs={"class": "form-select"}),
+            "date": forms.DateInput(attrs={
+                "type": "date", 
+                "class": "form-control datepicker-future"}),
+        }
+        labels = {"working_hours": "勤務時間", "date": "適用開始日"}
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # ここで初期値を設定する
+        self.fields["working_hours"].queryset = WorkingHour.objects.filter(is_active=True)
 
 class StaffYearMonthForm(forms.Form):
     """
