@@ -3,8 +3,21 @@
 
 {% block content%}
 
-<script>
 
+<style>
+.vertical-header {
+    writing-mode: vertical-rl;
+    text-align: center;
+	vertical-align: bottom;
+    white-space: nowrap;
+    padding: 8px 2px;
+    font-size: 13px;
+    min-width: 30px;
+}
+</style>
+
+
+<script>
 function submit()
 {
 	var yearmonth = document.getElementById("id_yearmonth").value
@@ -28,8 +41,26 @@ function submit()
 </script>
 
 <div class="container">
-	<div class="page-header">勤務実績一覧 {{summaries|length}}件
+
+    <div class="row mt-3 align-items-center">
+		<div class="col">
+			<div class="page-header">
+				<h4>勤務実績一覧</h4>
+				<!-- 計{{summaries|length}}件 -->
+			</div>
+        </div>
+
+		<div class="col-auto">
+			<div class="pull-left">
+			{{ form }}
+			</div>
+			<div class="checkbox col-xs-4">
+				<label><input id='id_filter_deactive' type="checkbox" name="filter" onchange=submit() {{checked}}>在籍スタッフ以外非表示</label>
+			</div>					
+		</div>
 	</div>
+
+
 
 	{% if not summaries %}
 		<div class="alert alert-danger">
@@ -37,38 +68,29 @@ function submit()
 		</div>
 	{% endif %}
 
-	<div>
-		<div class="pull-left">
-		{{ form }}
-		</div>
-		<div class="checkbox col-xs-4">
-			<label><input id='id_filter_deactive' type="checkbox" name="filter" onchange=submit() {{checked}}>在籍スタッフ以外非表示</label>
-		</div>					
-	</div>
 		
 	<br>
 	<table class="table table-striped table-bordered table-hover">
 		<tr>
-			<th>種別</th>
-			<th>所属</th>
-			<th>No</th>
-			<th>氏名</th>
+			<th class="vertical-header">種別</th>
+			<th class="vertical-header">所属</th>
+			<th class="vertical-header">管理番号</th>
+			<th class="vertical-header">氏名</th>
 			{% if user.is_staff or user.permission.enable_view_temporary_staff_record %}
-			<th>所定勤務日数</th>
-			<th>出勤日数</th>
-			<th>有休取得日数</th>
-			<th>代休日数</th>
-			<th>欠勤日数</th>
-			<th>特別休暇日数</th>
-			<th>遅刻回数</th>
-			<th>早退回数</th>
-			<th>休日出勤日数</th>
-			<th>有休残数</th>
+			<th class="vertical-header">所定勤務日数</th>
+			<th class="vertical-header">出勤日数</th>
+			<th class="vertical-header">有休取得日数</th>
+			<th class="vertical-header">代休日数</th>
+			<th class="vertical-header">欠勤日数</th>
+			<th class="vertical-header">特別休暇日数</th>
+			<th class="vertical-header">遅刻回数</th>
+			<th class="vertical-header">早退回数</th>
+			<th class="vertical-header">休日出勤日数</th>
+			<th class="vertical-header">有休残数</th>
 			{% endif %}
-			<th>時間外</th>
+			<th class="vertical-header">時間外</th>
 			{% if user.is_staff or user.permission.enable_view_temporary_staff_record %}
-			<th>詳細</th>
-			<th>WEB打刻</th>
+			<th class="vertical-header">操作</th>
 			{% endif %}
 		</tr>
 		{% for o in summaries %}
@@ -94,14 +116,17 @@ function submit()
 			<td class="text-right">{{o.daycount.9}}</td>
 			{% endif %}
 			<td class="text-right">{{o.overtime_work|strip_seconds:"0:00"}}</td>
+			<td>
 			{% if user.is_staff or user.permission.enable_view_temporary_staff_record %}
-			<td>
-				<a class="btn btn-default" id="name" 
-                    href="{% url 'sao:staff_detail' o.employee.employee_no year month %}">詳細</a>
-			</td>
+				<a class="btn btn-default" id="name" title="詳細"
+                    href="{% url 'sao:staff_detail' o.employee.employee_no year month %}">
+					<span class="oi oi-info"></span>
+				</a>
 			{% endif %}
-			<td>
-				<a class="btn btn-default" id="name" href="{% url 'sao:web_timestamp_view' o.employee.employee_no %}">⌚</a>
+				<a class="btn btn-default" id="name" title="WEB打刻"
+					href="{% url 'sao:web_timestamp_view' o.employee.employee_no %}">
+				<span class="oi oi-clock"></span>
+				</a>
 			</td>
 		</tr>
 		{% endfor %}

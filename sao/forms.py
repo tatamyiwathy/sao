@@ -65,11 +65,15 @@ class YearMonthForm(forms.Form):
     年月フォーム
     """
 
-    yearmonth = forms.CharField(
+    yearmonth = forms.DateField(
         label="",
         initial=datetime.date.today(),
         widget=forms.DateInput(
-            attrs={"class": "MonthPicker form-control", "onBlur": "submit()"},
+            attrs={
+                "type": "month",
+                "class": "form-control MonthPicker",
+                "onBlur": "submit()",
+            },
             format="%Y-%m",
         ),
     )
