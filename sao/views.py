@@ -894,11 +894,14 @@ def holiday_settings(request):
         request, "sao/holiday_settings.html", 
             {"form": form, "holidays": holidays}
     )
-
-
-def req_test(request):
-    return HttpResponse(r"POST") if request.method == "POST" else HttpResponse(r"GET")
-
+@login_required
+def delete_holiday(request, id):
+    """公休日設定削除"""
+    holiday = get_object_or_404(models.Holiday, id=id)
+    holiday.delete()
+    logger.info("%sが公休日(%s)を削除しました" % (request.user, holiday))
+    messages.success(request, f"{holiday}を削除しました")
+    return redirect("sao:holiday_settings")
 
 def progress(request, pk):
     """現在の進捗ページ"""

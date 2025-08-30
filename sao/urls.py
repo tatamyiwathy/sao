@@ -45,6 +45,7 @@ urlpatterns = [
         name="modify_permission",
     ),
     path("holiday_settings/", views.holiday_settings, name="holiday_settings"),
+    path("holiday/<int:id>/delete", views.delete_holiday, name="delete_holiday"),
     path(
         "progress/<int:pk>/", views.progress, name="progress"
     ),  # 進捗が表示されていくペー
