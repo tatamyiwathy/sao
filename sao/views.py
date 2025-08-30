@@ -875,20 +875,12 @@ def modify_permission(request, user_id):
 @login_required
 def holiday_settings(request):
     """公休日設定"""
+    form = forms.RegisterHolidayForm(request.POST or None)
     if request.method == "POST":
-        form = forms.RegisterHolidayForm(request.POST)
         if form.is_valid():
             holiday = form.save()
             logger.info("%sが公休日(%s)を登録しました" % (request.user, holiday))
-    else:
-        if "del" in request.GET:
-            id = request.GET["del"]
-            target = models.Holiday.objects.filter(id=id)
-            if target.count() > 0:
-                holiday = models.Holiday.objects.get(id=id)
-                target.delete()
-                logger.info("%sが公休日(%s)を削除しました" % (request.user, holiday))
-        form = forms.RegisterHolidayForm()
+
     holidays = models.Holiday.objects.all().order_by("date")
     return render(
         request, "sao/holiday_settings.html", 
