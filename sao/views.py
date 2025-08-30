@@ -311,7 +311,7 @@ def employee_hour_view(request, employee_no):
     employee = get_object_or_404(models.Employee, employee_no=employee_no)
     if request.method == "POST":
         employee_hour = models.EmployeeHour(employee=employee)
-        form = forms.ApplyWorkingHoursForm(request.POST, instance=employee_hour)
+        form = forms.WorkingHourAssignForm(request.POST, instance=employee_hour)
         if form.is_valid():
             date = form.cleaned_data["date"]
             working_hours = form.cleaned_data["working_hours"]
@@ -328,7 +328,7 @@ def employee_hour_view(request, employee_no):
                 errors = "すでに設定されています"
 
     else:
-        form = forms.ApplyWorkingHoursForm(
+        form = forms.WorkingHourAssignForm(
             instance=employee, initial={"date": datetime.date.today()}
         )
     employee_hours = models.EmployeeHour.objects.filter(

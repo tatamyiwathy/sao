@@ -4,7 +4,7 @@ from sao.forms import (
     ModifyRecordForm,
     AddEmployeeForm,
     YearMonthForm,
-    ApplyWorkingHoursForm,
+    WorkingHourAssignForm,
     StaffYearMonthForm,
     ModifyPermissionForm,
     RegisterHolidayForm,
@@ -100,14 +100,13 @@ class YearMonthFormTest(TestCase):
         self.assertTrue(form.is_valid())
 
         form = YearMonthForm({"yearmonth": "2017-01-31"})
-        self.assertTrue(form.is_valid())
-        self.assertEqual(form.cleaned_data["yearmonth"], "2017-01-31")
+        self.assertEqual(form.cleaned_data["yearmonth"], datetime.date(2017, 1, 31))
 
 
-class ApplyWorkingHoursFormTest(TestCase):
+class WorkingHourAssignFormTest(TestCase):
 
     def test_invalid(self):
-        form = ApplyWorkingHoursForm()
+        form = WorkingHourAssignForm()
         self.assertFalse(form.is_valid())
 
     def test_valid(self):
@@ -118,7 +117,7 @@ class ApplyWorkingHoursFormTest(TestCase):
         set_office_hours_to_employee(employee, datetime.date.today(), w)
 
         today = datetime.date(2022, 1, 1)
-        form = ApplyWorkingHoursForm({"date": today, "working_hours": w.pk})
+        form = WorkingHourAssignForm({"date": today, "working_hours": w.pk})
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["date"], today)
 

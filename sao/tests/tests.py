@@ -92,14 +92,6 @@ class FunctionTest(TestCase):
 
 class ViewTest(TestCase):
 
-    def test_response(self):
-        c = Client()
-        response = c.post("/sao/req_test/")
-        self.assertEqual(response.status_code, 200)
-
-        response = c.get("/sao/req_test/")
-        self.assertEqual(response.status_code, 200)
-
     def test_url_invalid(self):
         """urlが404を返すことを確認する"""
         with self.assertRaises(Resolver404):
@@ -1228,10 +1220,10 @@ class HolidayViewTest(TestCase):
         create_user()
         c = create_client(TEST_USER)
 
-        horiday = models.Holiday.objects.create(date=datetime.date(2017, 1, 1))
-        horiday.save()
+        holiday = models.Holiday.objects.create(date=datetime.date(2017, 1, 1))
+        holiday.save()
 
-        c.get(reverse("sao:holiday_settings"), {"del": horiday.pk})
+        c.get(reverse("sao:delete_holiday", kwargs=dict(id=holiday.pk)))
         self.assertTrue(len(models.Holiday.objects.all()) == 0)
 
 

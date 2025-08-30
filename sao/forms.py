@@ -6,7 +6,7 @@ from .models import Employee, EmployeeHour, Holiday, TimeRecord, WorkingHour
 from .working_status import WorkingStatus
 
 
-class ApplyWorkingHoursForm(forms.ModelForm):
+class WorkingHourAssignForm(forms.ModelForm):
     """勤務時間を適用するフォーム"""
 
     class Meta:
