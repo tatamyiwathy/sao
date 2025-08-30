@@ -29,49 +29,46 @@
                 <div class="card-body">
                     <p class="card-text">「国民の祝日」以外の会社公式の休日を設定します</p>
                     {% if form.message %}
-                        <div class="alert alert-danger" role="alert">
-                            {{form.message}}
-                        </div>
+                    <div class="alert alert-danger" role="alert">
+                        {{form.message}}
+                    </div>
                     {% endif %}
 
                     <form class="form" method='POST' action={% url 'sao:holiday_settings' %}>
-    <div class="d-flex align-items-center mt-3 gap-2">
+                        <div class="d-flex align-items-center mt-3 gap-2">
                             {% csrf_token %}
                             <label for="id_date" class="form-label mb-0 me-2">日付</label>
                             {{ form.date|add_class:"form-control-sm w-auto" }}
                             <button class="btn btn-primary" type="submit">追加</button>
                         </div>
                     </form>
-
                 </div>
-
-
             </div>
 
 
             <hr>
             {% if holidays %}
-                <table class="table table-striped mt-3">
-                    <thead>
-                        <tr>
-                            <th>公休日</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for h in holidays %}
-                        <tr>
-                            <td>{{h.holiday}}</td>
-                            <td>
-                                <a onclick="jump(this); return false;" class="btn btn-sm btn-danger"
-                                    href="{% url 'sao:holiday_settings' %}?del={{h.id}}">削除</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <table class="table table-striped mt-3">
+                <thead>
+                    <tr>
+                        <th>公休日</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in holidays %}
+                    <tr>
+                        <td>{{h.holiday}}</td>
+                        <td>
+                            <a onclick="jump(this); return false;" class="btn btn-sm btn-danger"
+                                href="{% url 'sao:holiday_settings' %}?del={{h.id}}">削除</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
             {% else %}
-                <div class="text-muted">休日は設定されていません</div>
+            <div class="text-muted">休日は設定されていません</div>
             {% endif %}
 
         </div>
