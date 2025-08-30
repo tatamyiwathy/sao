@@ -24,7 +24,7 @@ function submit()
 	var filter_diactive = document.getElementById("id_filter_deactive").checked
     var form = document.getElementById("yearmonthform");
 
-	var url = "{% url 'sao:overview' %}"
+	var url = "{% url 'sao:attendance_summary' %}"
 	if(filter_diactive)
 	{
 		url = url + "\?f_deactive&"

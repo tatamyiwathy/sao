@@ -572,7 +572,7 @@ class OverviewTest(TestCase):
         stamp = [datetime.time(hour=10), datetime.time(hour=20)]
         create_timerecord(employee=self.employee, date=a_day, stamp=stamp)
         result = self.client.get(
-            reverse("sao:overview"), {"year": a_day.year, "month": 1}
+            reverse("sao:attendance_summary"), {"year": a_day.year, "month": 1}
         )
         self.assertTrue(result.status_code, 200)
 

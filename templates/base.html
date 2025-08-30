@@ -68,7 +68,7 @@
 
 					{% if user.is_staff or user.permission.enable_view_temporary_staff_record or user.permission.enable_view_dev_staff_record%}
 					<li class="nav-item">
-						<a class="nav-link" href={% url 'sao:overview' %}>勤務実績一覧</a>
+						<a class="nav-link" href={% url 'sao:attendance_summary' %}>勤務実績一覧</a>
 					</li>
 					{% endif %} 
 

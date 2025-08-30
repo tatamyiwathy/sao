@@ -23,7 +23,7 @@ urlpatterns = [
         views.modify_record,
         name="modify_record",
     ),
-    path("overview/", views.attendance_summary, name="overview"),
+    path("attendance_summary/", views.attendance_summary, name="attendance_summary"),
 
     # 雇用者管理
     path("employee/", views.employee_list, name="employee_list"),
