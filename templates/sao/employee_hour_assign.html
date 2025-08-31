@@ -21,8 +21,8 @@
 		<div class="col"></div>
 
 		<div class="col col-lg-6">
-			<div class="col page-header">
-				<h4>勤務時間設定の追加と削除</h4>
+			<div class="col page-header text-center">
+				<h4>勤務時間の割り当て</h4>
 			</div>
 
 			{% if messages %}
@@ -96,7 +96,10 @@
 						{% csrf_token %}
 
 						{{form.as_p}}
-						<button class="btn btn-primary" type='submit'>追加</button>
+                        <div class="d-grid gap-2">
+							<button class="btn btn-primary" type='submit'>割り当て</button>
+							<a href="{% url 'sao:employee_list' %}" class="btn btn-secondary">キャンセル</a>
+						</div>
 						<input type='hidden' name='id' value='{{id}}' />
 						<input type='hidden' name='employee_no' value='{{employee.employee_no}}' />
 					</form>

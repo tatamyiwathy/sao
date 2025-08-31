@@ -330,7 +330,7 @@ def employee_hour_view(request, employee_no):
 
     return render(
         request,
-        "sao/office_hours_list.html",
+        "sao/employee_hour_assign.html",
         {
             "employee": employee,
             "office_hours": employee_hours,
