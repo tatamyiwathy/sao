@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+
+{% block content%}
+
+<div class="container">
+
+	<div class="row justify-content-center mt-5">
+		<div class="col-md-6">
+
+			<div class="card">
+				<div class="card-header">
+					<h4 class="card-title text-center">退社処理</h4>
+				</div>
+				<div class="card-body">
+					<div class="alert alert-info">
+						社員を退社扱いにします。<br>
+					</div>
+
+					{% if messages %}
+						{% for message in messages %}
+						<div class="alert alert-{{message.tags}}" role="alert">
+							{{ message }}
+						</div>
+						{% endfor %}
+					{% endif %}
+
+					{% for error in form.non_field_errors %}
+					<div class="alert alert-danger">
+						{{ error }}
+					</div>
+					{% endfor %}
+
+					<form class="form" method="post" action="{% url 'sao:leave_from_company' employee.employee_no %}">
+						{% csrf_token %}
+
+
+						{% for field in form %}
+						<label class="form-label" for="{{ field.id_for_label }}">
+							{{ field.label }}
+						</label>
+						{% render_field field class="form-control" %}
+						{% if field.errors %}
+						<div class="text-danger small">
+							{% for error in field.errors %}
+							{{ error }}
+							{% endfor %}
+						</div>
+						{% endif %}
+						{% endfor %}
+						<div class="d-grid">
+							<button class="btn btn-primary" type="submit"
+								{% if leaved %}
+						        onclick="return confirm('{{employee}}は{{employee.leave_date}}に退社しています。変更しますか？');"
+								{% endif %}
+							>
+								退社処理する
+							</button>
+							{% if leaved %}
+							<a href="" class="btn btn-secondary mt-2">退社を取り消す</a>
+							{% endif %}
+							<a href="{% url 'sao:employee_list' %}" class="btn btn-secondary mt-2">社員一覧に戻る</a>
+						</div>
+					</form>
+				</div>
+
+			</div>
+		</div>
+
+	</div>
+</div>
+{% endblock %}
+
+{% block footer %}
+{% endblock %}

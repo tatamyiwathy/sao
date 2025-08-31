@@ -715,24 +715,33 @@ def add_employee(request):
 
 def leave_from_company(request, employee_no):
     """退社処理"""
+    employee = get_object_or_404(models.Employee, employee_no=employee_no)
     form = forms.LeaveFromCompanyForm(request.POST or None)
-    if form.is_valid():
-        employee = get_object_or_404(models.Employee, employee_no=employee_no)
-        # 退社日を設定する
-        employee.leave_date = request.POST["leave_date"]
-        employee.save()
-        # アカウントはアクティブのまま（リストには残したい）
-        # user = employee.user
-        # user.is_active = False
-        # user.save()
-        logger.info(
-            "%sが%sを%sに退職するように処理した"
-            % (request.user, employee, employee.leave_date)
-        )
-        return redirect("sao:employee_list")
-    
-    form = forms.LeaveFromCompanyForm()
-    return render(request, "sao/leave.html", {"form": form, "employee": employee})
+    if request.method == "POST":
+        if form.is_valid():
+            leave_date = form.cleaned_data["leave_date"]
+            # 退社日を設定する
+            employee.leave_date = leave_date
+            employee.save()
+            # アカウントはアクティブのまま（リストには残したい）
+            # user = employee.user
+            # user.is_active = False
+            # user.save()
+            logger.info(
+                "%sが%sを%sに退職するように処理した"
+                % (request.user, employee, employee.leave_date)
+            )
+            messages.success(request, f"{employee}を{leave_date}付で退職にしました")
+            return redirect("sao:employee_list")
+
+    if employee.leave_date < datetime.date(2099,12,31):
+        if employee.leave_date < datetime.date.today():
+            messages.info(request, f"{employee}は{employee.leave_date}に退社しています")
+        else:
+            messages.info(request, f"{employee}は{employee.leave_date}に退社予定です")
+    return render(request, "sao/leave_from_company.html", {
+        "form": form, "employee": employee, "leaved": employee.leave_date < datetime.date(2099,12,31)
+    })
 
 
 @login_required

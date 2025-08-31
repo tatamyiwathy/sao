@@ -255,9 +255,20 @@ class LeaveFromCompanyForm(forms.Form):
 
     leave_date = forms.DateField(
         label="退社日",
-        widget=forms.TextInput(attrs={"class": "datepicker-future form-control"}),
+        widget=forms.TextInput(attrs={
+            "type": "date", 
+            "class": "datepicker-future form-control"}),
         initial=datetime.date.today(),
     )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        leave_date = cleaned_data.get("leave_date")
+
+        if leave_date and leave_date < datetime.date.today():
+            self.add_error("leave_date", "退社日は今日以降の日付を指定してください。")
+
+        return cleaned_data
 
 
 class ModifyPermissionForm(forms.Form):
