@@ -313,23 +313,21 @@ def employee_hour_view(request, employee_no):
         form = forms.WorkingHourAssignForm(request.POST, instance=employee_hour)
         if form.is_valid():
             date = form.cleaned_data["date"]
-            if 0 == len(
-                models.EmployeeHour.objects.filter(employee=employee)
-                .filter(date=date)
-            ):
+            if date < employee.join_date:
+                messages.error(request, "入社日以前の日付は設定できません")
+            elif not models.EmployeeHour.objects.filter(employee=employee, date=date).exists():
                 form.save()
                 logger.info("%sが%sを追加した" % (request.user, employee_hour))
-                # return redirect("sao:employee_list")
             else:
                 messages.error(request, "すでに設定されています")
-
     else:
         form = forms.WorkingHourAssignForm(
             instance=employee, initial={"date": datetime.date.today()}
         )
     employee_hours = models.EmployeeHour.objects.filter(
         employee=employee
-    ).order_by("-date")
+    ).filter(date__gte=datetime.date.today()).order_by("-date")
+
     return render(
         request,
         "sao/office_hours_list.html",
@@ -337,6 +335,7 @@ def employee_hour_view(request, employee_no):
             "employee": employee,
             "office_hours": employee_hours,
             "form": form,
+            "today": datetime.date.today()
         },
     )
 
