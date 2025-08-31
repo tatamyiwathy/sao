@@ -23,7 +23,6 @@
 		<div class="col col-lg-6">
 			<div class="col page-header">
 				<h4>勤務時間設定の追加と削除</h4>
-				<h5>{{employee.name}} (社員番号: {{employee.employee_no}} )</h5>
 			</div>
 
 			{% if messages %}
@@ -39,6 +38,10 @@
 				</div>
 				<div class="card-body">
 
+					<div class="alert alert-info">
+						{{employee.name}} (管理番号: {{employee.employee_no}} )に割り当てられている勤務時間です<br>
+						ℹ️「予定」の勤務時間は削除できます
+					</div>
 					{% if office_hours|length <= 0 %}
 					勤務時間が設定されていません
 					{% else %}
@@ -62,15 +65,17 @@
 
 							<td class="{% if oh.date > today %}table-danger{% endif %}">
 								{{oh.date}}
-								{% if oh.date > today %}（まだ適用日前です）{% endif %}
+								{% if oh.date > today %}（予定）{% endif %}
 							</td>
 
 							<td>
+								{% if oh.date > today %}
 								<a id="link" href="{% url 'sao:del_employee_hour' oh.id %}"
-									{% if oh.date > today %}
-									onclick="delete_office_hours(this); return false;">削除
-									{% endif %}
+									onclick="delete_office_hours(this); return false;"
+									title="勤務時間設定を削除">
+									<i class="oi oi-trash"></i>
 								</a>
+								{% endif %}
 							</td>
 						</tr>
 						{% endfor %}
@@ -80,7 +85,12 @@
 			</div>
 
 			<div class="card mt-3">
-				<div class="card-header">勤務時間の設定を新規追加する</div>
+				<div class="card-header">勤務時間の割り当て</div>
+				<div class="alert alert-info m-3">
+					{{employee.name}} (管理番号: {{employee.employee_no}} )に勤務時間を割り当てます。<br>
+					ℹ️入社日以前の日付は設定できません。<br>
+					ℹ️すでに設定されている日付は再度設定できません。
+				</div>
 				<div class="card-body">
 					<form class="form" method='POST' action="{% url 'sao:employee_hour_view' employee.employee_no %}">
 						{% csrf_token %}
