@@ -57,10 +57,14 @@
 							>
 								退社処理する
 							</button>
+
 							{% if leaved %}
-							<a href="" class="btn btn-secondary mt-2">退社を取り消す</a>
+							<a href="{% url 'sao:cancel_leave_from_company' employee.employee_no %}" class="btn btn-secondary mt-2">退社を取り消す</a>
 							{% endif %}
-							<a href="{% url 'sao:employee_list' %}" class="btn btn-secondary mt-2">雇用者一覧に戻る</a>
+
+							<a href="{% url 'sao:employee_list' %}" class="btn btn-secondary mt-2">
+								雇用者一覧に戻る
+							</a>
 						</div>
 					</form>
 				</div>

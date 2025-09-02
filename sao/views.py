@@ -743,6 +743,14 @@ def leave_from_company(request, employee_no):
         "form": form, "employee": employee, "leaved": employee.leave_date < datetime.date(2099,12,31)
     })
 
+@login_required
+def cancel_leave_from_company(request, employee_no):
+    employee = get_object_or_404(models.Employee, employee_no=employee_no)
+    employee.leave_date = datetime.date(2099, 12, 31)
+    employee.save()
+    messages.success(request, f"{employee}の退社予定をキャンセルしました")
+    return redirect("sao:employee_list")
+
 
 @login_required
 def attendance_summary(request):

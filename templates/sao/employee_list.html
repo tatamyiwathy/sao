@@ -32,6 +32,13 @@
 
     <div class="row mt-3">
         <div class="col-md-6">
+            <div class="alert-info">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-info">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
             <table class="table table-bordered table-sm mb-0">
                 <thead class="table-light">
                     <tr>
