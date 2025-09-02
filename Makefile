@@ -14,7 +14,7 @@ export SAO_DB_USER
 export SAO_DB_PASSWORD
 
 
-.PHONY: build dn deploy deploy-bg shell log ps clean debug-db run-db stop-db db-shell \
+.PHONY: build dn deploy deploy-bg shell log ps clean clean-db debug-db run-db stop-db db-shell \
 		test test-with-db test-verbose test-coverage test-app test-file \
 		coverage-report coverage-html clean-test clean-coverage generate-db-init \
 		makemigrations migrate help run-web stop-web restart-web \
@@ -46,6 +46,10 @@ clean:
 	-docker image prune -f
 	-docker builder prune -f
 	-docker network prune -f
+
+clean-db:
+	-docker compose ${DKC_OPT} down db
+	-docker volume rm sao_postgres_data
 
 # Webサービスの起動（データベース依存関係付き）
 run-web: run-db
