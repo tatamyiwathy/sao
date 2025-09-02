@@ -16,6 +16,8 @@ from .core import (
     get_employee_hour,
     get_working_hours_tobe_assign,
     NoAssignedWorkingHourError,
+    get_day_switch_time,
+    normalize_to_business_day,
 )
 from .const import Const
 from .attendance import Attendance
@@ -186,7 +188,7 @@ def home(request):
         )
 
     # 今日の出退勤時刻を取得する
-    today = utils.get_today()
+    today = core.get_today()
 
     # 設定された勤務時間を取得する
     try:
@@ -828,17 +830,15 @@ def attendance_summary(request):
 def time_clock(request):
     """■打刻"""
     employee = models.Employee.objects.get(user=request.user)
-    stamp = datetime.datetime(*datetime.datetime.now().timetuple()[:6])
+    stamp = datetime.datetime.now().replace(microsecond=0)
     if request.method == "POST":
         models.WebTimeStamp(employee=employee, stamp=stamp).save()
 
-    start = datetime.datetime(stamp.year, stamp.month, stamp.day, 5, 0, 0)
-    if stamp.hour < 5:
-        # 日を跨いでる
-        start = stamp - datetime.timedelta(days=1)
-        start = datetime.datetime(start.year, start.month, start.day, 5, 0, 0)
+
+    day_switch_time = get_day_switch_time()
+    business_day = normalize_to_business_day(stamp)
     stamps = models.WebTimeStamp.objects.filter(
-        employee=employee, stamp__gte=start
+        employee=employee, stamp__gte=datetime.datetime.combine(business_day.date(), day_switch_time)
     ).order_by("-stamp")
     return render(
         request, "sao/time_clock.html", {"employee": employee, "stamps": stamps}

@@ -587,6 +587,25 @@ class StampTest(TestCase):
         self.assertEqual(r.status_code, 200)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class PermissionTest(TestCase):
     def setUp(self):
         self.user = create_user()

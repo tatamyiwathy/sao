@@ -10,6 +10,7 @@ from .models import (
     SteppingOut,
     EmployeeHour,
     WorkingHour,
+    DaySwitchTime
 )
 from .attendance import Attendance
 from .working_status import WorkingStatus
@@ -701,11 +702,29 @@ def get_working_hours_tobe_assign(employee: Employee) -> EmployeeHour:
         return employee_hours[0]
     raise ValueError("no specified working hour for %s" % employee.name)
 
+def get_day_switch_time() -> datetime.time:
+    """
+    勤怠システムでの「日付変更時刻」を取得する
+    ない
+    """
+    if not DaySwitchTime.objects.exists():
+        # 存在しない場合はAM5:00に設定する
+        DaySwitchTime.objects.create(switch_time=datetime.time(5, 0, 0))
+
+    return DaySwitchTime.objects.first().switch_time
+
 def get_today() -> datetime.date:
     # 勤怠システムでは１日はAM5:00-翌AM4:59までとする
     # なので、もし日をまたいだAM0:00-AM4:59の間は前日の日付を返す
-    today = datetime.date.today()
-    if datetime.datetime.now().hour < 5:
-        # 日を跨いでる
-        today = (datetime.datetime.now() - datetime.timedelta(days=1)).date()
-    return today
+    now = datetime.datetime.now()
+    return normalize_to_business_day(now).date()
+
+def normalize_to_business_day(day: datetime.datetime) -> datetime.datetime:
+    """日付をビジネスデーに正規化する"""
+    day_switch_time = get_day_switch_time()
+    if day.time() < day_switch_time:
+        # dayは日を跨いでる
+        t = day.time()
+        d = (day - datetime.timedelta(days=1)).date()
+        day = datetime.datetime.combine(d, t)
+    return day
