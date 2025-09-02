@@ -100,6 +100,7 @@ class YearMonthFormTest(TestCase):
         self.assertTrue(form.is_valid())
 
         form = YearMonthForm({"yearmonth": "2017-01-31"})
+        self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["yearmonth"], datetime.date(2017, 1, 31))
 
 
