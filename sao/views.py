@@ -1281,3 +1281,39 @@ def update_working_hours(request, id):
                 for error in errors:
                     messages.error(request, f'{field}: {error}')
     return redirect('sao:working_hours_view')
+
+@login_required
+def day_switch_time_view(request):
+
+    # DaySwitchTimeは1件しか存在しないので、なければ作成する
+    if not models.DaySwitchTime.objects.exists():
+        models.DaySwitchTime.objects.create(
+            switch_time = datetime.time(hour=5, minute=0)
+        )
+
+    return render(
+        request,
+        "sao/day_switch_time_view.html",
+        {
+            'day_switch_time': models.DaySwitchTime.objects.all()[0],
+        },
+    )
+
+def day_switch_time_edit(request, id):
+
+    day_switch_time = get_object_or_404(models.DaySwitchTime, id=id)
+    form = forms.DaySwitchTimeForm(request.POST or None, instance=day_switch_time)
+    if request.method == "POST":
+        if form.is_valid():
+            day_switch_time = form.save()
+            messages.success(request, f'日付切り替え時間を「{day_switch_time.switch_time}」に変更しました。')
+            logger.info(f'日付切り替え時間を「{day_switch_time.switch_time}」に変更しました。')
+            return redirect('sao:day_switch_time_view')
+
+    return render(
+        request,
+        "sao/day_switch_time_edit.html",
+        {
+            'form': form,
+        },
+    )

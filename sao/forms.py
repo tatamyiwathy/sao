@@ -2,7 +2,7 @@ import re
 import datetime
 from django import forms
 from django.core.exceptions import ObjectDoesNotExist
-from .models import Employee, EmployeeHour, Holiday, TimeRecord, WorkingHour
+from .models import Employee, EmployeeHour, Holiday, TimeRecord, WorkingHour, DaySwitchTime
 from .working_status import WorkingStatus
 
 
@@ -374,4 +374,14 @@ class WorkingHourForm(forms.ModelForm):
             raise forms.ValidationError('出社時間は退社時間より前である必要があります。')
 
         return cleaned_data
-    
+
+class DaySwitchTimeForm(forms.ModelForm):
+    class Meta:
+        model = DaySwitchTime
+        fields = ['switch_time']
+        widgets = {
+            'switch_time': forms.TimeInput(attrs={
+                'type': 'time',
+                'class': 'form-control'
+            })
+        }

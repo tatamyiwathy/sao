@@ -77,7 +77,14 @@
 						<a class="nav-link" href={% url 'sao:employee_record' %}>打刻データ修正</a>
 					</li>
 					{% endif %}
-				</ul>
+
+					{% if user.is_staff %}
+					<li class="nav-item">
+						<a class="nav-link" href={% url 'sao:day_switch_time_view' %}>日付切り替え時間</a>
+					</li>
+					{% endif %}
+
+                </ul>
 
 
 				<ul class="nav navbar-nav ms-auto">

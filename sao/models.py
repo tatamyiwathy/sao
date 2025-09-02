@@ -391,6 +391,12 @@ class SteppingOut(models.Model):
     return_time = models.DateTimeField(blank=True, null=True)
 
 
+class DaySwitchTime(models.Model):
+    """日付切替時間"""
+
+    switch_time = models.TimeField(blank=True, null=True)
+
+
 class EmployeeAdmin(admin.ModelAdmin):
     """管理サイト"""
 
