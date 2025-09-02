@@ -700,3 +700,12 @@ def get_working_hours_tobe_assign(employee: Employee) -> EmployeeHour:
     if employee_hours:
         return employee_hours[0]
     raise ValueError("no specified working hour for %s" % employee.name)
+
+def get_today() -> datetime.date:
+    # 勤怠システムでは１日はAM5:00-翌AM4:59までとする
+    # なので、もし日をまたいだAM0:00-AM4:59の間は前日の日付を返す
+    today = datetime.date.today()
+    if datetime.datetime.now().hour < 5:
+        # 日を跨いでる
+        today = (datetime.datetime.now() - datetime.timedelta(days=1)).date()
+    return today
