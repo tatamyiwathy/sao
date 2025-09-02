@@ -10,7 +10,7 @@ if [ -z "${DJANGO_SUPERUSER_PASSWORD}" ]; then
     exit 1
 fi
 
-if python /app/is-superuser.py; then
+if python manage.py is_exits_superuser; then
     echo "✅ Superuser already exists. Skipping creation."
 else
     echo "🔨 Creating superuser..."
