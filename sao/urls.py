@@ -83,4 +83,6 @@ urlpatterns = [
     path("working_hours/add", views.add_working_hours, name="add_working_hours"),
     path("working_hours/<int:id>/delete/", views.del_working_hours, name="del_working_hours"),
     path("working_hours/<int:id>/update/", views.update_working_hours, name="edit_working_hours"),
+    path("day_switch_time_view/", views.day_switch_time_view, name="day_switch_time_view"),
+    path("day_switch_time_edit/<int:id>/", views.day_switch_time_edit, name="day_switch_time_edit"),
 ]

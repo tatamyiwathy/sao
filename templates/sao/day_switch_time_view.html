@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4 class="mb-0">日付切り替え時間</h4>
+                </div>
+                <div class="card-body text-center">
+                    <div class="alert alert-info">
+                        <p class="mb-0">この時刻以前の打刻は前日扱いとなります。</p>
+                    </div>
+                    <p class="fs-5 mb-2">
+                        <span class="text-muted">現在の設定時間</span><br>
+                        <span class="fw-bold display-6">{{ day_switch_time.switch_time }}</span>
+                    </p>
+                    <a href="{% url 'sao:day_switch_time_edit' day_switch_time.id %}" class="btn btn-outline-primary btn-lg mt-3">
+                        変更する
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
