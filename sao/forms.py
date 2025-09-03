@@ -2,7 +2,7 @@ import re
 import datetime
 from django import forms
 from django.core.exceptions import ObjectDoesNotExist
-from .models import Employee, EmployeeHour, Holiday, TimeRecord, WorkingHour, DaySwitchTime
+from .models import Employee, EmployeeHour, Holiday, EmployeeDailyRecord, WorkingHour, DaySwitchTime
 from .working_status import WorkingStatus
 
 
@@ -87,7 +87,7 @@ class ModifyRecordForm(forms.ModelForm):
     """勤怠記録修正フォーム"""
 
     class Meta:
-        model = TimeRecord
+        model = EmployeeDailyRecord
         fields = [
             "clock_in",
             "clock_out",

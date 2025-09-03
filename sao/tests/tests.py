@@ -87,7 +87,7 @@ class FunctionTest(TestCase):
         stamp = [datetime.time(hour=10), datetime.time(hour=20)]
         r = create_timerecord(employee=e, date=a_day, stamp=stamp)
         self.assertTrue(r.is_valid())
-        self.assertEqual(r, models.TimeRecord.objects.all()[0])
+        self.assertEqual(r, models.EmployeeDailyRecord.objects.all()[0])
 
 
 class ViewTest(TestCase):
@@ -205,14 +205,14 @@ class TimeRecordTest(TestCase):
     def test_instanciate(self):
         fromTime = datetime.datetime.now()
         toTime = datetime.datetime.now()
-        models.TimeRecord(
+        models.EmployeeDailyRecord(
             date=datetime.date.today(),
             employee=self.employee,
             clock_in=fromTime,
             clock_out=toTime,
         ).save()
 
-        timerecords = models.TimeRecord.objects.all()
+        timerecords = models.EmployeeDailyRecord.objects.all()
         self.assertEqual(timerecords.count(), 1)
 
     def test_status(self):
@@ -252,7 +252,7 @@ class TimeRecordTest(TestCase):
         for scenario in scenarios:
             fromTime = scenario[0]
             toTime = scenario[1]
-            timerecord = models.TimeRecord(
+            timerecord = models.EmployeeDailyRecord(
                 date=fromTime.date(),
                 employee=self.employee,
                 clock_in=fromTime,
@@ -282,7 +282,7 @@ class TimeRecordTest(TestCase):
         for scenario in scenarios:
             fromTime = datetime.datetime.combine(scenario[0], scenario[1])
             toTime = datetime.datetime.combine(scenario[0], scenario[2])
-            timerecord = models.TimeRecord(
+            timerecord = models.EmployeeDailyRecord(
                 date=scenario[0],
                 employee=self.employee,
                 clock_in=fromTime,
@@ -294,7 +294,7 @@ class TimeRecordTest(TestCase):
     def test_omit_seconds(self):
         fromTime = datetime.datetime(2021, 9, 27, 15, 39, 21)
         toTime = datetime.datetime(2021, 9, 27, 15, 42, 30)
-        timerecord = models.TimeRecord(
+        timerecord = models.EmployeeDailyRecord(
             date=datetime.date(2021, 9, 27),
             employee=self.employee,
             clock_in=fromTime,
@@ -365,7 +365,7 @@ class HomeTest(TestCase):
         self.assertFalse(calendar.is_workday(datetime.date(2021, 8, 9)))
 
     def test_time_record(self):
-        query = models.TimeRecord.objects.all()
+        query = models.EmployeeDailyRecord.objects.all()
         self.assertTrue(len(query) > 0)
         # for record in query:
         #     print(record.fromTime)
@@ -468,7 +468,7 @@ class ModifyRecordTest(TestCase):
         self.assertRedirects(resp, reverse("sao:employee_record"))
 
         # DBから欠勤データを取得する
-        r = models.TimeRecord.objects.get(date=date)
+        r = models.EmployeeDailyRecord.objects.get(date=date)
         self.assertEqual(r.status, WorkingStatus.C_KEKKIN)
         self.assertNotEqual(r.clock_in, None)  # 打刻はそのまま残る
         self.assertNotEqual(r.clock_out, None)
