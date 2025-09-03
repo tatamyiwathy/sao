@@ -16,12 +16,16 @@ def get_today_stamp(employee: Employee, date: datetime.date):
 
     if stamps.count() == 0:
         return ("--:--:--", "--:--:--")
-    if stamps.first() is not None:
-        fromTime = stamps.first().stamp.strftime("%H:%M")
-    if stamps.last() is not None:
-        toTime = stamps.last().stamp.strftime("%H:%M")
-        if fromTime == toTime:
-            toTime = "--:--:--"
+    first_stamp = stamps.first()
+    last_stamp = stamps.last()
+    if first_stamp is not None and getattr(first_stamp, 'stamp', None) is not None:
+        if first_stamp.stamp is not None:
+            fromTime = first_stamp.stamp.strftime("%H:%M")
+    if last_stamp is not None and getattr(last_stamp, 'stamp', None) is not None:
+        if last_stamp.stamp is not None:
+            toTime = last_stamp.stamp.strftime("%H:%M")
+            if fromTime == toTime:
+                toTime = "--:--:--"
     return (fromTime, toTime)
 
 
