@@ -8,31 +8,6 @@ from django.dispatch import receiver
 from . import calendar
 from .working_status import WorkingStatus
 
-
-def parse_datetime(datetime_string: str) -> datetime.datetime:
-    if datetime_string is None or datetime_string == "":
-        raise ValueError("can not parse datetime_string")
-    datetime_string = datetime_string.replace('"', "")
-    if datetime_string == "":
-        raise ValueError("can not parse datetime_string")
-
-    datetime_string = (
-        datetime_string.replace('"', " ")
-        .replace("(", " ")
-        .replace(")", " ")
-        .replace(",", " ")
-        .replace("'", " ")
-        .replace("/", "-")
-        .strip()
-    )
-    if "." in datetime_string:
-        (usefull, useless) = datetime_string.split(".")
-    else:
-        usefull = datetime_string
-
-    return datetime.datetime.strptime(usefull, "%Y-%m-%d %H:%M:%S")
-
-
 class Employee(models.Model):
     """社員クラス"""
 
