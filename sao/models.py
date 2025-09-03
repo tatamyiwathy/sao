@@ -155,7 +155,7 @@ class WorkingHour(models.Model):
         return self.begin_time < self.end_time
 
 
-class TimeRecord(models.Model):
+class EmployeeDailyRecord(models.Model):
     """就業実績クラス"""
 
     employee = models.ForeignKey("Employee", on_delete=models.CASCADE)
@@ -476,7 +476,7 @@ class SteppingOutAdmin(admin.ModelAdmin):
 
 admin.site.register(Employee, EmployeeAdmin)
 admin.site.register(WorkingHour, WorkingHourAdmin)
-admin.site.register(TimeRecord, TimeRecordAdmin)
+admin.site.register(EmployeeDailyRecord, TimeRecordAdmin)
 admin.site.register(EmployeeHour, EmployeeHourAdmin)
 admin.site.register(Notification, NotificationAdmin)
 admin.site.register(Manager, ManagerAdmin)
