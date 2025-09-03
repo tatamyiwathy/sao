@@ -1,6 +1,6 @@
 from datetime import date, time, datetime, timedelta
 from django.test import TestCase
-from sao_proj.test_utils import create_user, create_employee
+from common.utils_for_test import create_user, create_employee
 from ..models import EmployeeDailyRecord, SteppingOut
 from .utils import (
     create_working_hours,

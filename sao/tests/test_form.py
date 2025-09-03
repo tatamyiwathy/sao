@@ -11,7 +11,7 @@ from sao.forms import (
 )
 from sao.models import Employee, Holiday
 from sao.working_status import WorkingStatus
-from sao_proj.test_utils import create_employee, create_user
+from common.utils_for_test import create_employee, create_user
 from sao.tests.utils import create_working_hours, set_office_hours_to_employee
 from sao.core import get_working_hours_by_category
 

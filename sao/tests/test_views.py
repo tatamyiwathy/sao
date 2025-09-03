@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from sao import models, utils
 import datetime
-from sao_proj.test_utils import (
+from common.utils_for_test import (
     TEST_ADMIN_USER,
     TEST_USER,
     create_client,

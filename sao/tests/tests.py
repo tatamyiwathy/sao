@@ -7,7 +7,7 @@ from django.db.utils import IntegrityError
 from django.test import TestCase, TransactionTestCase
 from django.test.client import Client
 from django.urls import Resolver404, resolve, reverse
-from sao_proj.test_utils import (
+from common.utils_for_test import (
     TEST_ADMIN_USER,
     TEST_USER,
     create_client,
