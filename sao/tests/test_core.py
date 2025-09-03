@@ -8,11 +8,10 @@ from .utils import (
     create_time_stamp_data,
     TOTAL_ACTUAL_WORKING_TIME,
 )
+from .. import attendance
 from ..core import (
     adjust_working_hours,
     get_assumed_working_time,
-    tally_monthly_attendance,
-    sumup_attendances,
     round_down,
     round_stamp,
     round_result,
@@ -70,7 +69,7 @@ class TallyMonthAttendancesTest(TestCase):
         self.assertEqual(len(records), monthdays(self.day))
 
         # 勤怠記録を集計
-        results = tally_monthly_attendance(self.day.month, records)
+        results = attendance.tally_monthly_attendance(self.day.month, records)
         self.assertEqual(len(results), monthdays(self.day))
 
         # self.assertEqual(results[5].date, date(2021, 9, 6))
@@ -86,7 +85,7 @@ class TallyMonthAttendancesTest(TestCase):
         records = collect_timerecord_by_month(self.emp, self.day)
         self.assertEqual(len(records), monthdays(self.day))
 
-        results = tally_monthly_attendance(self.day.month, records)
+        results = attendance.tally_monthly_attendance(self.day.month, records)
         self.assertEqual(len(results), monthdays(self.day))
 
 
@@ -129,8 +128,8 @@ class TestSumupAttendances(TestCase):
         set_office_hours_to_employee(
             employee, date(1901, 1, 1), get_working_hours_by_category("A")
         )
-        attendances = tally_monthly_attendance(8, EmployeeDailyRecord.objects.all())
-        summed_up = sumup_attendances(attendances)
+        attendances = attendance.tally_monthly_attendance(8, EmployeeDailyRecord.objects.all())
+        summed_up = attendance.sumup_attendances(attendances)
         self.assertEqual(summed_up["work"], TOTAL_ACTUAL_WORKING_TIME)
         self.assertEqual(summed_up["late"], Const.TD_3H)  # 遅刻
         self.assertEqual(summed_up["before"], timedelta(minutes=24))  # 早退
@@ -170,8 +169,8 @@ class TestRoundResult(TestCase):
         set_office_hours_to_employee(
             employee, date(1901, 1, 1), get_working_hours_by_category("A")
         )
-        attendances = tally_monthly_attendance(8, EmployeeDailyRecord.objects.all())
-        summed_up = sumup_attendances(attendances)
+        attendances = attendance.tally_monthly_attendance(8, EmployeeDailyRecord.objects.all())
+        summed_up = attendance.sumup_attendances(attendances)
         rounded_result = round_result(summed_up)
         self.assertEqual(
             rounded_result["work"], timedelta(seconds=6 * 24 * 3600 + 90 * 60)
