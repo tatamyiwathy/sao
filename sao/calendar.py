@@ -65,6 +65,7 @@ def is_workday(date: datetime.date) -> bool:
         return False
 
     if date.weekday() >= 5:
+        # 土日チェック
         return False
 
     if is_local_holiday(date):
