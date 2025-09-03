@@ -1,6 +1,6 @@
 from datetime import date, time, datetime, timedelta
 from django.test import TestCase
-from sao_proj.test_utils import create_user, create_employee
+from common.utils_for_test import create_user, create_employee
 from ..models import EmployeeDailyRecord, SteppingOut
 from .utils import (
     create_working_hours,
@@ -8,12 +8,10 @@ from .utils import (
     create_time_stamp_data,
     TOTAL_ACTUAL_WORKING_TIME,
 )
+from .. import attendance
 from ..core import (
     adjust_working_hours,
     get_assumed_working_time,
-    eval_record,
-    tally_monthly_attendance,
-    sumup_attendances,
     round_down,
     round_stamp,
     round_result,
@@ -27,7 +25,6 @@ from ..core import (
     calc_midnight_work,
     calc_legal_holiday,
     calc_holiday,
-    count_days,
     accumulate_weekly_working_hours,
     is_permit_overtime,
     get_half_year_day,
@@ -39,10 +36,17 @@ from ..core import (
     get_working_hours_by_category,
     get_working_hours_tobe_assign,
     calc_actual_working_time,
+    get_day_switch_time,
+    normalize_to_business_day,
 )
 from ..const import Const
 from ..calendar import monthdays, is_holiday
 from ..working_status import WorkingStatus
+from ..models import DaySwitchTime
+from unittest.mock import patch
+from datetime import datetime, date, time
+from ..core import get_today
+from django.test import TestCase
 
 
 class TallyMonthAttendancesTest(TestCase):
@@ -65,7 +69,7 @@ class TallyMonthAttendancesTest(TestCase):
         self.assertEqual(len(records), monthdays(self.day))
 
         # 勤怠記録を集計
-        results = tally_monthly_attendance(self.day.month, records)
+        results = attendance.tally_monthly_attendance(self.day.month, records)
         self.assertEqual(len(results), monthdays(self.day))
 
         # self.assertEqual(results[5].date, date(2021, 9, 6))
@@ -81,7 +85,7 @@ class TallyMonthAttendancesTest(TestCase):
         records = collect_timerecord_by_month(self.emp, self.day)
         self.assertEqual(len(records), monthdays(self.day))
 
-        results = tally_monthly_attendance(self.day.month, records)
+        results = attendance.tally_monthly_attendance(self.day.month, records)
         self.assertEqual(len(results), monthdays(self.day))
 
 
@@ -124,8 +128,8 @@ class TestSumupAttendances(TestCase):
         set_office_hours_to_employee(
             employee, date(1901, 1, 1), get_working_hours_by_category("A")
         )
-        attendances = tally_monthly_attendance(8, EmployeeDailyRecord.objects.all())
-        summed_up = sumup_attendances(attendances)
+        attendances = attendance.tally_monthly_attendance(8, EmployeeDailyRecord.objects.all())
+        summed_up = attendance.sumup_attendances(attendances)
         self.assertEqual(summed_up["work"], TOTAL_ACTUAL_WORKING_TIME)
         self.assertEqual(summed_up["late"], Const.TD_3H)  # 遅刻
         self.assertEqual(summed_up["before"], timedelta(minutes=24))  # 早退
@@ -165,8 +169,8 @@ class TestRoundResult(TestCase):
         set_office_hours_to_employee(
             employee, date(1901, 1, 1), get_working_hours_by_category("A")
         )
-        attendances = tally_monthly_attendance(8, EmployeeDailyRecord.objects.all())
-        summed_up = sumup_attendances(attendances)
+        attendances = attendance.tally_monthly_attendance(8, EmployeeDailyRecord.objects.all())
+        summed_up = attendance.sumup_attendances(attendances)
         rounded_result = round_result(summed_up)
         self.assertEqual(
             rounded_result["work"], timedelta(seconds=6 * 24 * 3600 + 90 * 60)
@@ -555,3 +559,51 @@ class TestGetWorkingHoursToBeAssign(TestCase):
         working_hours = get_working_hours_tobe_assign(emp).working_hours
         self.assertEqual(working_hours.begin_time, Const.OCLOCK_1000)
         self.assertEqual(working_hours.end_time, Const.OCLOCK_1900)
+
+class TestGetDaySwitchTime(TestCase):
+    def test_get_day_switch_time(self):
+        # Arrange: create a DaySwitchTime object in the database
+        DaySwitchTime.objects.all().delete()
+        DaySwitchTime.objects.create(switch_time=time(5, 0))
+        
+        # Act
+        result = get_day_switch_time()
+        
+        # Assert
+        self.assertEqual(result, time(5, 0))
+
+    def test_get_day_switch_time_none(self):
+        # Arrange: ensure no DaySwitchTime objects exist
+        DaySwitchTime.objects.all().delete()
+        
+        # Act & Assert: should raise AttributeError if .first() returns None
+        self.assertEqual(get_day_switch_time(), time(5, 0))
+
+
+
+class TestNormalizeToBusinessDay(TestCase):
+    def setUp(self):
+        DaySwitchTime.objects.all().delete()
+        DaySwitchTime.objects.create(switch_time=time(5, 0))
+
+    def test_normalize_to_business_day_before_switch_time(self):
+        # 4:30 AM, should normalize to previous day
+        dt = datetime(2021, 8, 2, 4, 30)
+        normalized = normalize_to_business_day(dt)
+        self.assertEqual(normalized, datetime(2021, 8, 1, 4, 30))
+
+    def test_normalize_to_business_day_at_switch_time(self):
+        # 5:00 AM, should not normalize
+        dt = datetime(2021, 8, 2, 5, 0)
+        normalized = normalize_to_business_day(dt)
+        self.assertEqual(normalized, dt)
+
+    def test_normalize_to_business_day_after_switch_time(self):
+        # 6:00 AM, should not normalize
+        dt = datetime(2021, 8, 2, 6, 0)
+        normalized = normalize_to_business_day(dt)
+        self.assertEqual(normalized, dt)
+
+
+
+

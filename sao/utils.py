@@ -2,26 +2,30 @@ import datetime
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from .models import Employee, WebTimeStamp
-
+from .core import get_day_switch_time
 
 def get_today_stamp(employee: Employee, date: datetime.date):
     """打刻を取得する"""
     fromTime = "--:--:--"
     toTime = "--:--:--"
 
-    day_begin = datetime.datetime(date.year, date.month, date.day, 5, 0, 0)
+    day_begin = datetime.datetime.combine(date, get_day_switch_time())
     stamps = WebTimeStamp.objects.filter(
         employee=employee, stamp__gte=day_begin
     ).order_by("stamp")
 
     if stamps.count() == 0:
         return ("--:--:--", "--:--:--")
-    if stamps.first() is not None:
-        fromTime = stamps.first().stamp.strftime("%H:%M")
-    if stamps.last() is not None:
-        toTime = stamps.last().stamp.strftime("%H:%M")
-        if fromTime == toTime:
-            toTime = "--:--:--"
+    first_stamp = stamps.first()
+    last_stamp = stamps.last()
+    if first_stamp is not None and getattr(first_stamp, 'stamp', None) is not None:
+        if first_stamp.stamp is not None:
+            fromTime = first_stamp.stamp.strftime("%H:%M")
+    if last_stamp is not None and getattr(last_stamp, 'stamp', None) is not None:
+        if last_stamp.stamp is not None:
+            toTime = last_stamp.stamp.strftime("%H:%M")
+            if fromTime == toTime:
+                toTime = "--:--:--"
     return (fromTime, toTime)
 
 
@@ -136,10 +140,10 @@ def get_employee_status(employee, date):
 
 def collect_webstamp(employee_no: int, date: datetime.date):
     """WebStampから日にちを指定してスタンプを収集"""
-    opening_hour = datetime.datetime(date.year, date.month, date.day, 5, 0, 0)
-    closing_hour = opening_hour + datetime.timedelta(days=1)
+    day_begin = datetime.datetime.combine(date, get_day_switch_time())
+    day_end = day_begin + datetime.timedelta(days=1)
     stamps = WebTimeStamp.objects.filter(
-        employee=employee_no, stamp__gte=opening_hour, stamp__lt=closing_hour
+        employee=employee_no, stamp__gte=day_begin, stamp__lt=day_end
     ).order_by("stamp")
     return stamps
 
@@ -201,11 +205,3 @@ def is_empty_stamp(clock_in, clock_out):
         return False
     return True
 
-def get_today() -> datetime.date:
-    # 勤怠システムでは１日はAM5:00-翌AM4:59までとする
-    # なので、もし日をまたいだAM0:00-AM4:59の間は前日の日付を返す
-    today = datetime.date.today()
-    if datetime.datetime.now().hour < 5:
-        # 日を跨いでる
-        today = (datetime.datetime.now() - datetime.timedelta(days=1)).date()
-    return today

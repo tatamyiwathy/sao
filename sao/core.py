@@ -9,8 +9,8 @@ from .models import (
     SteppingOut,
     EmployeeHour,
     WorkingHour,
+    DaySwitchTime
 )
-from .attendance import Attendance
 from .working_status import WorkingStatus
 from .const import Const
 from .calendar import is_holiday, is_legal_holiday
@@ -76,115 +76,12 @@ def get_assumed_working_time(
     return period
 
 
-def eval_record(record: EmployeeDailyRecord) -> Attendance:
-
-    if not record.is_valid_status():
-        logger.warning("勤怠記録(%s)とeval_code(%s)が不一致" % (record, record.status))
-
-    # 所定の始業、終業、勤務時間を取得する
-    (begin_work, end_work) = adjust_working_hours(record)
-    working_time = get_assumed_working_time(record, begin_work, end_work)
-
-    # 外出時間
-    steppingout = tally_steppingout(record)
-
-    # 実労働時間(休息分は差し引かれてる)
-    actual_work = calc_actual_working_time(record, begin_work, end_work, steppingout)
-
-    attn = Attendance()
-    attn.date = record.date
-    attn.remark = record.remark
-    attn.eval_code = record.status
-    attn.work = actual_work
-    attn.late = calc_tardiness(record, begin_work)
-    attn.before = calc_leave_early(record, end_work)
-    attn.steppingout = steppingout
-    attn.out_of_time = calc_overtime(record, actual_work, working_time)
-    if attn.out_of_time.total_seconds() > 0:
-        attn.over_8h = calc_over_8h(record, actual_work)
-        attn.night = calc_midnight_work(record)
-    attn.legal_holiday = calc_legal_holiday(record, actual_work)
-    attn.holiday = calc_holiday(record, actual_work)
-    attn.date = record.date
-    attn.clock_in = record.get_clock_in().time() if record.get_clock_in() else None
-    attn.clock_out = record.get_clock_out().time() if record.get_clock_out() else None
-    attn.record_id = record.id
-
-    attn.is_absent = False
-    if attn.eval_code in [
-        WorkingStatus.C_KEKKIN,
-        WorkingStatus.C_YUUKYUU,
-        WorkingStatus.C_DAIKYUU,
-        WorkingStatus.C_TOKUBETUKYUU,
-    ]:
-        attn.is_absent = True
-    attn.accepted_overtime = record.is_overtime_work_permitted
-    return attn
-
-
 class NoAssignedWorkingHourError(Exception):
     def __init__(self, arg=""):
         self.arg = arg
 
     def __str__(self):
         return self.arg
-
-
-def tally_monthly_attendance(month: int, records: list[EmployeeDailyRecord]) -> list[Attendance]:
-    """TimeRecordからAttendanceを作成する
-    month: 対象月
-    records: TimeRecordのリスト
-
-    employeeの所定労働時間が設定されていない場合はNoSpecifiedWorkingHoursErrorが発生する
-    """
-    result_record = []
-
-    summed_out_of_time = datetime.timedelta()
-    for r in records:
-        if r.date.month != month:
-            # 対象月のでーたではないので何もしない
-            continue
-        # 所定労働時間を取得
-        attendance = eval_record(r)
-        summed_out_of_time += attendance.out_of_time
-        attendance.summed_out_of_time = summed_out_of_time
-        result_record.append(attendance)
-    return result_record
-
-
-def sumup_attendances(attendances: list[Attendance]) -> dict:
-    """
-    勤務評価結果の集計をする
-    引数       result CalculatedRecordの配列
-    """
-
-    summed_up = {
-        "work": datetime.timedelta(),
-        "late": datetime.timedelta(),
-        "before": datetime.timedelta(),
-        "steppingout": datetime.timedelta(),
-        "out_of_time": datetime.timedelta(),
-        "over_8h": datetime.timedelta(),
-        "night": datetime.timedelta(),
-        "legal_holiday": datetime.timedelta(),
-        "holiday": datetime.timedelta(),
-        "accumulated_overtime": datetime.timedelta(),
-    }
-    for attn in attendances:
-        if attn.work:
-            summed_up["work"] += attn.work
-            summed_up["late"] += attn.late
-            summed_up["before"] += attn.before
-            summed_up["steppingout"] += attn.steppingout
-            summed_up["out_of_time"] += attn.out_of_time
-            summed_up["over_8h"] += attn.over_8h
-            summed_up["night"] += attn.night
-            summed_up["legal_holiday"] += attn.legal_holiday
-            summed_up["holiday"] += attn.holiday
-
-            if not sao.calendar.is_legal_holiday(attn.date):
-                summed_up["accumulated_overtime"] += attn.out_of_time
-    return summed_up
 
 
 def round_down(t: datetime.timedelta) -> datetime.timedelta:
@@ -699,3 +596,30 @@ def get_working_hours_tobe_assign(employee: Employee) -> EmployeeHour:
     if employee_hours:
         return employee_hours[0]
     raise ValueError("no specified working hour for %s" % employee.name)
+
+def get_day_switch_time() -> datetime.time:
+    """
+    勤怠システムでの「日付変更時刻」を取得する
+    ない
+    """
+    if not DaySwitchTime.objects.exists():
+        # 存在しない場合はAM5:00に設定する
+        DaySwitchTime.objects.create(switch_time=datetime.time(5, 0, 0))
+
+    return DaySwitchTime.objects.first().switch_time
+
+def get_today() -> datetime.date:
+    # 勤怠システムでは１日はAM5:00-翌AM4:59までとする
+    # なので、もし日をまたいだAM0:00-AM4:59の間は前日の日付を返す
+    now = datetime.datetime.now()
+    return normalize_to_business_day(now).date()
+
+def normalize_to_business_day(day: datetime.datetime) -> datetime.datetime:
+    """日付をビジネスデーに正規化する"""
+    day_switch_time = get_day_switch_time()
+    if day.time() < day_switch_time:
+        # dayは日を跨いでる
+        t = day.time()
+        d = (day - datetime.timedelta(days=1)).date()
+        day = datetime.datetime.combine(d, t)
+    return day

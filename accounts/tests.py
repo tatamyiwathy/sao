@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
-from sao_proj.test_utils import TEST_USER, create_client, create_user
+from common.utils_for_test import TEST_USER, create_client, create_user
 
 from .forms import SignupForm, UserForm
 
@@ -81,7 +81,7 @@ class AccountTest(TestCase):
 
 
 class SignupTest(TestCase):
-    from sao_proj.test_utils import TEST_USER
+    from common.utils_for_test import TEST_USER
 
     def setUp(self):
         self.context = {

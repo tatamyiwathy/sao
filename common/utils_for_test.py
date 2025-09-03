@@ -42,8 +42,9 @@ def create_employee(user, **kwargs) -> sao.models.Employee:
         if "include_overtime_pay" in kwargs.keys()
         else False
     )
+    employee_no = kwargs["employee_no"] if "employee_no" in kwargs.keys() else TEST_USER["employee_no"]
     return sao.utils.create_employee(
-        employee_no=TEST_USER["employee_no"],
+        employee_no=employee_no,
         name=user.last_name + user.first_name,
         join_date=TEST_USER["join_date"],
         employee_type=sao.models.Employee.TYPE_PERMANENT_STAFF,

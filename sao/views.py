@@ -11,14 +11,15 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
-from . import calendar, core, forms, models, utils
+from . import calendar, core, forms, models, utils, attendance
 from .core import (
     get_employee_hour,
     get_working_hours_tobe_assign,
     NoAssignedWorkingHourError,
+    get_day_switch_time,
+    normalize_to_business_day,
 )
 from .const import Const
-from .attendance import Attendance
 from .working_status import WorkingStatus
 
 logger = logging.getLogger("sao")  # views専用のロガー
@@ -29,7 +30,7 @@ def home(request):
     ■マイページ
     """
 
-    def list_warnings(attn: Attendance, today: datetime.date) -> dict:
+    def list_warnings(attn: attendance.Attendance, today: datetime.date) -> dict:
         """警告をリストアップする"""
         warnings = {}
         if attn.remark:
@@ -70,7 +71,7 @@ def home(request):
 
         return warnings
 
-    def is_need_overwork_notification(attn: Attendance, today: datetime.date) -> bool:
+    def is_need_overwork_notification(attn: attendance.Attendance, today: datetime.date) -> bool:
         """残業の通知が必要かどうかを判定する"""
         if attn.summed_out_of_time <= datetime.timedelta(hours=25):
             return False
@@ -133,7 +134,7 @@ def home(request):
         # 集計
         records = core.collect_timerecord_by_month(employee, view_date)
         try:
-            attendances = core.tally_monthly_attendance(view_date.month, records)
+            attendances = attendance.tally_monthly_attendance(view_date.month, records)
         except NoAssignedWorkingHourError:
             # 勤務時間が割り当てられていない
             attendances = []
@@ -143,7 +144,7 @@ def home(request):
             attendances = set_warning_message(attendances, view_date, today)
 
         # 集計する
-        summed_up = core.sumup_attendances(attendances)
+        summed_up = attendance.sumup_attendances(attendances)
 
         # 時間外勤務についての警告
         warn_class, warn_title = utils.attention_overtime(summed_up["out_of_time"])
@@ -186,7 +187,7 @@ def home(request):
         )
 
     # 今日の出退勤時刻を取得する
-    today = utils.get_today()
+    today = core.get_today()
 
     # 設定された勤務時間を取得する
     try:
@@ -196,7 +197,7 @@ def home(request):
         try:
             office_hours = get_working_hours_tobe_assign(employee).working_hours
         except ValueError:
-            sumup = core.sumup_attendances([])
+            sumup = attendance.sumup_attendances([])
             rounded = core.round_result(sumup)
             return render(
                 request,
@@ -254,7 +255,7 @@ def staff_detail(request, employee, year, month):
     )
 
     try:
-        calculated = core.tally_monthly_attendance(from_date.month, query)
+        calculated = attendance.tally_monthly_attendance(from_date.month, query)
     except NoAssignedWorkingHourError:
         return render(
             request,
@@ -264,7 +265,7 @@ def staff_detail(request, employee, year, month):
             },
         )
 
-    summed_up = core.sumup_attendances(calculated)
+    summed_up = attendance.sumup_attendances(calculated)
     rounded_result = core.round_result(summed_up)
 
     daycount = core.count_days(calculated, from_date)
@@ -535,7 +536,7 @@ def employee_record(request):
                 pass
             else:
                 try:
-                    calculated = core.tally_monthly_attendance(from_date.month, records)
+                    calculated = attendance.tally_monthly_attendance(from_date.month, records)
                 except NoAssignedWorkingHourError:
                     return render(
                         request,
@@ -548,7 +549,7 @@ def employee_record(request):
                 printable_calculated = calculated
 
                 # 集計
-                summed_up = core.sumup_attendances(calculated)
+                summed_up = attendance.sumup_attendances(calculated)
                 printable_summed_up = summed_up
 
                 # まるめ
@@ -595,7 +596,7 @@ def employee_record(request):
         )
 
         try:
-            calculated = core.tally_monthly_attendance(from_date.month, records)
+            calculated = attendance.tally_monthly_attendance(from_date.month, records)
         except NoAssignedWorkingHourError:
             return render(
                 request,
@@ -607,7 +608,7 @@ def employee_record(request):
 
         printable_calculated = calculated
 
-        summed_up = core.sumup_attendances(calculated)
+        summed_up = attendance.sumup_attendances(calculated)
         printable_summed_up = summed_up
 
         rounded = core.round_result(summed_up)
@@ -787,7 +788,7 @@ def attendance_summary(request):
             records = stamps.filter(employee=employee).order_by("date")
 
             try:
-                calculated = core.tally_monthly_attendance(from_date.month, records)
+                calculated = attendance.tally_monthly_attendance(from_date.month, records)
             except NoAssignedWorkingHourError:
                 return render(
                     request,
@@ -799,7 +800,7 @@ def attendance_summary(request):
 
             daycount = core.count_days(calculated, from_date)
 
-            summed_up = core.sumup_attendances(calculated)
+            summed_up = attendance.sumup_attendances(calculated)
 
             summary = {
                 "type": utils.get_employee_type(employee.employee_type),
@@ -828,17 +829,15 @@ def attendance_summary(request):
 def time_clock(request):
     """■打刻"""
     employee = models.Employee.objects.get(user=request.user)
-    stamp = datetime.datetime(*datetime.datetime.now().timetuple()[:6])
+    stamp = datetime.datetime.now().replace(microsecond=0)
     if request.method == "POST":
         models.WebTimeStamp(employee=employee, stamp=stamp).save()
 
-    start = datetime.datetime(stamp.year, stamp.month, stamp.day, 5, 0, 0)
-    if stamp.hour < 5:
-        # 日を跨いでる
-        start = stamp - datetime.timedelta(days=1)
-        start = datetime.datetime(start.year, start.month, start.day, 5, 0, 0)
+
+    day_switch_time = get_day_switch_time()
+    business_day = normalize_to_business_day(stamp)
     stamps = models.WebTimeStamp.objects.filter(
-        employee=employee, stamp__gte=start
+        employee=employee, stamp__gte=datetime.datetime.combine(business_day.date(), day_switch_time)
     ).order_by("-stamp")
     return render(
         request, "sao/time_clock.html", {"employee": employee, "stamps": stamps}
@@ -964,9 +963,9 @@ def download_csv(request, employee_no, year, month):
     response["Content-Disposition"] = 'attachment; filename="' + filename + '.csv"'
     records = core.collect_timerecord_by_month(employee, csv_date)
     try:
-        calculated = core.tally_monthly_attendance(csv_date.month, records)
+        calculated = attendance.tally_monthly_attendance(csv_date.month, records)
     except NoAssignedWorkingHourError:
-        sumup = core.sumup_attendances([])
+        sumup = attendance.sumup_attendances([])
         rounded = core.round_result(sumup)
         messages.warning(request, f"・{employee}の打刻データが存在しないためCVSの出力ができません")
         return render(
@@ -984,7 +983,7 @@ def download_csv(request, employee_no, year, month):
         )
 
     # 集計する
-    summed_up = core.sumup_attendances(calculated)
+    summed_up = attendance.sumup_attendances(calculated)
 
     # 時間外勤務についての警告
     # warn_class, warn_title = utils.warning_to_out_of_time(summed_up["out_of_time"])
