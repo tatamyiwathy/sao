@@ -2,14 +2,14 @@ import datetime
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from .models import Employee, WebTimeStamp
-
+from .core import get_day_switch_time
 
 def get_today_stamp(employee: Employee, date: datetime.date):
     """打刻を取得する"""
     fromTime = "--:--:--"
     toTime = "--:--:--"
 
-    day_begin = datetime.datetime(date.year, date.month, date.day, 5, 0, 0)
+    day_begin = datetime.datetime.combine(date, get_day_switch_time())
     stamps = WebTimeStamp.objects.filter(
         employee=employee, stamp__gte=day_begin
     ).order_by("stamp")
@@ -136,10 +136,10 @@ def get_employee_status(employee, date):
 
 def collect_webstamp(employee_no: int, date: datetime.date):
     """WebStampから日にちを指定してスタンプを収集"""
-    opening_hour = datetime.datetime(date.year, date.month, date.day, 5, 0, 0)
-    closing_hour = opening_hour + datetime.timedelta(days=1)
+    day_begin = datetime.datetime.combine(date, get_day_switch_time())
+    day_end = day_begin + datetime.timedelta(days=1)
     stamps = WebTimeStamp.objects.filter(
-        employee=employee_no, stamp__gte=opening_hour, stamp__lt=closing_hour
+        employee=employee_no, stamp__gte=day_begin, stamp__lt=day_end
     ).order_by("stamp")
     return stamps
 
