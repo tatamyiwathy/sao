@@ -1,7 +1,7 @@
 from datetime import date, time, datetime, timedelta
 from django.test import TestCase
 from sao_proj.test_utils import create_user, create_employee
-from ..models import TimeRecord, SteppingOut
+from ..models import EmployeeDailyRecord, SteppingOut
 from .utils import (
     create_working_hours,
     set_office_hours_to_employee,
@@ -129,7 +129,7 @@ class TestSumupAttendances(TestCase):
         set_office_hours_to_employee(
             employee, date(1901, 1, 1), get_working_hours_by_category("A")
         )
-        attendances = tally_monthly_attendance(8, TimeRecord.objects.all())
+        attendances = tally_monthly_attendance(8, EmployeeDailyRecord.objects.all())
         summed_up = sumup_attendances(attendances)
         self.assertEqual(summed_up["work"], TOTAL_ACTUAL_WORKING_TIME)
         self.assertEqual(summed_up["late"], Const.TD_3H)  # 遅刻
@@ -170,7 +170,7 @@ class TestRoundResult(TestCase):
         set_office_hours_to_employee(
             employee, date(1901, 1, 1), get_working_hours_by_category("A")
         )
-        attendances = tally_monthly_attendance(8, TimeRecord.objects.all())
+        attendances = tally_monthly_attendance(8, EmployeeDailyRecord.objects.all())
         summed_up = sumup_attendances(attendances)
         rounded_result = round_result(summed_up)
         self.assertEqual(
@@ -182,7 +182,7 @@ class TestGetAdjustedStartingTime(TestCase):
     def test_get_adjusted_starting_time(self):
 
         day = date(2021, 8, 2)
-        time_record = TimeRecord(
+        time_record = EmployeeDailyRecord(
             date=day,
             clock_in=datetime.combine(day, time(9, 30)),
         )
@@ -196,7 +196,7 @@ class TestGetAdjustedClosingTime(TestCase):
     def test_get_adjusted_closing_time(self):
         d = date(2021, 8, 2)
         employee = create_employee(create_user(), include_overtime_pay=True)
-        time_record = TimeRecord(
+        time_record = EmployeeDailyRecord(
             date=d,
             employee=employee,
             clock_in=datetime.combine(d, time(9, 0)),
@@ -213,7 +213,7 @@ class TestCalcActualWorkingHours(TestCase):
     def test_calc_actual_working_hours(self):
         d = date(2021, 8, 2)
         employee = create_employee(create_user(), include_overtime_pay=True)
-        time_record = TimeRecord(
+        time_record = EmployeeDailyRecord(
             date=d,
             employee=employee,
             clock_in=datetime.combine(d, time(9, 0)),
@@ -233,7 +233,7 @@ class TestCalcTardiness(TestCase):
     def test_calc_tardy(self):
         d = date(2021, 8, 2)
         employee = create_employee(create_user(), include_overtime_pay=True)
-        time_record = TimeRecord(
+        time_record = EmployeeDailyRecord(
             date=d,
             employee=employee,
             clock_in=datetime.combine(d, time(10, 15)),
@@ -250,7 +250,7 @@ class TestCalcLeaveEarly(TestCase):
     def test_calc_sotai(self):
         d = date(2021, 8, 2)
         employee = create_employee(create_user(), include_overtime_pay=True)
-        time_record = TimeRecord(
+        time_record = EmployeeDailyRecord(
             date=d,
             employee=employee,
             clock_in=datetime.combine(d, time(10, 00)),
@@ -274,14 +274,14 @@ class TestTallySteppingOut(TestCase):
             return_time=datetime(2021, 8, 2, 14, 0, 0),
         ).save()
         create_time_stamp_data(employee)
-        time_record = TimeRecord.objects.get(date=date(2021, 8, 2))
+        time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 2))
         total_stepping_out = tally_steppingout(time_record)
         self.assertEqual(total_stepping_out, Const.TD_1H)
 
     def test_tally_steppingout_when_empty(self):
         employee = create_employee(create_user(), include_overtime_pay=True)
         create_time_stamp_data(employee)
-        time_record = TimeRecord.objects.get(date=date(2021, 8, 2))
+        time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 2))
         total_stepping_out = tally_steppingout(time_record)
         self.assertEqual(total_stepping_out, Const.TD_ZERO)
 
@@ -296,7 +296,7 @@ class TestCalcOvertime(TestCase):
         create_time_stamp_data(self.employee)
 
     def test_calc_overtime(self):
-        time_record = TimeRecord.objects.get(date=date(2021, 8, 3))
+        time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 3))
         working_hours = adjust_working_hours(time_record)
         period = get_assumed_working_time(
             time_record, working_hours[0], working_hours[1]
@@ -308,7 +308,7 @@ class TestCalcOvertime(TestCase):
         self.assertEqual(overtime, timedelta(hours=1))
 
     def test_calc_overtime_on_holiday(self):
-        time_record = TimeRecord.objects.get(date=date(2021, 8, 1))  # 日曜日
+        time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 1))  # 日曜日
         working_hours = adjust_working_hours(time_record)
         period = get_assumed_working_time(
             time_record, working_hours[0], working_hours[1]
@@ -320,7 +320,7 @@ class TestCalcOvertime(TestCase):
         self.assertEqual(overtime, timedelta(hours=0))
 
     def test_when_absent(self):
-        time_record = TimeRecord.objects.get(date=date(2021, 8, 23))
+        time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 23))
         working_hours = adjust_working_hours(time_record)
         period = get_assumed_working_time(
             time_record, working_hours[0], working_hours[1]
@@ -342,7 +342,7 @@ class TestCalcOver8h(TestCase):
         create_time_stamp_data(self.employee)
 
     def test_calc_over_8h(self):
-        time_record = TimeRecord.objects.get(date=date(2021, 8, 3))
+        time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 3))
         working_hours = adjust_working_hours(time_record)
         working_time = calc_actual_working_time(
             time_record, working_hours[0], working_hours[1], Const.TD_ZERO
@@ -361,7 +361,7 @@ class TestCalcMidnightWork(TestCase):
         create_time_stamp_data(self.employee)
 
     def test_calc_midnight_work(self):
-        time_record = TimeRecord.objects.get(date=date(2021, 8, 31))
+        time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 31))
         midnight_work = calc_midnight_work(time_record)
         self.assertEqual(midnight_work, timedelta(minutes=51))
 
@@ -376,12 +376,12 @@ class TestCalcLegalHoliday(TestCase):
         create_time_stamp_data(self.employee)
 
     def test_calc_legal_holiday(self):
-        time_record = TimeRecord.objects.get(date=date(2021, 8, 1))
+        time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 1))
         legal_holiday = calc_legal_holiday(time_record, timedelta(hours=8))
         self.assertEqual(legal_holiday, timedelta(hours=8))
 
     def test_calc_workiday(self):
-        time_record = TimeRecord.objects.get(date=date(2021, 8, 2))
+        time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 2))
         legal_holiday = calc_legal_holiday(time_record, timedelta(hours=8))
         self.assertEqual(legal_holiday, timedelta(hours=0))
 
@@ -396,7 +396,7 @@ class TestCalcHoliday(TestCase):
         create_time_stamp_data(self.employee)
 
     def test_calc_holiday(self):
-        time_record = TimeRecord.objects.get(date=date(2021, 8, 9))
+        time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 9))
         self.assertTrue(is_holiday(time_record.date))
         actual_working_hours = timedelta(hours=8)
         holiday = calc_holiday(time_record, actual_working_hours)

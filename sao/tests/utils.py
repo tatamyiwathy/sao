@@ -46,7 +46,7 @@ def set_office_hours_to_employee(
     return t
 
 
-def create_timerecord(**kwargs) -> models.TimeRecord:
+def create_timerecord(**kwargs) -> models.EmployeeDailyRecord:
     """タイムレコード作成
     stamp: [出勤打刻, 退社打刻]
     status: WorkingStatus
@@ -115,7 +115,7 @@ def create_timerecord(**kwargs) -> models.TimeRecord:
 
     accepted_overtime = True if adjusted_clockin and adjusted_clockout else False
 
-    timerecord = models.TimeRecord(
+    timerecord = models.EmployeeDailyRecord(
         date=kwargs["date"],
         employee=kwargs["employee"],
         clock_in=clock_in,

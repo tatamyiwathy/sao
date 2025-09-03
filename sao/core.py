@@ -1,11 +1,10 @@
 import datetime
 
 import sao.calendar
-import sao.utils
 import logging
 
 from .models import (
-    TimeRecord,
+    EmployeeDailyRecord,
     Employee,
     SteppingOut,
     EmployeeHour,
@@ -21,7 +20,7 @@ from dateutil.relativedelta import relativedelta
 
 logger = logging.getLogger("sao")
 
-def adjust_working_hours(record: TimeRecord) -> tuple:
+def adjust_working_hours(record: EmployeeDailyRecord) -> tuple:
     """勤務の開始、終了時間を調整する
 
     ・勤務の開始時刻と終了時刻をtupleで返す
@@ -63,7 +62,7 @@ def adjust_working_hours(record: TimeRecord) -> tuple:
 
 
 def get_assumed_working_time(
-    record: TimeRecord, begin_work: datetime.datetime, end_work: datetime.datetime
+    record: EmployeeDailyRecord, begin_work: datetime.datetime, end_work: datetime.datetime
 ) -> datetime.timedelta:
     """想定されている実労働時間を取得する
     ・労働時間が６時間を超えるなら休息時間分が１時間引かれる
@@ -78,7 +77,7 @@ def get_assumed_working_time(
     return period
 
 
-def eval_record(record: TimeRecord) -> Attendance:
+def eval_record(record: EmployeeDailyRecord) -> Attendance:
 
     if not record.is_valid_status():
         logger.warning("勤怠記録(%s)とeval_code(%s)が不一致" % (record, record.status))
@@ -132,7 +131,7 @@ class NoAssignedWorkingHourError(Exception):
         return self.arg
 
 
-def tally_monthly_attendance(month: int, records: list[TimeRecord]) -> list[Attendance]:
+def tally_monthly_attendance(month: int, records: list[EmployeeDailyRecord]) -> list[Attendance]:
     """TimeRecordからAttendanceを作成する
     month: 対象月
     records: TimeRecordのリスト
@@ -225,7 +224,7 @@ def round_result(result: dict) -> dict:
 
 
 def get_adjusted_starting_time(
-    record: TimeRecord, starting_time: datetime.datetime
+    record: EmployeeDailyRecord, starting_time: datetime.datetime
 ) -> datetime.datetime:
     """
     業務を開始した時間を取得する
@@ -245,7 +244,7 @@ def get_adjusted_starting_time(
 
 
 def get_adjusted_closing_time(
-    record: TimeRecord, closing_time: datetime.datetime, overtime_permittion: bool
+    record: EmployeeDailyRecord, closing_time: datetime.datetime, overtime_permittion: bool
 ) -> datetime.datetime:
     """
     業務を終了した時間を取得する
@@ -269,7 +268,7 @@ def get_adjusted_closing_time(
 
 
 def calc_actual_working_time(
-    record: TimeRecord,
+    record: EmployeeDailyRecord,
     begin_work: datetime.datetime,
     end_work: datetime.datetime,
     steppingout: datetime.timedelta,
@@ -306,7 +305,7 @@ def calc_actual_working_time(
 
 
 def calc_tardiness(
-    record: TimeRecord, start_time: datetime.datetime
+    record: EmployeeDailyRecord, start_time: datetime.datetime
 ) -> datetime.timedelta:
     """
     遅刻時間の計算
@@ -325,7 +324,7 @@ def calc_tardiness(
 
 
 def calc_leave_early(
-    record: TimeRecord, close_time: datetime.datetime
+    record: EmployeeDailyRecord, close_time: datetime.datetime
 ) -> datetime.timedelta:
     """
     早退時間の計算
@@ -348,7 +347,7 @@ def calc_leave_early(
     return close_time - clock_out
 
 
-def tally_steppingout(timerecord: TimeRecord) -> datetime.timedelta:
+def tally_steppingout(timerecord: EmployeeDailyRecord) -> datetime.timedelta:
     """
     外出時間を集計する
     もし出勤/退勤の打刻がないばあいは0を返す
@@ -371,7 +370,7 @@ def tally_steppingout(timerecord: TimeRecord) -> datetime.timedelta:
 
 
 def calc_overtime(
-    record: TimeRecord,
+    record: EmployeeDailyRecord,
     actual_work: datetime.timedelta,
     scheduled_working_period: datetime.timedelta,
 ) -> datetime.timedelta:
@@ -398,7 +397,7 @@ def calc_overtime(
 
 
 def calc_over_8h(
-    record: TimeRecord, actual_work: datetime.timedelta
+    record: EmployeeDailyRecord, actual_work: datetime.timedelta
 ) -> datetime.timedelta:
     """
     勤務時間が8時間を超過した時間を計算する
@@ -413,7 +412,7 @@ def calc_over_8h(
     return d if d.days >= 0 else Const.TD_ZERO
 
 
-def calc_midnight_work(timerecord: TimeRecord) -> datetime.timedelta:
+def calc_midnight_work(timerecord: EmployeeDailyRecord) -> datetime.timedelta:
     """
     深夜超過時間 深夜=22:00~
     """
@@ -426,7 +425,7 @@ def calc_midnight_work(timerecord: TimeRecord) -> datetime.timedelta:
 
 
 def calc_legal_holiday(
-    timerecord: TimeRecord, actual_work: datetime.timedelta
+    timerecord: EmployeeDailyRecord, actual_work: datetime.timedelta
 ) -> datetime.timedelta:
     """休出(法定)ならそのまま返す"""
     if timerecord.date.weekday() == 6:  # 日曜日
@@ -435,7 +434,7 @@ def calc_legal_holiday(
 
 
 def calc_holiday(
-    timerecord: TimeRecord, actual_work: datetime.timedelta
+    timerecord: EmployeeDailyRecord, actual_work: datetime.timedelta
 ) -> datetime.timedelta:
     """休出(法定外)ならそのまま返す"""
     if is_holiday(timerecord.date):
@@ -552,7 +551,7 @@ def count_days(results: list, year_month: datetime.date) -> list:
     return days
 
 
-def accumulate_weekly_working_hours(records: list[TimeRecord]) -> list[tuple]:
+def accumulate_weekly_working_hours(records: list[EmployeeDailyRecord]) -> list[tuple]:
     """週ごとの労働時間を累計する
 
     戻り    (n週, 週の始まり, 労働時間, 丸めた労働時間) * 週の数
@@ -660,13 +659,13 @@ def collect_timerecord_by_month(employee: Employee, date: datetime.date) -> list
 
     timerecords = []
     for day in days:
-        records = TimeRecord.objects.filter(employee=employee).filter(date=day)
+        records = EmployeeDailyRecord.objects.filter(employee=employee).filter(date=day)
         if records.count() > 0:
             for record in records:
                 timerecords.append(record)
         else:
             timerecords.append(
-                TimeRecord(employee=employee, date=day, status=WorkingStatus.C_NONE)
+                EmployeeDailyRecord(employee=employee, date=day, status=WorkingStatus.C_NONE)
             )
     return timerecords
 

@@ -249,7 +249,7 @@ def staff_detail(request, employee, year, month):
     office_hours = get_employee_hour(employee, datetime.date.today())
 
     query = (
-        models.TimeRecord.objects.filter(employee=employee)
+        models.EmployeeDailyRecord.objects.filter(employee=employee)
         .filter(date__gte=from_date)
         .filter(date__lt=to_date)
         .order_by("date")
@@ -469,14 +469,14 @@ def modify_record(request, record_id, year, month):
     """
     msg = ""
     if request.method == "POST":
-        record = get_object_or_404(models.TimeRecord, id=record_id)
+        record = get_object_or_404(models.EmployeeDailyRecord, id=record_id)
         form = forms.ModifyRecordForm(request.POST, instance=record)
         if form.is_valid():
             form.save()
             logger.info(f"{request.user}が変更した: {record} {record.status}")
             return redirect("sao:employee_record")
     else:
-        record = get_object_or_404(models.TimeRecord, id=record_id)
+        record = get_object_or_404(models.EmployeeDailyRecord, id=record_id)
         form = forms.ModifyRecordForm(instance=record)
 
     # 外出時間を取得する
@@ -528,7 +528,7 @@ def employee_record(request):
 
             # 前月の最終日曜日から次月の最初の日曜日までのデータを集める
             records = (
-                models.TimeRecord.objects.filter(employee=employee)
+                models.EmployeeDailyRecord.objects.filter(employee=employee)
                 .filter(date__gte=last_sunday)
                 .filter(date__lt=next_sunday)
                 .order_by("date")
@@ -590,7 +590,7 @@ def employee_record(request):
 
         # 前月の最終日曜日から次月の最初の日曜日までのデータを集める
         records = (
-            employee.timerecord_set.filter(employee=employee)
+            employee.employeedailyrecord_set.filter(employee=employee)
             .filter(date__gte=calendar.get_last_sunday(from_date))
             .filter(date__lt=calendar.get_next_sunday(to_date))
             .order_by("date")
@@ -782,7 +782,7 @@ def attendance_summary(request):
         else:
             employees = employees.order_by("-user__is_active", "employee_no")
 
-        stamps = models.TimeRecord.objects.filter(date__gte=from_date).filter(
+        stamps = models.EmployeeDailyRecord.objects.filter(date__gte=from_date).filter(
             date__lt=to_date
         )
         for employee in employees:
@@ -931,7 +931,7 @@ def update_annual_leave(request):
         )
 
         records = (
-            models.TimeRecord.objects.filter(employee=employee)
+            models.EmployeeDailyRecord.objects.filter(employee=employee)
             .filter(date__gte=d)
             .order_by("date")
         )
@@ -1074,7 +1074,7 @@ def web_timestamp_view(request, employee_no):
 @login_required
 def add_steppingout(request, record, year, month):
     """外出時間の追加"""
-    record = get_object_or_404(models.TimeRecord, id=record)
+    record = get_object_or_404(models.EmployeeDailyRecord, id=record)
     employee = record.employee
     msg = ""
 
@@ -1161,7 +1161,7 @@ def add_steppingout(request, record, year, month):
 def modify_steppingout(request, steppingout, record, year, month):
     """外出時間の修正"""
     steppingout = get_object_or_404(models.SteppingOut, id=steppingout)
-    record = get_object_or_404(models.TimeRecord, id=record)
+    record = get_object_or_404(models.EmployeeDailyRecord, id=record)
     if request.method == "POST":
         form = forms.AddSteppingOutForm(request.POST)
         if form.is_valid():
@@ -1226,7 +1226,7 @@ def fix_holiday(request):
     """休日の修正"""
     employees = models.Employee.objects.filter(user__is_active=True)
     for e in employees:
-        rec = models.TimeRecord.objects.filter(employee=e)
+        rec = models.EmployeeDailyRecord.objects.filter(employee=e)
         rec = rec.filter(date__gte="2021-12-28")
         rec = rec.filter(date__lt="2022-01-05")
         for r in rec:
