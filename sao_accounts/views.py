@@ -55,17 +55,15 @@ def change_password(request, username):
     form = SaoChangePasswordForm(request.POST or None)
     if request.method == "POST":
         if form.is_valid():
-            print("form is valid")
             password = form.cleaned_data["password"]
             target_user.set_password(password)
             target_user.save()
             messages.success(request, "パスワードを変更しました")
             logger.info("%sが%sのパスワードを変更しました" % (request.user, target_user.username))
             return redirect("sao_accounts:list")
-
     return render(
         request,
-        "accounts/change_password.html",
+        "sao_accounts/change_password.html",
         {"form": form, "target_user": target_user},
     )
 

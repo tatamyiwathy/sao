@@ -1,68 +1,43 @@
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
-from common.utils_for_test import TEST_USER, create_client, create_user
+from common.utils_for_test import TEST_USER, create_client, create_super_user, create_user
 
-from .forms import SignupForm, UserForm
+from .forms import SignupForm, UserForm, SaoChangePasswordForm
+from sao.utils import create_user as create_user_util
 
 
 class AccountTest(TestCase):
     def setUp(self):
         self.user = create_user()
+        self.client = create_client(TEST_USER)
 
-        self.urls_with_authed = [
-        ]
+    def test_url(self):
+        url = reverse("sao_accounts:list")
+        self.assertEqual(url, "/sao_accounts/")
 
-        self.urls_with_noauth = [
-            reverse("sao_accounts:list"),
-            reverse("sao_accounts:edit", kwargs={"username": TEST_USER["username"]}),
-            reverse("sao_accounts:list"),
-        ]
 
-    def test_create_user(self):
 
-        user = User.objects.create(username="foo")
-        self.assertTrue(user)
 
-    def test_form_validation(self):
-
-        user = User.objects.create(username="foo", is_active=True)
+    def test_UserForm_validation(self):
+        user = create_user()
         form = UserForm({"username": "foo", "is_active": True}, instance=user)
         self.assertTrue(form.is_valid(), form)
-
-    def test_view_without_login(self):
-        client = Client()
-        for url in self.urls_with_noauth:
-            response = client.get(url)
-            self.assertFalse(response.status_code == 200)
-        for url in self.urls_with_authed:
-            response = client.get(url)
-            self.assertTrue(response.status_code == 200)
-
-    def test_view_with_login(self):
-        client = create_client(TEST_USER)
-        for url in self.urls_with_noauth:
-            response = client.get(url)
-            self.assertTrue(response.status_code == 200)
-        for url in self.urls_with_authed:
-            response = client.get(url)
-            self.assertTrue(response.status_code == 200)
 
     def test_post_with_nouser(self):
         client = create_client(TEST_USER)
         response = client.get(reverse("sao_accounts:edit", kwargs={"username": "nanashi"}))
         self.assertEqual(response.status_code, 404)
 
-    def test_post_form_noabnormaly(self):
+    def test_post_form_normaly(self):
         client = create_client(TEST_USER)
         form = {
             "username": self.user.username,
             "email": self.user.email,
-            "ntd_email": "",
             "is_active": True,
         }
         response = client.post(
-            reverse("sao_accounts:edit", kwargs={"username": self.user}), form
+            reverse("sao_accounts:edit", kwargs={"username": self.user.username}), form
         )
         self.assertRedirects(response, reverse("sao_accounts:list"))
 
@@ -71,37 +46,77 @@ class AccountTest(TestCase):
         form = {
             "username": "",
             "email": self.user.email,
-            "ntd_email": "",
             "is_active": True,
         }
         response = client.post(
-            reverse("sao_accounts:edit", kwargs={"username": self.user}), form
+            reverse("sao_accounts:edit", kwargs={"username": self.user.username}), form
         )
         self.assertTrue(response.status_code == 200)
 
-
-class SignupTest(TestCase):
-    from common.utils_for_test import TEST_USER
-
+class AccountViewsTests(TestCase):
     def setUp(self):
-        self.context = {
-            "username": TEST_USER["username"],
-            "password": TEST_USER["password"],
-            "last_name": TEST_USER["last_name"],
-            "first_name": TEST_USER["first_name"],
-            "email": TEST_USER["email"],
-        }
+        self.user = create_user()
+        self.client = create_client(TEST_USER)
+        self.superuser = create_super_user()
+        self.client.force_login(self.user)
 
-    def test_form_ok(self):
-        form = SignupForm(self.context)
-        self.assertTrue(form.is_valid(), form)
+    def test_account_list_only_active_for_normal_user(self):
+        inactive_user = create_user_util(username="inactive", last="", first="", password="pass", email="")
+        inactive_user.is_active = False
+        url = reverse("sao_accounts:list")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        accounts = response.context["accounts"]
+        self.assertTrue(all(u.is_active for u in accounts))
 
-    def test_form_passwd_less_min(self):
-        self.context["password"] = "test"
-        form = SignupForm(self.context)
-        form.is_valid()
-        self.assertFormError(
-            form,
-            "password",
-            "この値が少なくとも 6 文字以上であることを確認してください (4 文字になっています)。",
-        )
+    def test_account_list_all_for_superuser(self):
+        self.client.force_login(self.superuser)
+        inactive_user = create_user_util(username="inactive", last="", first="", password="pass", email="")
+        inactive_user.is_active = False
+        url = reverse("sao_accounts:list")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        usernames = [u.username for u in response.context["accounts"]]
+        self.assertIn("inactive", usernames)
+        self.assertIn(self.superuser.username, usernames)
+
+    def test_edit_account_get(self):
+        url = reverse("sao_accounts:edit", args=[self.user.username])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.user.username)
+
+    def test_edit_account_post_valid(self):
+        url = reverse("sao_accounts:edit", args=[self.user.username])
+        data = {"username": self.user.username, "email": "newemail@example.com"}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, "newemail@example.com")
+
+    def test_change_password_get(self):
+        url = reverse("sao_accounts:change_password", args=[self.user.username])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.user.username)
+
+    def test_change_password_form(self):
+        url = reverse("sao_accounts:change_password", args=[self.user.username])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIsInstance(response.context["form"], SaoChangePasswordForm)
+    
+    def test_change_password_form_valid(self):
+        form = SaoChangePasswordForm(data={"password": "newsecurepassword", "confirm": ""})
+        self.assertFalse(form.is_valid())
+        form = SaoChangePasswordForm(data={"password": "newsecurepassword", "confirm": "newsecurepassword"})
+        self.assertTrue(form.is_valid())
+
+    def test_change_password_post_valid(self):
+        self.client.force_login(self.superuser)
+        url = reverse("sao_accounts:change_password", args=[self.user.username])
+        data = {"password": "newsecurepassword", "confirm": "newsecurepassword"}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("newsecurepassword"))

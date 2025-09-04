@@ -57,3 +57,4 @@ class TimeClockViewTests(TestCase):
         stamps = response.context["stamps"]
         for stamp in stamps:
             self.assertEqual(stamp.employee, self.e)
+

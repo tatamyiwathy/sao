@@ -1,8 +1,11 @@
-import sao.models
-import sao.utils
+# import sao.models
+# import sao.utils
 import datetime
 from django.contrib.auth.models import User
 from django.test.client import Client
+from sao import models as sao_models
+from sao import utils as sao_utils
+
 
 TEST_USER = {
     "username": "foobar",
@@ -12,8 +15,8 @@ TEST_USER = {
     "join_date": datetime.date(2015, 1, 1),
     "leave_date": datetime.date(2099, 12, 31),
     "employee_no": 51,
-    "employee_type": sao.models.Employee.TYPE_PERMANENT_STAFF,
-    "department": sao.models.Employee.DEPT_DEVELOPMENT,
+    "employee_type": sao_models.Employee.TYPE_PERMANENT_STAFF,
+    "department": sao_models.Employee.DEPT_DEVELOPMENT,
     "email": "foobar@sample.com",
 }
 
@@ -25,7 +28,7 @@ TEST_ADMIN_USER = {
 
 
 def create_user() -> User:
-    user = sao.utils.create_user(
+    user = sao_utils.create_user(
         username=TEST_USER["username"],
         last=TEST_USER["last_name"],
         first=TEST_USER["first_name"],
@@ -35,7 +38,7 @@ def create_user() -> User:
     return user
 
 
-def create_employee(user, **kwargs) -> sao.models.Employee:
+def create_employee(user, **kwargs) -> sao_models.Employee:
 
     include_overtime_pay = (
         kwargs["include_overtime_pay"]
@@ -43,12 +46,12 @@ def create_employee(user, **kwargs) -> sao.models.Employee:
         else False
     )
     employee_no = kwargs["employee_no"] if "employee_no" in kwargs.keys() else TEST_USER["employee_no"]
-    return sao.utils.create_employee(
+    return sao_utils.create_employee(
         employee_no=employee_no,
         name=user.last_name + user.first_name,
         join_date=TEST_USER["join_date"],
-        employee_type=sao.models.Employee.TYPE_PERMANENT_STAFF,
-        department=sao.models.Employee.DEPT_DEVELOPMENT,
+        employee_type=sao_models.Employee.TYPE_PERMANENT_STAFF,
+        department=sao_models.Employee.DEPT_DEVELOPMENT,
         user=user,
         include_overtime_pay=include_overtime_pay,
     )
