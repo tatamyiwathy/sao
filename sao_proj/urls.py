@@ -20,6 +20,6 @@ from sao_proj import settings
 
 urlpatterns = [
     path('sao/', include('sao.urls')),
-    path('accounts/', include('accounts.urls')),
+    path('sao_accounts/', include('sao_accounts.urls')),
     path('admin/', admin.site.urls),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
