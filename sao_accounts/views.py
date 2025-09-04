@@ -24,7 +24,7 @@ def account_list(request):
         accounts = accounts.filter(is_active=True)
     accounts = accounts.order_by("-is_active")
 
-    return render(request, "accounts/list.html", {"accounts": accounts})
+    return render(request, "sao_accounts/list.html", {"accounts": accounts})
 
 
 @login_required
@@ -37,12 +37,12 @@ def edit_account(request, username):
             logger.info(
                 "%sが%sのプロファイルを変更した" % (request.user, u.username)
             )
-            return redirect("accounts:list")
+            return redirect("sao_accounts:list")
 
     form = UserForm(instance=u)
     return render(
         request,
-        "accounts/edit.html",
+        "sao_accounts/edit.html",
         {"form": form, "edituser": u},
     )
 
@@ -61,7 +61,7 @@ def change_password(request, username):
             target_user.save()
             messages.success(request, "パスワードを変更しました")
             logger.info("%sが%sのパスワードを変更しました" % (request.user, target_user.username))
-            return redirect("accounts:list")
+            return redirect("sao_accounts:list")
 
     return render(
         request,

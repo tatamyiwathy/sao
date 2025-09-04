@@ -106,7 +106,7 @@
 						<ul class="dropdown-menu">
 							{% if user.is_staff or user.permission.enable_add_staff %}
 							<li><a class="dropdown-item" href={% url 'sao:employee_list' %}>雇用情報</a></li>
-							<li><a class="dropdown-item" href={% url 'accounts:list' %}>アカウント管理</a></li>
+							<li><a class="dropdown-item" href={% url 'sao_accounts:list' %}>アカウント管理</a></li>
 							{% endif %}
 						</ul>
 					</li>
@@ -117,7 +117,7 @@
 					<li class="nav-item dropdown">
 						<a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{{user.username}}</a>
 						<ul class="dropdown-menu">
-							<form class="" action="/accounts/logout/" method="post" >
+							<form class="" action="/sao_accounts/logout/" method="post" >
 								{% csrf_token %}
 								<button type="submit" class="btn btn-primary">logout</button>
 							</form>

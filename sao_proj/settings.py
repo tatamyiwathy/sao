@@ -49,7 +49,8 @@ ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
     "sao.apps.SaoConfig",
-    "accounts.apps.AccountsConfig",
+    # "accounts.apps.AccountsConfig",
+    "sao_accounts.apps.SaoAccountsConfig",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -172,7 +173,7 @@ else:
 
 
 # 
-LOGIN_URL = "accounts:login"
+LOGIN_URL = "sao_accounts:login"
 LOGOUT_REDIRECT_URL = "sao:home"
 
 

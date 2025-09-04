@@ -23,7 +23,7 @@
                 {% endif %}
 
                 <div class="card-body">
-                    <form class="form" method="post" action="{% url 'accounts:login' %}">
+                    <form class="form" method="post" action="{% url 'sao_accounts:login' %}">
                         {% csrf_token %}
                         <div class="mb-3">
                             <label class="form-label">{{form.username.label}}</label>

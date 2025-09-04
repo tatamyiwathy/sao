@@ -14,9 +14,9 @@ class AccountTest(TestCase):
         ]
 
         self.urls_with_noauth = [
-            reverse("accounts:list"),
-            reverse("accounts:edit", kwargs={"username": TEST_USER["username"]}),
-            reverse("accounts:list"),
+            reverse("sao_accounts:list"),
+            reverse("sao_accounts:edit", kwargs={"username": TEST_USER["username"]}),
+            reverse("sao_accounts:list"),
         ]
 
     def test_create_user(self):
@@ -50,7 +50,7 @@ class AccountTest(TestCase):
 
     def test_post_with_nouser(self):
         client = create_client(TEST_USER)
-        response = client.get(reverse("accounts:edit", kwargs={"username": "nanashi"}))
+        response = client.get(reverse("sao_accounts:edit", kwargs={"username": "nanashi"}))
         self.assertEqual(response.status_code, 404)
 
     def test_post_form_noabnormaly(self):
@@ -62,9 +62,9 @@ class AccountTest(TestCase):
             "is_active": True,
         }
         response = client.post(
-            reverse("accounts:edit", kwargs={"username": self.user}), form
+            reverse("sao_accounts:edit", kwargs={"username": self.user}), form
         )
-        self.assertRedirects(response, reverse("accounts:list"))
+        self.assertRedirects(response, reverse("sao_accounts:list"))
 
     def test_post_form_abnormaly(self):
         client = create_client(TEST_USER)
@@ -75,7 +75,7 @@ class AccountTest(TestCase):
             "is_active": True,
         }
         response = client.post(
-            reverse("accounts:edit", kwargs={"username": self.user}), form
+            reverse("sao_accounts:edit", kwargs={"username": self.user}), form
         )
         self.assertTrue(response.status_code == 200)
 

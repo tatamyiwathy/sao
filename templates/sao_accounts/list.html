@@ -32,10 +32,10 @@
                         <td>{{ account.email }}</td>
                         <td class="text-center">
                             {% if user.is_staff or user.permission.enable_regist_event %}
-                            <a href="{% url 'accounts:edit' account.username %}" class="btn btn-outline-primary btn-sm" title="編集">
+                            <a href="{% url 'sao_accounts:edit' account.username %}" class="btn btn-outline-primary btn-sm" title="編集">
                                 <span class="oi oi-pencil"></span>
                             </a>
-                            <a href="{% url 'accounts:change_password' account.username %}" class="btn btn-outline-primary btn-sm" title="パスワード変更">
+                            <a href="{% url 'sao_accounts:change_password' account.username %}" class="btn btn-outline-primary btn-sm" title="パスワード変更">
                                 <span class="oi oi-key"></span>
                             </a>
                             {% endif %}

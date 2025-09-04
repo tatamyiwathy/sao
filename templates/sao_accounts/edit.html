@@ -13,7 +13,7 @@
                     <h4 class="mb-0 text-center">アカウント編集</h4>
                 </div>
                 <div class="card-body">
-                    <form action="{% url 'accounts:edit' edituser.username %}" method="POST">
+                    <form action="{% url 'sao_accounts::edit' edituser.username %}" method="POST">
                         {% csrf_token %}
                         <div class="mb-3">
                             <label class="form-label" for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
