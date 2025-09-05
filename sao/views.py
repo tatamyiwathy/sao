@@ -1316,3 +1316,36 @@ def day_switch_time_edit(request, id):
             'form': form,
         },
     )
+
+@csrf_exempt
+def day_switch(request):
+    """日時切り替え処理"""
+
+
+
+
+
+    date = datetime.date.today()
+    # WebTimeStampを集めてEmployeeDailyRecordを生成する
+    employees = models.Employee.objects.filter(
+                    user__is_active=True).filter(
+                        join_date__lte=date).filter(
+                        leave_date__gte=date)
+    for employee in employees:
+        # もしEmployeeDailyRecordが存在していたら削除する
+        models.EmployeeDailyRecord.objects.filter( 
+            employee=employee, date=date).delete()
+        # WebTimeStampを集める
+        stamps = [x.stamp for x in models.WebTimeStamp.objects.filter(employee=employee).filter(
+            date=date).order_by("stamp") if x.stamp is not None]
+        # EmployeeDailyRecordを生成する
+        utils.generate_daily_record(stamps, employee, date)
+
+        # EmployeeDailyRecordを集めてDailyAttendanceRecordを生成する
+        records = [ x for x in models.EmployeeDailyRecord.objects.filter(employee=employee).filter(
+            date=date) ]
+        # utils.generate_attendance_record(records, employee, date)
+
+
+
+
