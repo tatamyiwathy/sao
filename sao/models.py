@@ -472,6 +472,48 @@ class Progress(models.Model):
 
 
 class Foo(models.Model):
-    """テスト"""
+    """テストで使用するモデル"""
 
     pass
+
+
+class DailyAttendanceRecord(models.Model):
+    """日次勤怠集計"""
+
+    time_record = models.OneToOneField(
+        EmployeeDailyRecord, 
+        on_delete=models.CASCADE,
+        related_name="attendance_record"
+    )
+    
+    # 調整後の時間
+    adjusted_clock_in = models.DateTimeField(null=True, blank=True)
+    adjusted_clock_out = models.DateField(null=True, blank=True)
+    # 実労働時間
+    actual_working_time = models.DurationField(null=True, blank=True)
+    # 遅刻
+    late_time = models.DurationField(null=True, blank=True)
+    # 早退
+    early_leave = models.DurationField(null=True, blank=True)
+    # 外出
+    stepping_out = models.DurationField(null=True, blank=True)
+    # 時間外労働
+    out_of_time = models.DurationField(null=True, blank=True)
+    # 割増=8時間を超えた分
+    over_8h = models.DurationField(null=True, blank=True)
+    # 深夜=22時以降
+    night_work = models.DurationField(null=True, blank=True)
+    # 法定休日
+    legal_holiday_work = models.DurationField(null=True, blank=True)
+    # 法定外休日
+    holiday_work = models.DurationField(null=True, blank=True)
+    # 届け
+    remark = models.CharField(max_length=128, null=True, blank=True)
+    # 勤務状況
+    status = models.IntegerField(
+        null=True, blank=True, choices=WorkingStatus.choices
+    )
+
+    def __str__(self):
+        return f"{self.time_record.employee.name} {self.time_record.date}"
+

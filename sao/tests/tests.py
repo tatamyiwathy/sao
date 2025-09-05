@@ -1245,10 +1245,8 @@ class HolidayViewTest(TestCase):
         self.assertTrue(len(models.Holiday.objects.all()) == 0)
 
 
-# Threadを使用してDBをいじるときはTransactionTestCaseを使用する
-
-
 class ThreadTest(TransactionTestCase):
+    # Threadを使用してDBをいじるときはTransactionTestCaseを使用する
     def threadmain(self):
         self.assertTrue(models.Foo.objects.all().count() > 0)
 
@@ -1260,7 +1258,7 @@ class ThreadTest(TransactionTestCase):
         th.start()
         th.join()
 
-        self.assertTrue(models.Foo.objects.all().count() > 0)
+        self.assertTrue(models.Foo.objects.exists())
 
 
 class ReadCsvTest(TestCase):
