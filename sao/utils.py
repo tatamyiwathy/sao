@@ -1,7 +1,7 @@
 import datetime
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from . import models, utils, working_status, core, const
+from . import models, working_status, core, const
 
 def get_today_stamp(employee: models.Employee, date: datetime.date):
     """打刻を取得する"""
@@ -241,7 +241,7 @@ def generate_daily_record(stamps: list[datetime.datetime], employee: models.Empl
         begin = datetime.datetime.combine( date, working_hour.begin_time )
         end = datetime.datetime.combine( date, working_hour.end_time )
 
-        if stamp is not None and utils.is_over_half_working_hours(stamp, employee, (begin, end)):
+        if stamp is not None and is_over_half_working_hours(stamp, employee, (begin, end)):
             # 出社打刻が勤務時間の半分以上なら、出勤打刻がないものとして扱う
             models.EmployeeDailyRecord(
                 employee=employee,

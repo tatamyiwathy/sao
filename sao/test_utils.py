@@ -4,7 +4,7 @@ import datetime
 
 import sao.utils as utils
 from common.utils_for_test import create_employee, create_user
-from . import working_status
+from . import working_status, utils
 
 class TestIsOverHalfWorkingHours(unittest.TestCase):
     def setUp(self):
@@ -65,9 +65,9 @@ class TestGenerateDailyRecord(unittest.TestCase):
         )
         mock_emp_daily_record.return_value.save.assert_called_once()
 
-    @patch("sao.utils.models.EmployeeDailyRecord")
-    @patch("sao.utils.core.get_employee_hour")
-    @patch("sao.utils.utils.is_over_half_working_hours")
+    @patch("sao.models.EmployeeDailyRecord")
+    @patch("sao.core.get_employee_hour")
+    @patch("sao.utils.is_over_half_working_hours")
     def test_one_stamp_under_half(self, mock_is_over_half, mock_get_hour, mock_emp_daily_record):
         # Setup working hour
         begin_time = datetime.time(9, 0)
@@ -88,9 +88,9 @@ class TestGenerateDailyRecord(unittest.TestCase):
         )
         mock_emp_daily_record.return_value.save.assert_called_once()
 
-    @patch("sao.utils.models.EmployeeDailyRecord")
-    @patch("sao.utils.core.get_employee_hour")
-    @patch("sao.utils.utils.is_over_half_working_hours")
+    @patch("sao.models.EmployeeDailyRecord")
+    @patch("sao.core.get_employee_hour")
+    @patch("sao.utils.is_over_half_working_hours")
     def test_one_stamp_over_half(self, mock_is_over_half, mock_get_hour, mock_emp_daily_record):
         begin_time = datetime.time(9, 0)
         end_time = datetime.time(18, 0)
@@ -153,17 +153,17 @@ class TestGenerateDailyRecord(unittest.TestCase):
 
 
 class TestGenerateAttendanceRecord(unittest.TestCase):
-    @patch("sao.utils.models.DailyAttendanceRecord")
-    @patch("sao.utils.core.adjust_working_hours")
-    @patch("sao.utils.core.calc_assumed_working_time")
-    @patch("sao.utils.core.calc_actual_working_time")
-    @patch("sao.utils.core.calc_tardiness")
-    @patch("sao.utils.core.calc_leave_early")
-    @patch("sao.utils.core.calc_overtime")
-    @patch("sao.utils.core.calc_over_8h")
-    @patch("sao.utils.core.calc_midnight_work")
-    @patch("sao.utils.core.calc_legal_holiday")
-    @patch("sao.utils.core.calc_holiday")
+    @patch("sao.models.DailyAttendanceRecord")
+    @patch("sao.core.adjust_working_hours")
+    @patch("sao.core.calc_assumed_working_time")
+    @patch("sao.core.calc_actual_working_time")
+    @patch("sao.core.calc_tardiness")
+    @patch("sao.core.calc_leave_early")
+    @patch("sao.core.calc_overtime")
+    @patch("sao.core.calc_over_8h")
+    @patch("sao.core.calc_midnight_work")
+    @patch("sao.core.calc_legal_holiday")
+    @patch("sao.core.calc_holiday")
     def test_attendance_record_full_flow(
         self, mock_holiday, mock_legal_holiday, mock_midnight, mock_over_8h, mock_overtime,
         mock_leave_early, mock_tardiness, mock_actual, mock_assumed, mock_adjust, mock_daily_attendance
