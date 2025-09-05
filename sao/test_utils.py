@@ -59,10 +59,9 @@ class TestGenerateDailyRecord(unittest.TestCase):
         mock_emp_daily_record.assert_called_once_with(
             employee=self.employee,
             date=self.date,
-            flag="",
             clock_in=None,
             clock_out=None,
-            status=utils.working_status.WorkingStatus.C_KEKKIN,
+            status=working_status.WorkingStatus.C_KEKKIN,
         )
         mock_emp_daily_record.return_value.save.assert_called_once()
 
@@ -83,10 +82,9 @@ class TestGenerateDailyRecord(unittest.TestCase):
         mock_emp_daily_record.assert_called_once_with(
             employee=self.employee,
             date=self.date,
-            flag="",
             clock_in=stamp,
             clock_out=None,
-            status=utils.working_status.WorkingStatus.C_KINMU,
+            status=working_status.WorkingStatus.C_KINMU,
         )
         mock_emp_daily_record.return_value.save.assert_called_once()
 
@@ -106,10 +104,9 @@ class TestGenerateDailyRecord(unittest.TestCase):
         mock_emp_daily_record.assert_called_once_with(
             employee=self.employee,
             date=self.date,
-            flag="",
             clock_in=None,
             clock_out=stamp,
-            status=utils.working_status.WorkingStatus.C_KINMU,
+            status=working_status.WorkingStatus.C_KINMU,
         )
         mock_emp_daily_record.return_value.save.assert_called_once()
 
@@ -130,10 +127,9 @@ class TestGenerateDailyRecord(unittest.TestCase):
         mock_emp_daily_record.assert_called_once_with(
             employee=self.employee,
             date=self.date,
-            flag="",
             clock_in=stamp1,
             clock_out=stamp2,
-            status=utils.working_status.WorkingStatus.C_KINMU,
+            status=working_status.WorkingStatus.C_KINMU,
         )
         mock_emp_daily_record.return_value.save.assert_called_once()
 
@@ -148,10 +144,9 @@ class TestGenerateDailyRecord(unittest.TestCase):
         mock_emp_daily_record.assert_called_once_with(
             employee=self.employee,
             date=self.date,
-            flag="",
             clock_in=stamps[0],
             clock_out=stamps[-1],
-            status=utils.working_status.WorkingStatus.C_KINMU,
+            status=working_status.WorkingStatus.C_KINMU,
         )
         mock_emp_daily_record.return_value.save.assert_called_once()
 

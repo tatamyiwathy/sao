@@ -480,7 +480,7 @@ class Foo(models.Model):
 class DailyAttendanceRecord(models.Model):
     """日次勤怠集計"""
 
-    create_at = models.DateTimeField(auto_now_add=True)
+    create_at = models.DateTimeField(default=datetime.datetime.now)
     update_at = models.DateTimeField(auto_now=True)
     
     time_record = models.OneToOneField(
