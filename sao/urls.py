@@ -85,4 +85,5 @@ urlpatterns = [
     path("working_hours/<int:id>/update/", views.update_working_hours, name="edit_working_hours"),
     path("day_switch_time_view/", views.day_switch_time_view, name="day_switch_time_view"),
     path("day_switch_time_edit/<int:id>/", views.day_switch_time_edit, name="day_switch_time_edit"),
+    path("day_switch", views.day_switch, name="day_switch"),
 ]

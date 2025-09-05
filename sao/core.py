@@ -24,46 +24,50 @@ def adjust_working_hours(record: EmployeeDailyRecord) -> tuple:
 
     ・勤務の開始時刻と終了時刻をtupleで返す
     ・通常は所定の開始/終了時間を返す
-    ・所定の勤務時間が６時間を超えるなら休息時間分を引く
-    ・午前休/午後休の場合はそれぞれ調整して返す
     ・休日出勤はそのまま返す
+    ・午前休/午後休の場合はそれぞれ調整して返す
+    ・所定の勤務時間が６時間を超えるなら終了時間を休息時間分前倒しする
     ・Employeeに勤務時間の設定がないとNoSpecifiedWorkingHoursError例外が発生する
     """
 
     def adjust_scheduled_time(status: WorkingStatus, scheduled: tuple) -> tuple:
+        """午前休、午後休に応じて所定の勤務時間を調整する"""
         begin_work_time = scheduled[0]
         end_work_time = scheduled[1]
-        period = end_work_time - begin_work_time
-        if period > Const.TD_6H:
-            period -= Const.TD_1H
-        if status in WorkingStatus.MORNING_OFF:
-            # 午前休なので開始時間を 所定労働時間の半分と休息１時間分ずらす
-            begin_work_time = scheduled[0] + period / 2 + Const.TD_1H
-        if status in WorkingStatus.AFTERNOON_OFF_WITH_REST:
-            end_work_time = scheduled[1] - period / 2
-        elif status in WorkingStatus.AFTERNOON_OFF_NO_REST:
-            end_work_time = scheduled[1] - period / 2 - Const.TD_1H
+        if status:
+            duration = end_work_time - begin_work_time
+            if duration > Const.TD_6H:
+                duration -= Const.TD_1H
+            if status in WorkingStatus.MORNING_OFF:
+                # 午前休なので開始時間を 所定労働時間の半分と休息１時間分ずらす
+                begin_work_time = scheduled[0] + duration / 2 + Const.TD_1H
+            if status in WorkingStatus.AFTERNOON_OFF_WITH_REST:
+                end_work_time = scheduled[1] - duration / 2
+            elif status in WorkingStatus.AFTERNOON_OFF_NO_REST:
+                # 休息なしなので休息１時間分ずらす
+                end_work_time = scheduled[1] - duration / 2 - Const.TD_1H
         return (begin_work_time, end_work_time)
 
     if is_holiday(record.date):
+        # 休日出勤はそのまま返す
         clockin = record.get_clock_in()
         clockout = record.get_clock_out()
         return (clockin, clockout)
 
-    officehour = get_employee_hour(record.employee, record.date)
+    working_hour = get_employee_hour(record.employee, record.date)
     return adjust_scheduled_time(
         record.status,
         (
-            datetime.datetime.combine(record.date, officehour.begin_time),
-            datetime.datetime.combine(record.date, officehour.end_time),
+            datetime.datetime.combine(record.date, working_hour.begin_time),
+            datetime.datetime.combine(record.date, working_hour.end_time),
         ),
     )
 
 
-def get_assumed_working_time(
+def calc_assumed_working_time(
     record: EmployeeDailyRecord, begin_work: datetime.datetime, end_work: datetime.datetime
 ) -> datetime.timedelta:
-    """想定されている実労働時間を取得する
+    """想定されている実労働時間を計算する
     ・労働時間が６時間を超えるなら休息時間分が１時間引かれる
     ・休日の場合は休息時間は引かれない
     """
@@ -261,6 +265,8 @@ def tally_steppingout(timerecord: EmployeeDailyRecord) -> datetime.timedelta:
         out_time__gte=clock_in,
         return_time__lt=clock_out,
     ):
+        if steppingout.out_time is None or steppingout.return_time is None:
+            continue
         total_steppingout += steppingout.return_time - steppingout.out_time
     return total_steppingout
 
@@ -315,7 +321,7 @@ def calc_midnight_work(timerecord: EmployeeDailyRecord) -> datetime.timedelta:
     clock_out = timerecord.get_clock_out()
     if clock_out is None:
         raise ValueError("clock_outがNone")
-    night = datetime.datetime.combine(timerecord.date, datetime.time(22))
+    night = datetime.datetime.combine(timerecord.date, Const.NIGHT_WORK_START)
     d = clock_out - night
     return d if d.days >= 0 else Const.TD_ZERO
 
@@ -606,7 +612,10 @@ def get_day_switch_time() -> datetime.time:
         # 存在しない場合はAM5:00に設定する
         DaySwitchTime.objects.create(switch_time=datetime.time(5, 0, 0))
 
-    return DaySwitchTime.objects.first().switch_time
+    switch_time = DaySwitchTime.objects.first()
+    if switch_time is None:
+        return datetime.time(5, 0, 0)
+    return switch_time.switch_time
 
 def get_today() -> datetime.date:
     # 勤怠システムでは１日はAM5:00-翌AM4:59までとする

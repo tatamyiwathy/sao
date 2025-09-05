@@ -480,9 +480,12 @@ class Foo(models.Model):
 class DailyAttendanceRecord(models.Model):
     """日次勤怠集計"""
 
+    create_at = models.DateTimeField(auto_now_add=True)
+    update_at = models.DateTimeField(auto_now=True)
+    
     time_record = models.OneToOneField(
         EmployeeDailyRecord, 
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="attendance_record"
     )
     
@@ -514,6 +517,23 @@ class DailyAttendanceRecord(models.Model):
         null=True, blank=True, choices=WorkingStatus.choices
     )
 
-    def __str__(self):
-        return f"{self.time_record.employee.name} {self.time_record.date}"
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.time_record = kwargs["time_record"] if "time_record" in kwargs else None
+        self.adjusted_clock_in = kwargs["adjusted_clock_in"] if "adjusted_clock_in" in kwargs else None
+        self.adjusted_clock_out = kwargs["adjusted_clock_out"] if "adjusted_clock_out" in kwargs else None
+        self.actual_working_time = kwargs["actual_working_time"] if "actual_working_time" in kwargs else None
+        self.late_time = kwargs["late_time"] if "late_time" in kwargs else None
+        self.early_leave = kwargs["early_leave"] if "early_leave" in kwargs else None
+        self.stepping_out = kwargs["stepping_out"] if "stepping_out" in kwargs else None
+        self.over_time = kwargs["out_of_time"] if "out_of_time" in kwargs else None
+        self.over_8h = kwargs["over_8h"] if "over_8h" in kwargs else None
+        self.night_work = kwargs["night_work"] if "night_work" in kwargs else None
+        self.legal_holiday_work = kwargs["legal_holiday_work"] if "legal_holiday_work" in kwargs else None
+        self.holiday_work = kwargs["holiday_work"] if "holiday_work" in kwargs else None
+        self.remark = kwargs["remark"] if "remark" in kwargs else ""
+        self.status = kwargs["status"] if "status" in kwargs else None
+
+
 

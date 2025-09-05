@@ -4,7 +4,7 @@ import datetime
 
 import sao.utils as utils
 from common.utils_for_test import create_employee, create_user
-
+from . import working_status
 
 class TestIsOverHalfWorkingHours(unittest.TestCase):
     def setUp(self):
@@ -154,6 +154,92 @@ class TestGenerateDailyRecord(unittest.TestCase):
             status=utils.working_status.WorkingStatus.C_KINMU,
         )
         mock_emp_daily_record.return_value.save.assert_called_once()
+
+
+
+class TestGenerateAttendanceRecord(unittest.TestCase):
+    @patch("sao.utils.models.DailyAttendanceRecord")
+    @patch("sao.utils.core.adjust_working_hours")
+    @patch("sao.utils.core.calc_assumed_working_time")
+    @patch("sao.utils.core.calc_actual_working_time")
+    @patch("sao.utils.core.calc_tardiness")
+    @patch("sao.utils.core.calc_leave_early")
+    @patch("sao.utils.core.calc_overtime")
+    @patch("sao.utils.core.calc_over_8h")
+    @patch("sao.utils.core.calc_midnight_work")
+    @patch("sao.utils.core.calc_legal_holiday")
+    @patch("sao.utils.core.calc_holiday")
+    def test_attendance_record_full_flow(
+        self, mock_holiday, mock_legal_holiday, mock_midnight, mock_over_8h, mock_overtime,
+        mock_leave_early, mock_tardiness, mock_actual, mock_assumed, mock_adjust, mock_daily_attendance
+    ):
+        # Setup mocks
+        record = MagicMock()
+        record.clock_in = datetime.datetime(2024, 6, 1, 9, 0)
+        record.clock_out = datetime.datetime(2024, 6, 1, 18, 0)
+        record.status = working_status.WorkingStatus.C_KINMU
+        mock_adjust.return_value = (record.clock_in, record.clock_out)
+        mock_assumed.return_value = datetime.timedelta(hours=8)
+        mock_actual.return_value = datetime.timedelta(hours=8, minutes=30)
+        mock_tardiness.return_value = datetime.timedelta(minutes=5)
+        mock_leave_early.return_value = datetime.timedelta(minutes=0)
+        mock_overtime.return_value = datetime.timedelta(minutes=30)
+        mock_over_8h.return_value = datetime.timedelta(minutes=10)
+        mock_midnight.return_value = datetime.timedelta(minutes=0)
+        mock_legal_holiday.return_value = datetime.timedelta(minutes=0)
+        mock_holiday.return_value = datetime.timedelta(minutes=0)
+
+        attendance_instance = MagicMock()
+        mock_daily_attendance.return_value = attendance_instance
+
+        utils.generate_attendance_record(record)
+
+        mock_daily_attendance.assert_called_once_with({"time_record": record})
+        mock_adjust.assert_called_once_with(record)
+        mock_assumed.assert_called_once_with(record, record.clock_in, record.clock_out)
+        mock_actual.assert_called_once_with(record, record.clock_in, record.clock_out, utils.const.Const.TD_ZERO)
+        mock_tardiness.assert_called_once_with(record, record.clock_in)
+        mock_leave_early.assert_called_once_with(record, record.clock_out)
+        mock_overtime.assert_called_once_with(record, mock_actual.return_value, mock_assumed.return_value)
+        mock_over_8h.assert_called_once_with(record, mock_actual.return_value)
+        mock_midnight.assert_called_once_with(record)
+        mock_legal_holiday.assert_called_once_with(record, mock_actual.return_value)
+        mock_holiday.assert_called_once_with(record, mock_actual.return_value)
+        self.assertEqual(attendance_instance.actual_working_time, mock_actual.return_value)
+        self.assertEqual(attendance_instance.late_time, mock_tardiness.return_value)
+        self.assertEqual(attendance_instance.early_leave, mock_leave_early.return_value)
+        self.assertEqual(attendance_instance.over_time, mock_overtime.return_value)
+        self.assertEqual(attendance_instance.over_8h, mock_over_8h.return_value)
+        self.assertEqual(attendance_instance.night_work, mock_midnight.return_value)
+        self.assertEqual(attendance_instance.legal_holiday_work, mock_legal_holiday.return_value)
+        self.assertEqual(attendance_instance.holiday_work, mock_holiday.return_value)
+        self.assertEqual(attendance_instance.status, record.status)
+        attendance_instance.save.assert_called_once()
+
+    @patch("sao.utils.models.DailyAttendanceRecord")
+    def test_attendance_record_missing_clock_in_or_out(self, mock_daily_attendance):
+        # Test when clock_in is None
+        record = MagicMock()
+        record.clock_in = None
+        record.clock_out = datetime.datetime(2024, 6, 1, 18, 0)
+        attendance_instance = MagicMock()
+        mock_daily_attendance.return_value = attendance_instance
+
+        utils.generate_attendance_record(record)
+        mock_daily_attendance.assert_called_once_with({"time_record": record})
+        attendance_instance.save.assert_not_called()  # because attendance.save is not called as a function
+
+        # Test when clock_out is None
+        mock_daily_attendance.reset_mock()
+        record.clock_in = datetime.datetime(2024, 6, 1, 9, 0)
+        record.clock_out = None
+        attendance_instance = MagicMock()
+        mock_daily_attendance.return_value = attendance_instance
+
+        utils.generate_attendance_record(record)
+        mock_daily_attendance.assert_called_once_with({"time_record": record})
+        attendance_instance.save.assert_not_called()
+
 
 
 

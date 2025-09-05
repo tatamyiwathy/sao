@@ -1,7 +1,7 @@
 import datetime
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from . import models, utils, working_status, core
+from . import models, utils, working_status, core, const
 
 def get_today_stamp(employee: models.Employee, date: datetime.date):
     """打刻を取得する"""
@@ -137,14 +137,14 @@ def get_employee_status(employee, date):
             return "契約中"
 
 
-def collect_webstamp(employee_no: int, date: datetime.date):
+def collect_webstamp(employee: models.Employee, date: datetime.date) -> list[datetime.datetime]:
     """WebStampから日にちを指定してスタンプを収集"""
     day_begin = datetime.datetime.combine(date, core.get_day_switch_time())
     day_end = day_begin + datetime.timedelta(days=1)
     stamps = models.WebTimeStamp.objects.filter(
-        employee=employee_no, stamp__gte=day_begin, stamp__lt=day_end
+        employee=employee, stamp__gte=day_begin, stamp__lt=day_end
     ).order_by("stamp")
-    return stamps
+    return [ x.stamp for x in stamps if x.stamp is not None ]
 
 
 def make_sesamo_form_stamp(employee: models.Employee, stamp: datetime.datetime):
@@ -226,7 +226,6 @@ def generate_daily_record(stamps: list[datetime.datetime], employee: models.Empl
         models.EmployeeDailyRecord(
             employee=employee,
             date=date,
-            flag="",
             clock_in=None,
             clock_out=None,
             status=working_status.WorkingStatus.C_KEKKIN,
@@ -247,7 +246,6 @@ def generate_daily_record(stamps: list[datetime.datetime], employee: models.Empl
             models.EmployeeDailyRecord(
                 employee=employee,
                 date=date,
-                flag="",
                 clock_in=None,
                 clock_out=stamp,
                 status=working_status.WorkingStatus.C_KINMU,
@@ -257,7 +255,6 @@ def generate_daily_record(stamps: list[datetime.datetime], employee: models.Empl
             models.EmployeeDailyRecord(
                 employee=employee,
                 date=date,
-                flag="",
                 clock_in=stamp,
                 clock_out=None,
                 status=working_status.WorkingStatus.C_KINMU,
@@ -271,9 +268,42 @@ def generate_daily_record(stamps: list[datetime.datetime], employee: models.Empl
         models.EmployeeDailyRecord(
             employee=employee,
             date=date,
-            flag="",
             clock_in=first_stamp,
             clock_out=last_stamp,
             status=working_status.WorkingStatus.C_KINMU,
         ).save()
+    
+def generate_attendance_record(record: models.EmployeeDailyRecord):
+    """DailyAttendanceRecordを生成する"""
+
+    attendance = models.DailyAttendanceRecord({"time_record": record})
+        
+    # 所定の始業、終業、勤務時間を取得する
+    begin_work = record.clock_in
+    end_work = record.clock_out
+    
+    if begin_work is None or end_work is None:
+        attendance.save
+        return
+    
+    # 調整された出勤時間、退勤時間
+    (begin_work, end_work) = core.adjust_working_hours(record)
+
+    # 予定勤務時間
+    assumed_working_time = core.calc_assumed_working_time(record, begin_work, end_work)
+
+    # 実労働時間(休息分は差し引かれてる)
+    actual_working_time = core.calc_actual_working_time(record, begin_work, end_work, const.Const.TD_ZERO)
+
+    attendance.actual_working_time = actual_working_time
+    attendance.late_time = core.calc_tardiness(record, begin_work)
+    attendance.early_leave = core.calc_leave_early(record, end_work)
+    attendance.over_time = core.calc_overtime(record, actual_working_time, assumed_working_time)
+    if attendance.over_time is not None and attendance.over_time.total_seconds() > 0:
+        attendance.over_8h = core.calc_over_8h(record, actual_working_time)
+        attendance.night_work = core.calc_midnight_work(record)
+    attendance.legal_holiday_work = core.calc_legal_holiday(record, actual_working_time)
+    attendance.holiday_work = core.calc_holiday(record, actual_working_time)
+    attendance.status = record.status
+    attendance.save()    
     

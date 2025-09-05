@@ -11,7 +11,7 @@ from .utils import (
 from .. import attendance
 from ..core import (
     adjust_working_hours,
-    get_assumed_working_time,
+    calc_assumed_working_time,
     round_down,
     round_stamp,
     round_result,
@@ -297,7 +297,7 @@ class TestCalcOvertime(TestCase):
     def test_calc_overtime(self):
         time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 3))
         working_hours = adjust_working_hours(time_record)
-        period = get_assumed_working_time(
+        period = calc_assumed_working_time(
             time_record, working_hours[0], working_hours[1]
         )
         working_time = calc_actual_working_time(
@@ -309,7 +309,7 @@ class TestCalcOvertime(TestCase):
     def test_calc_overtime_on_holiday(self):
         time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 1))  # 日曜日
         working_hours = adjust_working_hours(time_record)
-        period = get_assumed_working_time(
+        period = calc_assumed_working_time(
             time_record, working_hours[0], working_hours[1]
         )
         working_time = calc_actual_working_time(
@@ -321,7 +321,7 @@ class TestCalcOvertime(TestCase):
     def test_when_absent(self):
         time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 23))
         working_hours = adjust_working_hours(time_record)
-        period = get_assumed_working_time(
+        period = calc_assumed_working_time(
             time_record, working_hours[0], working_hours[1]
         )
         working_time = calc_actual_working_time(

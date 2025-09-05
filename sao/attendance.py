@@ -7,7 +7,7 @@ from .working_status import WorkingStatus
 from .models import EmployeeDailyRecord
 from .core import (
     adjust_working_hours,
-    get_assumed_working_time,
+    calc_assumed_working_time,
     tally_steppingout,
     calc_actual_working_time,
     calc_tardiness,
@@ -53,7 +53,7 @@ class Attendance:
 
         # 所定の始業、終業、勤務時間を取得する
         (begin_work, end_work) = adjust_working_hours(record)
-        working_time = get_assumed_working_time(record, begin_work, end_work)
+        working_time = calc_assumed_working_time(record, begin_work, end_work)
 
         # 外出時間
         steppingout = tally_steppingout(record)
