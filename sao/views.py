@@ -1323,31 +1323,37 @@ def day_switch(request):
 
     if request.method == "POST":
         date = request.POST.get("date")
+        if not date:
+            return HttpResponse("no date")
         date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
-        # WebTimeStampを集めてEmployeeDailyRecordを生成する
-        employees = models.Employee.objects.filter(
-                        user__is_active=True).filter(
-                            join_date__lte=date).filter(
-                            leave_date__gte=date)
-        for employee in employees:
-            # もしEmployeeDailyRecordが存在していたら削除する
-            models.EmployeeDailyRecord.objects.filter( 
-                employee=employee, date=date).delete()
-            # WebTimeStampを集める
-            stamps = utils.collect_webstamp(employee, date)
-            # EmployeeDailyRecordを生成する
-            utils.generate_daily_record(stamps, employee, date)
+    else:
+        date = datetime.date.today() - datetime.timedelta(days=1)  # 昨日
 
-            # EmployeeDailyRecordを集めてDailyAttendanceRecordを生成する
-            records = [ x for x in models.EmployeeDailyRecord.objects.filter(employee=employee).filter(
-                date=date) ]
-            if len(records) > 1:
-                raise Exception(f"同日に複数の勤務記録が存在しています: {employee} {date}")
-            
-            # DailyAttendanceRecordを生成する
-            utils.generate_attendance_record(records[0])
+    # WebTimeStampを集めてEmployeeDailyRecordを生成する
+    employees = models.Employee.objects.filter(
+                    user__is_active=True).filter(
+                        join_date__lte=date).filter(
+                        leave_date__gte=date)
+    for employee in employees:
+        # もしEmployeeDailyRecordが存在していたら削除する
+        models.EmployeeDailyRecord.objects.filter( 
+            employee=employee, date=date).delete()
+        # WebTimeStampを集める
+        stamps = utils.collect_webstamp(employee, date)
+        # EmployeeDailyRecordを生成する
+        utils.generate_daily_record(stamps, employee, date)
 
-    return HttpResponse("day switch done")
+        # EmployeeDailyRecordを集めてDailyAttendanceRecordを生成する
+        records = [ x for x in models.EmployeeDailyRecord.objects.filter(employee=employee).filter(
+            date=date) ]
+        if len(records) > 1:
+            raise Exception(f"同日に複数の勤務記録が存在しています: {employee} {date}")
+        
+        # DailyAttendanceRecordを生成する
+        utils.generate_attendance_record(records[0])
+
+    logger.info(f"{date} の切り替え作業が完了しました")
+    return HttpResponse("day switch done for " + str(date))
 
 
 
