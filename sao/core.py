@@ -632,3 +632,26 @@ def normalize_to_business_day(day: datetime.datetime) -> datetime.datetime:
         d = (day - datetime.timedelta(days=1)).date()
         day = datetime.datetime.combine(d, t)
     return day
+
+def get_working_status(employee: Employee, date: datetime.date, clock_in: datetime.datetime, clock_out: datetime.datetime) -> WorkingStatus:
+    """タイムレコード作成"""
+
+    if is_holiday(date):
+        if [clock_in, clock_out] == [None, None]:
+            # 休日で記録なし
+            status = WorkingStatus.C_KYUJITU
+        else:
+            if is_legal_holiday(date):
+                # 日曜出勤
+                status = WorkingStatus.C_HOUTEI_KYUJITU
+            else:
+                # 土曜・祝日出勤
+                status = WorkingStatus.C_HOUTEIGAI_KYUJITU
+    else:
+        if [clock_in, clock_out] == [None, None]:
+            # 平日で記録なし
+            status = WorkingStatus.C_KEKKIN
+        else:
+            status = WorkingStatus.C_KINMU
+
+    return status
