@@ -205,3 +205,18 @@ def is_empty_stamp(clock_in, clock_out):
         return False
     return True
 
+
+def is_over_half_working_hours(
+        employee: Employee, working_hours: tuple[datetime.datetime, datetime.datetime],
+        target_time: datetime.datetime) -> bool:
+    
+    """所定労働時間の半分を超えているかどうか"""
+
+    begin_time = working_hours[0]
+    end_time = working_hours[1]
+    working_time = end_time - begin_time
+    if target_time > begin_time + working_time / 2:
+        return True
+    return False
+
+
