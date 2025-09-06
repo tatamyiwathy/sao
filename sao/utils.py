@@ -203,11 +203,10 @@ def is_over_half_working_hours(target_time: datetime.datetime,
         employee: models.Employee, working_hours: tuple[datetime.datetime, datetime.datetime]) -> bool:
     
     """所定労働時間の半分を超えているかどうか"""
-
     begin_time = working_hours[0]
     end_time = working_hours[1]
-    working_time = end_time - begin_time
-    if target_time > begin_time + working_time / 2:
+    duration = end_time - begin_time
+    if target_time > begin_time + duration / 2:
         return True
     return False
 
@@ -215,58 +214,81 @@ def is_over_half_working_hours(target_time: datetime.datetime,
 def generate_daily_record(stamps: list[datetime.datetime], employee: models.Employee, date: datetime.date):
     """EmployeeDailyRecordを生成する"""
 
+    try:
+        working_hour =core.get_employee_hour(employee, date)
+        scheduled_start_time = datetime.datetime.combine(date, working_hour.begin_time)
+        scheduled_end_time = datetime.datetime.combine(date, working_hour.end_time)
+    except core.NoAssignedWorkingHourError:
+        # 勤務時間が設定されていないので処理しない
+        return
+
+    context = {
+        "employee": employee,
+        "date": date,
+    }
     if not stamps:
         # 打刻がないので空のEmployeeDailyRecordを生成する
-        models.EmployeeDailyRecord(
-            employee=employee,
-            date=date,
-            clock_in=None,
-            clock_out=None,
-            status=working_status.WorkingStatus.C_KEKKIN,
-        ).save()
+        context["clock_in"] = None
+        context["clock_out"] = None
+        if core.is_holiday(date):
+            context["scheduled_start_time"] = None
+            context["scheduled_end_time"] = None
+            context["status"] = working_status.WorkingStatus.C_KYUJITU
+        else:
+            context["scheduled_start_time"] = scheduled_start_time
+            context["scheduled_end_time"] = scheduled_end_time
+            context["status"] = working_status.WorkingStatus.C_KEKKIN
     elif len(stamps) == 1:
         # 打刻が1件しかないので、出社のみ登録する
         stamp = stamps[0]
-        try:
-            working_hour = core.get_employee_hour(employee, date)
-        except core.NoAssignedWorkingHourError:
-            return
-
-        begin = datetime.datetime.combine( date, working_hour.begin_time )
-        end = datetime.datetime.combine( date, working_hour.end_time )
-
-        if stamp is not None and is_over_half_working_hours(stamp, employee, (begin, end)):
+        if core.is_holiday(date):
+            # 休日は出社打刻がある場合は出勤・退勤ともに登録する
+            context["clock_in"] = stamp
+            context["clock_out"] = stamp
+            context["scheduled_start_time"] = None
+            context["scheduled_end_time"] = None
+            context["status"] = working_status.WorkingStatus.C_KINMU
+        elif is_over_half_working_hours(stamp, employee, (scheduled_start_time, scheduled_end_time)):
             # 出社打刻が勤務時間の半分以上なら、出勤打刻がないものとして扱う
-            models.EmployeeDailyRecord(
-                employee=employee,
-                date=date,
-                clock_in=None,
-                clock_out=stamp,
-                status=working_status.WorkingStatus.C_KINMU,
-            ).save()
+            context["clock_in"] = None
+            context["clock_out"] = stamp
+            context["scheduled_start_time"] = scheduled_start_time
+            context["scheduled_end_time"] = scheduled_end_time
+            context["status"] = working_status.WorkingStatus.C_KINMU
         else:
             # 出社打刻が勤務時間の半分以下なら、退勤打刻がないものとして扱う
-            models.EmployeeDailyRecord(
-                employee=employee,
-                date=date,
-                clock_in=stamp,
-                clock_out=None,
-                status=working_status.WorkingStatus.C_KINMU,
-            ).save()
-
+            context["clock_in"] = stamp
+            context["clock_out"] = None
+            context["scheduled_start_time"] = scheduled_start_time
+            context["scheduled_end_time"] = scheduled_end_time
+            context["status"] = working_status.WorkingStatus.C_KINMU
     elif len(stamps) >= 2:
         # 打刻が2件以上あるので、最初と最後を出社・退社として登録する
         first_stamp = stamps[0]
         last_stamp = stamps[-1]
+        if core.is_holiday(date):
+            context["clock_in"] = first_stamp
+            context["clock_out"] = last_stamp
+            context["scheduled_start_time"] = None
+            context["scheduled_end_time"] = None
+            context["status"] = working_status.WorkingStatus.C_KINMU
+        else:
+            context["clock_in"] = first_stamp
+            context["clock_out"] = last_stamp
+            context["scheduled_start_time"] = scheduled_start_time
+            context["scheduled_end_time"] = scheduled_end_time
+            context["status"] = working_status.WorkingStatus.C_KINMU
 
-        models.EmployeeDailyRecord(
-            employee=employee,
-            date=date,
-            clock_in=first_stamp,
-            clock_out=last_stamp,
-            status=working_status.WorkingStatus.C_KINMU,
-        ).save()
-    
+    models.EmployeeDailyRecord(
+        employee=context["employee"],
+        date=context["date"],
+        clock_in=context["clock_in"],
+        clock_out=context["clock_out"],
+        scheduled_start_time = context["scheduled_start_time"],
+        scheduled_end_time = context["scheduled_end_time"],
+        status=context["status"],
+    ).save()
+
 def generate_attendance_record(record: models.EmployeeDailyRecord):
     """DailyAttendanceRecordを生成する"""
     attendance = models.DailyAttendanceRecord(time_record=record)

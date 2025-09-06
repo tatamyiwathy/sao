@@ -139,8 +139,8 @@ class EmployeeDailyRecord(models.Model):
     clock_in = models.DateTimeField(null=True, blank=True)
     clock_out = models.DateTimeField(null=True, blank=True)
 
-    scheduled_clock_in = models.DateTimeField(null=True, blank=True)
-    scheduled_clock_out = models.DateTimeField(null=True, blank=True)
+    scheduled_start_time = models.DateTimeField(null=True, blank=True)
+    scheduled_end_time = models.DateTimeField(null=True, blank=True)
 
     # 勤務状況
     status = models.IntegerField(null=True, blank=True, choices=WorkingStatus.choices)
