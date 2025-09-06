@@ -1329,29 +1329,55 @@ def day_switch(request):
     else:
         date = datetime.date.today() - datetime.timedelta(days=1)  # 昨日
 
+    logger.info(f"{date} の切り替え作業を開始します")
+
     # WebTimeStampを集めてEmployeeDailyRecordを生成する
     employees = models.Employee.objects.filter(
                     user__is_active=True).filter(
                         join_date__lte=date).filter(
                         leave_date__gte=date)
     for employee in employees:
-        # もしEmployeeDailyRecordが存在していたら削除する
-        models.EmployeeDailyRecord.objects.filter( 
-            employee=employee, date=date).delete()
+        logger.info(f"処理中: {employee} {date}")
+
+        if models.EmployeeDailyRecord.objects.filter(employee=employee, date=date).exists():
+            print("  勤務記録が既に存在しているためスキップします")
+            continue
+
         # WebTimeStampを集める
-        stamps = utils.collect_webstamp(employee, date)
+        stamps = utils.collect_webstamps(employee, date)
+
         # EmployeeDailyRecordを生成する
-        utils.generate_daily_record(stamps, employee, date)
+        utils.generate_daily_record([x.stamp for x in stamps], employee, date)
 
         # EmployeeDailyRecordを集めてDailyAttendanceRecordを生成する
-        records = [ x for x in models.EmployeeDailyRecord.objects.filter(employee=employee).filter(
-            date=date) ]
-        if len(records) > 1:
-            raise Exception(f"同日に複数の勤務記録が存在しています: {employee} {date}")
-        
-        # DailyAttendanceRecordを生成する
-        utils.generate_attendance_record(records[0])
+        records = models.EmployeeDailyRecord.objects.filter(employee=employee, date=date)
+        if len(records) != 1:
+            logger.error(f"勤務実績が生成されませんでした: {employee} {date}")
+            continue
 
+        # DailyAttendanceRecordを生成する
+        try:
+            utils.generate_attendance_record(records[0])
+        except Exception as e:
+            logger.error(f"勤務実績の生成に失敗しました: {employee} {date} {e}")
+            continue
+
+        attn = models.DailyAttendanceRecord.objects.filter(time_record=records[0])
+        if len(attn) == 1:
+            logger.info(f"勤務実績を生成しました: {employee} {date}")
+        else:
+            logger.error(f"勤務実績の生成に失敗しました: {employee} {date}")
+            continue
+
+        # WebTimeStampを削除する
+        try:
+            stamps.delete()  
+        except Exception as e:
+            logger.error(f"Web打刻データの削除に失敗しました: {employee} {date} {e}")
+            continue
+
+        stamps = utils.collect_webstamps(employee, date)
+        
     logger.info(f"{date} の切り替え作業が完了しました")
     return HttpResponse("day switch done for " + str(date))
 

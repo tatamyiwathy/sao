@@ -87,24 +87,6 @@ class DaySwitchViewTests(TestCase):
         self.assertIn(b"day switch done", response.content)
         self.assertTrue(models.EmployeeDailyRecord.objects.filter(employee=self.e, date=self.date).exists())
 
-    def test_day_switch_post_deletes_existing_daily_record(self):
-        # Create an existing record
-        models.EmployeeDailyRecord.objects.create(employee=self.e, date=self.date)
-        response = self.client.post(self.url, {"date": self.date.strftime("%Y-%m-%d")})
-        self.assertEqual(response.status_code, 200)
-        # Should only be one record after switch
-        self.assertEqual(models.EmployeeDailyRecord.objects.filter(employee=self.e, date=self.date).count(), 1)
-
-    def test_day_switch_post_raises_if_multiple_records(self):
-        # Patch generate_daily_record to create two records
-        def create_two_records(stamps, employee, date):
-            models.EmployeeDailyRecord.objects.create(employee=employee, date=date)
-            models.EmployeeDailyRecord.objects.create(employee=employee, date=date)
-        utils.generate_daily_record = create_two_records
-        with self.assertRaises(Exception) as cm:
-            self.client.post(self.url, {"date": self.date.strftime("%Y-%m-%d")})
-        self.assertIn("同日に複数の勤務記録が存在しています", str(cm.exception))
-
     def test_day_switch_get_returns_done(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)

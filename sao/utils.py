@@ -146,21 +146,15 @@ def collect_webstamp(employee: models.Employee, date: datetime.date) -> list[dat
     ).order_by("stamp")
     return [ x.stamp for x in stamps if x.stamp is not None ]
 
-
-def make_sesamo_form_stamp(employee: models.Employee, stamp: datetime.datetime):
-    """セサモ形式の打刻データを生成する"""
-    # 出退勤管理, 0-03-#-01-#, アクセス制御 , 打刻時刻, 000 区画外, 002 出退勤管理, カード番号, ユーザー, 雇用者番号
-    return [
-        '"出退勤管理"',
-        "",
-        "",
-        f'"{stamp.strftime("%Y-%m-%d %H:%M:%S")}"',
-        "",
-        "",
-        "",
-        "",
-        f'"{employee.employee_no}"'
-    ]
+from django.db.models.query import QuerySet
+def collect_webstamps(employee: models.Employee, date: datetime.date) -> QuerySet:
+    """WebStampから日にちを指定してスタンプを収集"""
+    day_begin = datetime.datetime.combine(date, core.get_day_switch_time())
+    day_end = day_begin + datetime.timedelta(days=1)
+    stamps = models.WebTimeStamp.objects.filter(
+        employee=employee, stamp__gte=day_begin, stamp__lt=day_end
+    ).order_by("stamp")
+    return stamps
 
 
 def print_strip_sec(total_sec, empty):
@@ -275,16 +269,11 @@ def generate_daily_record(stamps: list[datetime.datetime], employee: models.Empl
     
 def generate_attendance_record(record: models.EmployeeDailyRecord):
     """DailyAttendanceRecordを生成する"""
-
-    attendance = models.DailyAttendanceRecord({"time_record": record})
+    attendance = models.DailyAttendanceRecord(time_record=record)
         
     # 所定の始業、終業、勤務時間を取得する
     begin_work = record.clock_in
     end_work = record.clock_out
-    
-    if begin_work is None or end_work is None:
-        attendance.save
-        return
     
     # 調整された出勤時間、退勤時間
     (begin_work, end_work) = core.adjust_working_hours(record)
@@ -305,5 +294,4 @@ def generate_attendance_record(record: models.EmployeeDailyRecord):
     attendance.legal_holiday_work = core.calc_legal_holiday(record, actual_working_time)
     attendance.holiday_work = core.calc_holiday(record, actual_working_time)
     attendance.status = record.status
-    attendance.save()    
-    
+    attendance.save()
