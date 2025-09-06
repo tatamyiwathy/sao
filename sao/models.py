@@ -138,6 +138,10 @@ class EmployeeDailyRecord(models.Model):
 
     clock_in = models.DateTimeField(null=True, blank=True)
     clock_out = models.DateTimeField(null=True, blank=True)
+
+    scheduled_clock_in = models.DateTimeField(null=True, blank=True)
+    scheduled_clock_out = models.DateTimeField(null=True, blank=True)
+
     # 勤務状況
     status = models.IntegerField(null=True, blank=True, choices=WorkingStatus.choices)
     # 残業が許可されている
@@ -174,16 +178,6 @@ class EmployeeDailyRecord(models.Model):
         if self.clock_out is None:
             return None
         return self.clock_out.replace(second=0, microsecond=0)
-
-    # 修正された始業を取得する
-    def get_modified_clockin(self) -> datetime.datetime | None:
-        clock_in = self.get_clock_in()
-        return clock_in.replace(second=0, microsecond=0)
-
-    # 修正された終業のdatetime.datetimeを取得する
-    def get_modified_clockout(self) -> datetime.datetime | None:
-        clock_out = self.get_clock_out()
-        return clock_out.replace(second=0, microsecond=0)
 
     # 休日出勤か
     def is_holidaywork(self) -> bool:
@@ -251,12 +245,6 @@ class EmployeeDailyRecord(models.Model):
                 return False
 
         # ステータスは有効
-        return True
-
-    #   打刻時刻の正当性チェック
-    def is_valid_timestamp(self) -> bool:
-        if self.clock_in > self.clock_out:
-            return False
         return True
 
 

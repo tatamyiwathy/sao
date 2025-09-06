@@ -558,9 +558,6 @@ def employee_record(request):
 
                 week_work_time = core.accumulate_weekly_working_hours(records)
 
-                # for r in calculated:
-                #     print(r.record_id)
-
                 return render(
                     request,
                     "sao/view.html",
@@ -643,7 +640,6 @@ def edit_employee(request, employee_no):
     employee = get_object_or_404(models.Employee, employee_no=employee_no)
     if request.method == "POST":
         form = forms.EditEmployeeForm(request.POST, instance=employee)
-        print("nande")
         if form.is_valid():
             is_manager = form.cleaned_data["manager"]
             employee = form.save()
@@ -1025,7 +1021,7 @@ def download_csv(request, employee_no, year, month):
                 r.holiday,
             ]
         )
-    print(summed_up["out_of_time"])
+    # print(summed_up["out_of_time"])
     writer.writerow(
         [
             "",
@@ -1340,7 +1336,7 @@ def day_switch(request):
         logger.info(f"処理中: {employee} {date}")
 
         if models.EmployeeDailyRecord.objects.filter(employee=employee, date=date).exists():
-            print("  勤務記録が既に存在しているためスキップします")
+            logger.info("  勤務記録が既に存在しているためスキップします")
             continue
 
         # WebTimeStampを集める

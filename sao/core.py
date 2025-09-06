@@ -655,3 +655,5 @@ def get_working_status(employee: Employee, date: datetime.date, clock_in: dateti
             status = WorkingStatus.C_KINMU
 
     return status
+
+

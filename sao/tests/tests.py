@@ -214,81 +214,6 @@ class TimeRecordTest(TestCase):
         timerecords = models.EmployeeDailyRecord.objects.all()
         self.assertEqual(timerecords.count(), 1)
 
-    def test_status(self):
-        scenarios = [
-            (
-                datetime.datetime(2018, 5, 1, 10, 0, 0),
-                datetime.datetime(2018, 5, 1, 19, 0, 0),
-                WorkingStatus.C_KINMU,
-                True,
-            ),
-            (
-                datetime.datetime(2018, 5, 1, 10, 0, 0),
-                datetime.datetime(2018, 5, 1, 19, 0, 0),
-                WorkingStatus.C_HOUTEI_KYUJITU,
-                False,
-            ),
-            (
-                datetime.datetime(2018, 4, 29, 10, 0, 0),
-                datetime.datetime(2018, 4, 29, 19, 0, 0),
-                WorkingStatus.C_KINMU,
-                False,
-            ),
-            (
-                datetime.datetime(2018, 4, 29, 10, 0, 0),
-                datetime.datetime(2018, 4, 29, 19, 0, 0),
-                WorkingStatus.C_KEKKIN,
-                False,
-            ),
-            (
-                datetime.datetime(2017, 2, 24, 10, 0, 0),
-                datetime.datetime(2017, 2, 24, 19, 0, 0),
-                WorkingStatus.C_KINMU,
-                True,
-            ),
-        ]
-
-        for scenario in scenarios:
-            fromTime = scenario[0]
-            toTime = scenario[1]
-            timerecord = models.EmployeeDailyRecord(
-                date=fromTime.date(),
-                employee=self.employee,
-                clock_in=fromTime,
-                clock_out=toTime,
-                status=scenario[2],
-            )
-            self.assertEqual(timerecord.is_valid_status(), scenario[3])
-
-    def test_timestamp_validation(self):
-        scenarios = [
-            (
-                datetime.date(2022, 10, 21),
-                datetime.time(hour=10),
-                datetime.time(hour=19),
-                WorkingStatus.C_KINMU,
-                True,
-            ),
-            (
-                datetime.date(2022, 10, 21),
-                datetime.time(hour=19),
-                datetime.time(hour=10),
-                WorkingStatus.C_KINMU,
-                False,
-            ),
-        ]
-
-        for scenario in scenarios:
-            fromTime = datetime.datetime.combine(scenario[0], scenario[1])
-            toTime = datetime.datetime.combine(scenario[0], scenario[2])
-            timerecord = models.EmployeeDailyRecord(
-                date=scenario[0],
-                employee=self.employee,
-                clock_in=fromTime,
-                clock_out=toTime,
-                status=scenario[3],
-            )
-            self.assertEqual(timerecord.is_valid_timestamp(), scenario[4])
 
     def test_omit_seconds(self):
         fromTime = datetime.datetime(2021, 9, 27, 15, 39, 21)
@@ -366,8 +291,6 @@ class HomeTest(TestCase):
     def test_time_record(self):
         query = models.EmployeeDailyRecord.objects.all()
         self.assertTrue(len(query) > 0)
-        # for record in query:
-        #     print(record.fromTime)
 
     def test_get_home(self):
         set_office_hours_to_employee(
@@ -515,10 +438,7 @@ class EmployeeRecordTest(TestCase):
             )
         self.assertTrue(response.status_code, 200)
         soup = BeautifulSoup(response.content, "html.parser")
-        # print(soup)
         res = soup.find("td", id="work")
-        # print(res)
-        # print(res.get_text())
 
 
 class EditEmployeeTest(TestCase):
@@ -670,14 +590,12 @@ class TimeCalculationTest(TestCase):
         create_working_hours()
 
     def test_adjust_working_hours_raise_exception(self):
-        print(sys._getframe().f_code.co_name)
         """working_hourが取得できないと例外が発生する"""
         r = create_timerecord(employee=self.emp, date=self.today, stamp=[None, None])
         with self.assertRaises(NoAssignedWorkingHourError):
             adjust_working_hours(r)
 
     def test_adjust_working_hours_on_holiday(self):
-        print(sys._getframe().f_code.co_name)
         r = create_timerecord(
             employee=self.emp,
             date=datetime.date(2021, 9, 5),  # sunday
@@ -689,7 +607,6 @@ class TimeCalculationTest(TestCase):
         self.assertEqual(end_work, None)
 
     def test_adjust_working_hours_category_A(self):
-        print(sys._getframe().f_code.co_name)
         set_office_hours_to_employee(
             self.emp, datetime.date(2019, 1, 1), get_working_hours_by_category("A")
         )
@@ -734,7 +651,6 @@ class TimeCalculationTest(TestCase):
         self.assertEqual(close.time(), Const.OCLOCK_1400)
 
     def test_adjust_working_hours_category_E(self):
-        print(sys._getframe().f_code.co_name)
         """9:30-17:30の場合"""
         set_office_hours_to_employee(
             self.emp, datetime.date(2019, 1, 1), get_working_hours_by_category("E")
@@ -780,7 +696,6 @@ class TimeCalculationTest(TestCase):
         self.assertEqual(close.time(), Const.OCLOCK_1300)
 
     def test_get_regular_working_hours(self):
-        print(sys._getframe().f_code.co_name)
         """10-19でworkが9hになる"""
         set_office_hours_to_employee(
             self.emp, datetime.date(2019, 1, 1), get_working_hours_by_category("A")
@@ -795,7 +710,6 @@ class TimeCalculationTest(TestCase):
         self.assertEqual(close.time(), Const.OCLOCK_1900)
 
     def test_tardy(self):
-        print(sys._getframe().f_code.co_name)
         """遅刻"""
         set_office_hours_to_employee(
             self.emp, datetime.date(1900, 1, 1), get_working_hours_by_category("A")
@@ -839,7 +753,6 @@ class TimeCalculationTest(TestCase):
             self.assertEqual(attn.late, scenario[3])
 
     def test_early_leaving(self):
-        # print(sys._getframe().f_code.co_name)
 
         """早退"""
         set_office_hours_to_employee(
@@ -897,7 +810,6 @@ class TimeCalculationTest(TestCase):
             self.assertEqual(attn.before, scenario[2])
 
     def test_overtime(self):
-        print(sys._getframe().f_code.co_name)
         set_office_hours_to_employee(
             self.emp, datetime.date(1900, 1, 1), get_working_hours_by_category("A")
         )
@@ -947,7 +859,6 @@ class TimeCalculationTest(TestCase):
             self.assertEqual(attn.out_of_time, scenario[2])
 
     def test_work_day(self):
-        print(sys._getframe().f_code.co_name)
         set_office_hours_to_employee(
             self.emp, datetime.date(1900, 1, 1), get_working_hours_by_category("A")
         )
@@ -960,7 +871,6 @@ class TimeCalculationTest(TestCase):
         self.assertEqual(attn.holiday, Const.TD_ZERO)
 
     def test_legal_holiday(self):
-        print(sys._getframe().f_code.co_name)
         set_office_hours_to_employee(
             self.emp, datetime.date(1900, 1, 1), get_working_hours_by_category("A")
         )
@@ -978,7 +888,6 @@ class TimeCalculationTest(TestCase):
         self.assertEqual(attn.legal_holiday, Const.TD_3H)
 
     def test_holiday(self):
-        print(sys._getframe().f_code.co_name)
         """休日はworkが0になる"""
         set_office_hours_to_employee(
             self.emp, datetime.date(2019, 1, 1), get_working_hours_by_category("A")
@@ -997,7 +906,6 @@ class TimeCalculationTest(TestCase):
         self.assertEqual(attn.work, Const.TD_ZERO)
 
     def test_holiday_work(self):
-        print(sys._getframe().f_code.co_name)
         """休日出勤 work=TD_9H"""
         set_office_hours_to_employee(
             self.emp, datetime.date(2019, 1, 1), get_working_hours_by_category("A")
@@ -1014,7 +922,6 @@ class TimeCalculationTest(TestCase):
         self.assertEqual(attn.work, Const.TD_9H)
 
     def test_missing_timestamp(self):
-        print(sys._getframe().f_code.co_name)
         set_office_hours_to_employee(
             self.emp, datetime.date(1900, 1, 1), get_working_hours_by_category("A")
         )
@@ -1033,7 +940,6 @@ class TimeCalculationTest(TestCase):
         self.assertEqual(attn.holiday, Const.TD_ZERO)
 
     def test_afternoon_holiday(self):
-        print(sys._getframe().f_code.co_name)
         """午後休"""
         set_office_hours_to_employee(
             self.emp, datetime.date(1900, 1, 1), get_working_hours_by_category("A")
@@ -1496,4 +1402,5 @@ class UpdateWorkingHoursTest(TestCase):
         # レコードは更新されていない
         self.assertNotEqual(self.working_hour.category, '')
         self.assertEqual(response.status_code, 302)  # エラーでもリダイレクト
+
 

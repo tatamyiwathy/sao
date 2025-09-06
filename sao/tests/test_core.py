@@ -691,10 +691,3 @@ class TestAdjustWorkingHours(TestCase):
         start, end = adjust_working_hours(record)
         self.assertEqual(start, datetime.combine(self.day, time(10, 0)))
         self.assertEqual(end, datetime.combine(self.day, time(15, 0)))
-
-
-
-
-
-
-
