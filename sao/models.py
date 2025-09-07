@@ -502,8 +502,8 @@ class DailyAttendanceRecord(models.Model):
     )
     
     # 調整後の時間
-    adjusted_clock_in = models.DateTimeField(null=True, blank=True)
-    adjusted_clock_out = models.DateField(null=True, blank=True)
+    clock_in = models.DateTimeField(null=True, blank=True)
+    clock_out = models.DateField(null=True, blank=True)
     # 実労働時間
     actual_working_time = models.DurationField(null=True, blank=True)
     # 遅刻
@@ -513,7 +513,7 @@ class DailyAttendanceRecord(models.Model):
     # 外出
     stepping_out = models.DurationField(null=True, blank=True)
     # 時間外労働
-    out_of_time = models.DurationField(null=True, blank=True)
+    over_time = models.DurationField(null=True, blank=True)
     # 割増=8時間を超えた分
     over_8h = models.DurationField(null=True, blank=True)
     # 深夜=22時以降
@@ -533,13 +533,13 @@ class DailyAttendanceRecord(models.Model):
         super().__init__(*args, **kwargs)
 
         self.time_record = kwargs["time_record"] if "time_record" in kwargs else None
-        self.adjusted_clock_in = kwargs["adjusted_clock_in"] if "adjusted_clock_in" in kwargs else None
-        self.adjusted_clock_out = kwargs["adjusted_clock_out"] if "adjusted_clock_out" in kwargs else None
+        self.clock_in = kwargs["adjusted_clock_in"] if "adjusted_clock_in" in kwargs else None
+        self.clock_out = kwargs["adjusted_clock_out"] if "adjusted_clock_out" in kwargs else None
         self.actual_working_time = kwargs["actual_working_time"] if "actual_working_time" in kwargs else None
         self.late_time = kwargs["late_time"] if "late_time" in kwargs else None
         self.early_leave = kwargs["early_leave"] if "early_leave" in kwargs else None
         self.stepping_out = kwargs["stepping_out"] if "stepping_out" in kwargs else None
-        self.over_time = kwargs["out_of_time"] if "out_of_time" in kwargs else None
+        self.over_time = kwargs["over_time"] if "over_time" in kwargs else None
         self.over_8h = kwargs["over_8h"] if "over_8h" in kwargs else None
         self.night_work = kwargs["night_work"] if "night_work" in kwargs else None
         self.legal_holiday_work = kwargs["legal_holiday_work"] if "legal_holiday_work" in kwargs else None
@@ -547,5 +547,6 @@ class DailyAttendanceRecord(models.Model):
         self.remark = kwargs["remark"] if "remark" in kwargs else ""
         self.status = kwargs["status"] if "status" in kwargs else None
 
+    
 
 
