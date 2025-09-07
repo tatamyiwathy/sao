@@ -533,8 +533,8 @@ class DailyAttendanceRecord(models.Model):
         super().__init__(*args, **kwargs)
 
         self.time_record = kwargs["time_record"] if "time_record" in kwargs else None
-        self.clock_in = kwargs["adjusted_clock_in"] if "adjusted_clock_in" in kwargs else None
-        self.clock_out = kwargs["adjusted_clock_out"] if "adjusted_clock_out" in kwargs else None
+        self.clock_in = kwargs["clock_in"] if "clock_in" in kwargs else None
+        self.clock_out = kwargs["clock_out"] if "clock_out" in kwargs else None
         self.actual_working_time = kwargs["actual_working_time"] if "actual_working_time" in kwargs else None
         self.late_time = kwargs["late_time"] if "late_time" in kwargs else None
         self.early_leave = kwargs["early_leave"] if "early_leave" in kwargs else None
