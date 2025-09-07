@@ -7,7 +7,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from . import calendar
 from .working_status import WorkingStatus
-from .pair_time import PairTime
+from .period import Period
 
 class Employee(models.Model):
     """社員クラス"""
@@ -130,12 +130,12 @@ class WorkingHour(models.Model):
             return False
         return self.begin_time < self.end_time
 
-    def get_paired_time(self, date: datetime.date) -> PairTime:
+    def get_paired_time(self, date: datetime.date) -> Period:
         """勤務時間の始業と終業をペアで取得する
         引数:
             date    対象の日付
         戻り値:
-            PairTime    始業と終業のペア
+            Period    始業と終業のペア
         例外:
             ValueError  勤務時間が不正
         """
@@ -143,7 +143,7 @@ class WorkingHour(models.Model):
             raise ValueError("Invalid working hour")
         start = datetime.datetime.combine(date, self.begin_time)
         end = datetime.datetime.combine(date, self.end_time)
-        return PairTime(start=start, end=end)
+        return Period(start=start, end=end)
     
 class EmployeeDailyRecord(models.Model):
     """就業実績クラス"""
@@ -195,13 +195,13 @@ class EmployeeDailyRecord(models.Model):
         if self.clock_out is None:
             return None
         return self.clock_out.replace(second=0, microsecond=0)
-    def get_clock_in_out(self) -> PairTime:
+    def get_clock_in_out(self) -> Period:
         """出退勤のペアを取得する"""
-        return PairTime(start=self.get_clock_in(), end=self.get_clock_out())
+        return Period(start=self.get_clock_in(), end=self.get_clock_out())
     
-    def get_scheduled_time(self) -> PairTime:
+    def get_scheduled_time(self) -> Period:
         """予定勤務時間のペアを取得する"""
-        return PairTime(start=self.working_hours_start, end=self.working_hours_end)
+        return Period(start=self.working_hours_start, end=self.working_hours_end)
     
     # 休日出勤か
     def is_holidaywork(self) -> bool:

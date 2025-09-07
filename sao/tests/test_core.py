@@ -51,7 +51,7 @@ from django.test import TestCase
 from datetime import date, datetime, time, timedelta
 from unittest.mock import patch, MagicMock
 from ..models import EmployeeDailyRecord, Employee, WorkingHour
-from ..pair_time import PairTime
+from ..period import Period
 
 
 class TallyMonthAttendancesTest(TestCase):
@@ -723,33 +723,33 @@ class TestAdjustWorkingHours(TestCase):
 
 class TestGetClockInOut(TestCase):
     def setUp(self):
-        # Import PairTime from the correct location
-        self.PairTime = PairTime
+        # Import Period from the correct location
+        self.Period = Period
         self.dt = datetime(2023, 8, 2, 9, 0, 0)
         self.dt2 = datetime(2023, 8, 2, 18, 0, 0)
         self.dt3 = datetime(2023, 8, 2, 20, 0, 0)
 
     def test_no_stamps(self):
         result = get_clock_in_out([])
-        self.assertIsInstance(result, self.PairTime)
+        self.assertIsInstance(result, self.Period)
         self.assertIsNone(result.start)
         self.assertIsNone(result.end)
 
     def test_one_stamp(self):
         result = get_clock_in_out([self.dt])
-        self.assertIsInstance(result, self.PairTime)
+        self.assertIsInstance(result, self.Period)
         self.assertEqual(result.start, self.dt)
         self.assertIsNone(result.end)
 
     def test_two_stamps(self):
         result = get_clock_in_out([self.dt, self.dt2])
-        self.assertIsInstance(result, self.PairTime)
+        self.assertIsInstance(result, self.Period)
         self.assertEqual(result.start, self.dt)
         self.assertEqual(result.end, self.dt2)
 
     def test_multiple_stamps(self):
         result = get_clock_in_out([self.dt, self.dt2, self.dt3])
-        self.assertIsInstance(result, self.PairTime)
+        self.assertIsInstance(result, self.Period)
         self.assertEqual(result.start, self.dt)
         self.assertEqual(result.end, self.dt3)
 
@@ -761,7 +761,7 @@ class TestGenerateDailyRecord(TestCase):
         self.employee = create_employee(create_user(), include_overtime_pay=True)
         self.day = date(2023, 8, 2)
         self.working_hour = WorkingHour(begin_time=time(10, 0), end_time=time(19, 0))
-        self.pair_time = PairTime(
+        self.period = Period(
             datetime.combine(self.day, time(10, 0)),
             datetime.combine(self.day, time(19, 0)),
         )
@@ -777,9 +777,9 @@ class TestGenerateDailyRecord(TestCase):
         # 平日、出勤退勤あり
         # Setup
         stamps = [datetime(2023, 8, 2, 10, 0), datetime(2023, 8, 2, 19, 0)]
-        mock_get_clock_in_out.return_value = PairTime(stamps[0], stamps[1])
+        mock_get_clock_in_out.return_value = Period(stamps[0], stamps[1])
         mock_get_employee_hour.return_value = self.working_hour
-        self.working_hour.get_paired_time = MagicMock(return_value=self.pair_time)
+        self.working_hour.get_paired_time = MagicMock(return_value=self.period)
 
         # Act
         generate_daily_record(stamps, self.employee, self.day)
@@ -789,8 +789,8 @@ class TestGenerateDailyRecord(TestCase):
         self.assertIsNotNone(record)
         self.assertEqual(record.clock_in, stamps[0])
         self.assertEqual(record.clock_out, stamps[1])
-        self.assertEqual(record.working_hours_start, self.pair_time.start)
-        self.assertEqual(record.working_hours_end, self.pair_time.end)
+        self.assertEqual(record.working_hours_start, self.period.start)
+        self.assertEqual(record.working_hours_end, self.period.end)
         self.assertEqual(record.status, WorkingStatus.C_KINMU)
 
 
@@ -804,9 +804,9 @@ class TestGenerateDailyRecord(TestCase):
     ):
         # 平日、出勤退勤なし
         stamps = []
-        mock_get_clock_in_out.return_value = PairTime(None, None)
+        mock_get_clock_in_out.return_value = Period(None, None)
         mock_get_employee_hour.return_value = self.working_hour
-        self.working_hour.get_paired_time = MagicMock(return_value=self.pair_time)
+        self.working_hour.get_paired_time = MagicMock(return_value=self.period)
 
         # Act
         generate_daily_record(stamps, self.employee, self.day)
@@ -816,8 +816,8 @@ class TestGenerateDailyRecord(TestCase):
         self.assertIsNotNone(record)
         self.assertEqual(record.clock_in, None)
         self.assertEqual(record.clock_out, None)
-        self.assertEqual(record.working_hours_start, self.pair_time.start)
-        self.assertEqual(record.working_hours_end, self.pair_time.end)
+        self.assertEqual(record.working_hours_start, self.period.start)
+        self.assertEqual(record.working_hours_end, self.period.end)
         self.assertEqual(record.status, WorkingStatus.C_KEKKIN)
 
     @patch("sao.core.get_working_status", return_value=WorkingStatus.C_HOUTEIGAI_KYUJITU)
@@ -831,10 +831,10 @@ class TestGenerateDailyRecord(TestCase):
         # 法定外休日、出勤退勤あり->打刻そのまま
         # Setup
         stamps = [datetime(2023, 8, 2, 10, 0), datetime(2023, 8, 2, 19, 0)]
-        mock_get_clock_in_out.return_value = PairTime(stamps[0], stamps[1])
+        mock_get_clock_in_out.return_value = Period(stamps[0], stamps[1])
         mock_get_employee_hour.return_value = self.working_hour
         # get_paired_time should not be called, but if it is, return normal
-        self.working_hour.get_paired_time = MagicMock(return_value=self.pair_time)
+        self.working_hour.get_paired_time = MagicMock(return_value=self.period)
 
         # Act
         generate_daily_record(stamps, self.employee, self.day)
@@ -860,10 +860,10 @@ class TestGenerateDailyRecord(TestCase):
         # 法定休日、出勤退勤あり->打刻そのまま
         # Setup
         stamps = [datetime(2023, 8, 2, 10, 0), datetime(2023, 8, 2, 19, 0)]
-        mock_get_clock_in_out.return_value = PairTime(stamps[0], stamps[1])
+        mock_get_clock_in_out.return_value = Period(stamps[0], stamps[1])
         mock_get_employee_hour.return_value = self.working_hour
         # get_paired_time should not be called, but if it is, return normal
-        self.working_hour.get_paired_time = MagicMock(return_value=self.pair_time)
+        self.working_hour.get_paired_time = MagicMock(return_value=self.period)
 
         # Act
         generate_daily_record(stamps, self.employee, self.day)
@@ -899,7 +899,7 @@ class TestGenerateDailyRecord(TestCase):
     #     # 勤務時間未設定->レコード作成しない
     #     # Setup
     #     stamps = [datetime(2023, 8, 2, 10, 0)]
-    #     mock_get_clock_in_out.return_value = PairTime(stamps[0], None)
+    #     mock_get_clock_in_out.return_value = Period(stamps[0], None)
 
     #     # Act
     #     generate_daily_record(stamps, self.employee, self.day)

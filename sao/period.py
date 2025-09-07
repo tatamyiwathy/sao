@@ -1,6 +1,6 @@
 import datetime
 
-class PairTime:
+class Period:
     def __init__(self, start: datetime.datetime | None, end: datetime.datetime | None):
         self.start = start
         self.end = end
@@ -18,4 +18,4 @@ class PairTime:
         return self.end - self.start
     
     def __str__(self) -> str:
-        return f"PairTime(start={self.start}, end={self.end})"
+        return f"Period(start={self.start}, end={self.end})"

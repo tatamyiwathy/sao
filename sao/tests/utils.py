@@ -1,7 +1,7 @@
 import sao.models as models
 import sao.calendar as calendar
 import sao.core as core
-import sao.pair_time as pair_time
+import sao.period as period
 import datetime
 
 from sao.working_status import WorkingStatus, get_working_status
@@ -90,7 +90,7 @@ def create_timerecord(**kwargs) -> models.EmployeeDailyRecord:
     else:
         is_holiday = calendar.is_holiday(kwargs["date"])
         is_legal_holiday = calendar.is_legal_holiday(kwargs["date"])
-        stamp = pair_time.PairTime(clock_in, clock_out)
+        stamp = period.Period(clock_in, clock_out)
         status = get_working_status(is_holiday, is_legal_holiday, not stamp.is_empty())
 
     timerecord = models.EmployeeDailyRecord(

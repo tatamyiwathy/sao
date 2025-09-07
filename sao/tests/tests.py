@@ -31,7 +31,6 @@ from .utils import (
     create_timerecord,
     create_time_stamp_data,
 )
-from sao.pair_time import PairTime
 
 class FunctionTest(TestCase):
     def test_create_user(self):

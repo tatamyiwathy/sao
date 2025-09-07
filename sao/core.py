@@ -15,7 +15,7 @@ from .models import (
 from .working_status import WorkingStatus
 from .const import Const
 from .calendar import is_holiday, is_legal_holiday
-from .pair_time import PairTime
+from .period import Period
 from .working_status import get_working_status
 from dateutil.relativedelta import relativedelta
 
@@ -23,7 +23,7 @@ from dateutil.relativedelta import relativedelta
 logger = logging.getLogger("sao")
 
 
-def get_adjusted_working_hours(status: int, working_hour: PairTime) -> PairTime:
+def get_adjusted_working_hours(status: int, working_hour: Period) -> Period:
 
     """午前休、午後休に応じて所定の勤務時間を調整する"""
 
@@ -45,9 +45,9 @@ def get_adjusted_working_hours(status: int, working_hour: PairTime) -> PairTime:
     elif status in WorkingStatus.AFTERNOON_OFF_NO_REST:
         # 休息なしなので休息１時間分ずらす
         end = end - duration / 2 - Const.TD_1H
-    return PairTime(start, end)
+    return Period(start, end)
 
-def adjust_working_hours(record: EmployeeDailyRecord) -> PairTime:
+def adjust_working_hours(record: EmployeeDailyRecord) -> Period:
     """勤務の開始、終了時間を調整する"""
     if is_holiday(record.date):
         # 休日出勤はそのまま返す
@@ -679,17 +679,17 @@ def normalize_to_business_day(day: datetime.datetime) -> datetime.datetime:
     return day
 
 
-def get_clock_in_out(stamps: list[datetime.datetime]) -> PairTime:
+def get_clock_in_out(stamps: list[datetime.datetime]) -> Period:
     """打刻のリストから出社・退社のペアを取得する
     打刻がないときは(None, None)を返す
     打刻が1件のときは(打刻, None)を返す
     打刻が2件以上のときは(最初の打刻, 最後の打刻)を返す
     """
     if not stamps:
-        return PairTime(None, None)
+        return Period(None, None)
     if len(stamps) == 1:
-        return PairTime(stamps[0], None)
-    return PairTime(stamps[0], stamps[-1])
+        return Period(stamps[0], None)
+    return Period(stamps[0], stamps[-1])
 
 
 def generate_daily_record(stamps: list[datetime.datetime], employee: Employee, date: datetime.date):
@@ -707,7 +707,7 @@ def generate_daily_record(stamps: list[datetime.datetime], employee: Employee, d
         scheduled_time = working_hour.get_paired_time(date)
         if is_holiday(date):
             # 休日の場合は所定の勤務時間は設定しない
-            scheduled_time = PairTime(None, None)
+            scheduled_time = Period(None, None)
     except NoAssignedWorkingHourError:
         # 勤務時間が設定されていないので処理しない
         return
