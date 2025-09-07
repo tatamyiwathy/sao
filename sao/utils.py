@@ -183,8 +183,10 @@ def print_total_sec(total_sec):
 def is_missed_stamp(clock_in, clock_out):
     """打刻漏れがあるかどうかを判定する"""
     if clock_in and clock_out:
+        # どちらもある
         return False
     if not clock_in and not clock_out:
+        # どちらもない
         return False
 
     return True
@@ -192,11 +194,7 @@ def is_missed_stamp(clock_in, clock_out):
 
 def is_empty_stamp(clock_in, clock_out):
     """打刻がないかどうかを判定する"""
-    if clock_in:
-        return False
-    if clock_out:
-        return False
-    return True
+    return True if (clock_in,clock_out)==(None,None) else False
 
 
 def is_over_half_working_hours(target_time: datetime.datetime,
