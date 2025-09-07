@@ -7,6 +7,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from . import calendar
 from .working_status import WorkingStatus
+from .pair_time import PairTime
 
 class Employee(models.Model):
     """社員クラス"""
@@ -129,18 +130,34 @@ class WorkingHour(models.Model):
             return False
         return self.begin_time < self.end_time
 
-
+    def get_paired_time(self, date: datetime.date) -> PairTime:
+        """勤務時間の始業と終業をペアで取得する
+        引数:
+            date    対象の日付
+        戻り値:
+            PairTime    始業と終業のペア
+        例外:
+            ValueError  勤務時間が不正
+        """
+        if not self.is_valid():
+            raise ValueError("Invalid working hour")
+        start = datetime.datetime.combine(date, self.begin_time)
+        end = datetime.datetime.combine(date, self.end_time)
+        return PairTime(start=start, end=end)
+    
 class EmployeeDailyRecord(models.Model):
     """就業実績クラス"""
 
     employee = models.ForeignKey("Employee", on_delete=models.CASCADE)
     date = models.DateField()
 
+    # 打刻した時間
     clock_in = models.DateTimeField(null=True, blank=True)
     clock_out = models.DateTimeField(null=True, blank=True)
 
-    scheduled_start_time = models.DateTimeField(null=True, blank=True)
-    scheduled_end_time = models.DateTimeField(null=True, blank=True)
+    # 所定の勤務時間
+    working_hours_start = models.DateTimeField(null=True, blank=True)
+    working_hours_end = models.DateTimeField(null=True, blank=True)
 
     # 勤務状況
     status = models.IntegerField(null=True, blank=True, choices=WorkingStatus.choices)
@@ -178,7 +195,14 @@ class EmployeeDailyRecord(models.Model):
         if self.clock_out is None:
             return None
         return self.clock_out.replace(second=0, microsecond=0)
-
+    def get_clock_in_out(self) -> PairTime:
+        """出退勤のペアを取得する"""
+        return PairTime(start=self.get_clock_in(), end=self.get_clock_out())
+    
+    def get_scheduled_time(self) -> PairTime:
+        """予定勤務時間のペアを取得する"""
+        return PairTime(start=self.working_hours_start, end=self.working_hours_end)
+    
     # 休日出勤か
     def is_holidaywork(self) -> bool:
         if self.status is WorkingStatus.C_NONE:

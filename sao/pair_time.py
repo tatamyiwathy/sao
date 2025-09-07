@@ -10,3 +10,12 @@ class PairTime:
     
     def is_empty(self) -> bool:
         return self.start is None and self.end is None
+    
+    def duration(self) -> datetime.timedelta | None:
+        """ 終了時間 - 開始時間 を返す。どちらかがNoneならNoneを返す """
+        if self.start is None or self.end is None:
+            return None
+        return self.end - self.start
+    
+    def __str__(self) -> str:
+        return f"PairTime(start={self.start}, end={self.end})"

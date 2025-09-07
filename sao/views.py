@@ -1343,7 +1343,7 @@ def day_switch(request):
         stamps = utils.collect_webstamps(employee, date)
 
         # EmployeeDailyRecordを生成する
-        utils.generate_daily_record([x.stamp for x in stamps], employee, date)
+        core.generate_daily_record([x.stamp for x in stamps], employee, date)
 
         # EmployeeDailyRecordを集めてDailyAttendanceRecordを生成する
         records = models.EmployeeDailyRecord.objects.filter(employee=employee, date=date)
@@ -1353,7 +1353,7 @@ def day_switch(request):
 
         # DailyAttendanceRecordを生成する
         try:
-            utils.generate_attendance_record(records[0])
+            core.generate_attendance_record(records[0])
         except Exception as e:
             logger.error(f"勤務実績の生成に失敗しました: {employee} {date} {e}")
             continue

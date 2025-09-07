@@ -2,7 +2,7 @@ import unittest
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from sao import models, utils
+from sao import models, utils, core
 import datetime
 from common.utils_for_test import (
     TEST_ADMIN_USER,
@@ -70,16 +70,16 @@ class DaySwitchViewTests(TestCase):
         self.url = reverse("sao:day_switch")
         # Patch utils functions to avoid side effects
         self._collect_webstamp = utils.collect_webstamp
-        self._generate_daily_record = utils.generate_daily_record
-        self._generate_attendance_record = utils.generate_attendance_record
+        self._generate_daily_record = core.generate_daily_record
+        self._generate_attendance_record = core.generate_attendance_record
         utils.collect_webstamp = lambda employee, date: []
-        utils.generate_daily_record = lambda stamps, employee, date: models.EmployeeDailyRecord.objects.create(employee=employee, date=date)
-        utils.generate_attendance_record = lambda record: None
+        core.generate_daily_record = lambda stamps, employee, date: models.EmployeeDailyRecord.objects.create(employee=employee, date=date)
+        core.generate_attendance_record = lambda record: None
 
     def tearDown(self):
         utils.collect_webstamp = self._collect_webstamp
-        utils.generate_daily_record = self._generate_daily_record
-        utils.generate_attendance_record = self._generate_attendance_record
+        core.generate_daily_record = self._generate_daily_record
+        core.generate_attendance_record = self._generate_attendance_record
 
     def test_day_switch_post_creates_daily_record(self):
         response = self.client.post(self.url, {"date": self.date.strftime("%Y-%m-%d")})

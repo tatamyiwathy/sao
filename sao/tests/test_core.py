@@ -38,6 +38,8 @@ from ..core import (
     calc_actual_working_time,
     get_day_switch_time,
     normalize_to_business_day,
+    get_clock_in_out,
+    generate_daily_record
 )
 from ..const import Const
 from ..calendar import monthdays, is_holiday
@@ -45,12 +47,11 @@ from ..working_status import WorkingStatus
 from ..models import DaySwitchTime
 from unittest.mock import patch
 from datetime import datetime, date, time
-from ..core import get_today
 from django.test import TestCase
 from datetime import date, datetime, time, timedelta
 from unittest.mock import patch, MagicMock
-from ..core import adjust_working_hours
 from ..models import EmployeeDailyRecord, Employee, WorkingHour
+from ..pair_time import PairTime
 
 
 class TallyMonthAttendancesTest(TestCase):
@@ -112,6 +113,7 @@ class AccumulateWeeklyWorkingHoursTest(TestCase):
             week += 1
 
     def test_accumulate_weekly_working_hours_when_empty(self) -> None:
+        EmployeeDailyRecord.objects.all().delete()
         """勤怠記録がない場合の週間勤務時間集計のテスト"""
         set_office_hours_to_employee(
             self.employee, date(1900, 1, 1), get_working_hours_by_category("A")
@@ -132,7 +134,7 @@ class TestSumupAttendances(TestCase):
         set_office_hours_to_employee(
             employee, date(1901, 1, 1), get_working_hours_by_category("A")
         )
-        attendances = attendance.tally_monthly_attendance(8, EmployeeDailyRecord.objects.all())
+        attendances = attendance.tally_monthly_attendance(8, [x for x in EmployeeDailyRecord.objects.all()])
         summed_up = attendance.sumup_attendances(attendances)
         self.assertEqual(summed_up["work"], TOTAL_ACTUAL_WORKING_TIME)
         self.assertEqual(summed_up["late"], Const.TD_3H)  # 遅刻
@@ -302,10 +304,10 @@ class TestCalcOvertime(TestCase):
         time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 3))
         working_hours = adjust_working_hours(time_record)
         period = calc_assumed_working_time(
-            time_record, working_hours[0], working_hours[1]
+            time_record, working_hours.start, working_hours.end
         )
         working_time = calc_actual_working_time(
-            time_record, working_hours[0], working_hours[1], Const.TD_ZERO
+            time_record, working_hours.start, working_hours.end, Const.TD_ZERO
         )
         overtime = calc_overtime(time_record, working_time, period)
         self.assertEqual(overtime, timedelta(hours=1))
@@ -314,10 +316,10 @@ class TestCalcOvertime(TestCase):
         time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 1))  # 日曜日
         working_hours = adjust_working_hours(time_record)
         period = calc_assumed_working_time(
-            time_record, working_hours[0], working_hours[1]
+            time_record, working_hours.start, working_hours.end
         )
         working_time = calc_actual_working_time(
-            time_record, working_hours[0], working_hours[1], Const.TD_ZERO
+            time_record, working_hours.start, working_hours.end, Const.TD_ZERO
         )
         overtime = calc_overtime(time_record, working_time, period)
         self.assertEqual(overtime, timedelta(hours=0))
@@ -326,10 +328,10 @@ class TestCalcOvertime(TestCase):
         time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 23))
         working_hours = adjust_working_hours(time_record)
         period = calc_assumed_working_time(
-            time_record, working_hours[0], working_hours[1]
+            time_record, working_hours.start, working_hours.end
         )
         working_time = calc_actual_working_time(
-            time_record, working_hours[0], working_hours[1], Const.TD_ZERO
+            time_record, working_hours.start, working_hours.end, Const.TD_ZERO
         )
         overtime = calc_overtime(time_record, working_time, period)
         self.assertEqual(overtime, timedelta(hours=0))
@@ -348,7 +350,7 @@ class TestCalcOver8h(TestCase):
         time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 3))
         working_hours = adjust_working_hours(time_record)
         working_time = calc_actual_working_time(
-            time_record, working_hours[0], working_hours[1], Const.TD_ZERO
+            time_record, working_hours.start, working_hours.end, Const.TD_ZERO
         )
         over_8h = calc_over_8h(time_record, working_time)
         self.assertEqual(over_8h, timedelta(hours=1))
@@ -622,10 +624,15 @@ class TestAdjustWorkingHours(TestCase):
     def test_normal_workday(self, mock_get_employee_hour, mock_is_holiday):
         # 平日、出勤退勤あり
         mock_get_employee_hour.return_value = self.working_hour
-        record = EmployeeDailyRecord(date=self.day, employee=self.employee, status=WorkingStatus.C_KINMU)
-        start, end = adjust_working_hours(record)
-        self.assertEqual(start, datetime.combine(self.day, Const.OCLOCK_1000))
-        self.assertEqual(end, datetime.combine(self.day, Const.OCLOCK_1900))
+        wh_start = datetime.combine(self.day, self.working_hour.begin_time)
+        wh_end = datetime.combine(self.day, self.working_hour.end_time)
+        record = EmployeeDailyRecord(date=self.day, employee=self.employee, 
+                                        working_hours_start=wh_start,
+                                        working_hours_end=wh_end,
+                                     status=WorkingStatus.C_KINMU)
+        working_hours = adjust_working_hours(record)
+        self.assertEqual(working_hours.start, datetime.combine(self.day, Const.OCLOCK_1000))
+        self.assertEqual(working_hours.end, datetime.combine(self.day, Const.OCLOCK_1900))
 
     @patch("sao.core.is_holiday", return_value=True)
     def test_holiday_work(self, mock_is_holiday):
@@ -637,48 +644,63 @@ class TestAdjustWorkingHours(TestCase):
             clock_out=datetime.combine(self.day, time(18, 0)),
             status=WorkingStatus.C_KINMU,
         )
-        start, end = adjust_working_hours(record)
-        self.assertEqual(start, datetime.combine(self.day, time(9, 0)))
-        self.assertEqual(end, datetime.combine(self.day, time(18, 0)))
+        working_hours = adjust_working_hours(record)
+        self.assertEqual(working_hours.start, datetime.combine(self.day, time(9, 0)))
+        self.assertEqual(working_hours.end, datetime.combine(self.day, time(18, 0)))
 
     @patch("sao.core.is_holiday", return_value=False)
     @patch("sao.core.get_employee_hour")
     def test_morning_off(self, mock_get_employee_hour, mock_is_holiday):
         # 午前休
         mock_get_employee_hour.return_value = self.working_hour
-        record = EmployeeDailyRecord(date=self.day, employee=self.employee, status=WorkingStatus.C_YUUKYUU_GOZENKYU)
-        start, end = adjust_working_hours(record)
+        wh_start = datetime.combine(self.day, self.working_hour.begin_time)
+        wh_end = datetime.combine(self.day, self.working_hour.end_time)
+        record = EmployeeDailyRecord(date=self.day, employee=self.employee, 
+                                     working_hours_start=wh_start,
+                                     working_hours_end=wh_end,
+                                     status=WorkingStatus.C_YUUKYUU_GOZENKYU)
+        working_hours = adjust_working_hours(record)
         # Duration = 9h, minus 1h rest = 8h, half = 4h
         expected_start = datetime.combine(self.day, Const.OCLOCK_1000) + timedelta(hours=4) + Const.TD_1H
         expected_end = datetime.combine(self.day, Const.OCLOCK_1900)
-        self.assertEqual(start, expected_start)
-        self.assertEqual(end, expected_end)
+        self.assertEqual(working_hours.start, expected_start)
+        self.assertEqual(working_hours.end, expected_end)
 
     @patch("sao.core.is_holiday", return_value=False)
     @patch("sao.core.get_employee_hour")
     def test_afternoon_off_with_rest(self, mock_get_employee_hour, mock_is_holiday):
         # 午後休（休息あり）
         mock_get_employee_hour.return_value = self.working_hour
-        record = EmployeeDailyRecord(date=self.day, employee=self.employee, status=WorkingStatus.C_YUUKYUU_GOGOKYUU_ARI)
-        start, end = adjust_working_hours(record)
+        wh_start = datetime.combine(self.day, self.working_hour.begin_time)
+        wh_end = datetime.combine(self.day, self.working_hour.end_time)
+        record = EmployeeDailyRecord(date=self.day, employee=self.employee, 
+                                        working_hours_start=wh_start,
+                                        working_hours_end=wh_end,
+                                     status=WorkingStatus.C_YUUKYUU_GOGOKYUU_ARI)
+        working_hours = adjust_working_hours(record)
         # Duration = 9h, minus 1h rest = 8h, half = 4h
         expected_start = datetime.combine(self.day, Const.OCLOCK_1000)
         expected_end = datetime.combine(self.day, Const.OCLOCK_1900) - timedelta(hours=4)
-        self.assertEqual(start, expected_start)
-        self.assertEqual(end, expected_end)
+        self.assertEqual(working_hours.start, expected_start)
+        self.assertEqual(working_hours.end, expected_end)
 
     @patch("sao.core.is_holiday", return_value=False)
     @patch("sao.core.get_employee_hour")
     def test_afternoon_off_no_rest(self, mock_get_employee_hour, mock_is_holiday):
         # 午後休（休息なし）
         mock_get_employee_hour.return_value = self.working_hour
-        record = EmployeeDailyRecord(date=self.day, employee=self.employee, status=WorkingStatus.C_YUUKYUU_GOGOKYUU_NASHI)
-        start, end = adjust_working_hours(record)
+        wh_start = datetime.combine(self.day, self.working_hour.begin_time)
+        wh_end = datetime.combine(self.day, self.working_hour.end_time)
+        record = EmployeeDailyRecord(date=self.day, employee=self.employee, 
+                                        working_hours_start=wh_start,
+                                        working_hours_end=wh_end,
+                                     status=WorkingStatus.C_YUUKYUU_GOGOKYUU_NASHI)
+        working_hours = adjust_working_hours(record)
         # Duration = 9h, minus 1h rest = 8h, half = 4h, minus 1h rest
         expected_start = datetime.combine(self.day, Const.OCLOCK_1000)
         expected_end = datetime.combine(self.day, Const.OCLOCK_1900) - timedelta(hours=4) - Const.TD_1H
-        self.assertEqual(start, expected_start)
-        self.assertEqual(end, expected_end)
+        self.assertEqual(working_hours.start, expected_start)
+        self.assertEqual(working_hours.end, expected_end)
 
     @patch("sao.core.is_holiday", return_value=False)
     @patch("sao.core.get_employee_hour")
@@ -687,7 +709,203 @@ class TestAdjustWorkingHours(TestCase):
         # Working hour less than 6h, no rest adjustment
         short_working_hour = WorkingHour(begin_time=time(10, 0), end_time=time(15, 0))
         mock_get_employee_hour.return_value = short_working_hour
-        record = EmployeeDailyRecord(date=self.day, employee=self.employee, status=WorkingStatus.C_KINMU)
-        start, end = adjust_working_hours(record)
-        self.assertEqual(start, datetime.combine(self.day, time(10, 0)))
-        self.assertEqual(end, datetime.combine(self.day, time(15, 0)))
+
+        working_hours_start = datetime.combine(self.day, short_working_hour.begin_time)
+        working_hours_end = datetime.combine(self.day, short_working_hour.end_time)
+        record = EmployeeDailyRecord(date=self.day, employee=self.employee, 
+                                     working_hours_start=working_hours_start,
+                                     working_hours_end=working_hours_end,
+                                     status=WorkingStatus.C_KINMU)
+        working_hours = adjust_working_hours(record)
+        self.assertEqual(working_hours.start, datetime.combine(self.day, time(10, 0)))
+        self.assertEqual(working_hours.end, datetime.combine(self.day, time(15, 0)))
+
+
+class TestGetClockInOut(TestCase):
+    def setUp(self):
+        # Import PairTime from the correct location
+        self.PairTime = PairTime
+        self.dt = datetime(2023, 8, 2, 9, 0, 0)
+        self.dt2 = datetime(2023, 8, 2, 18, 0, 0)
+        self.dt3 = datetime(2023, 8, 2, 20, 0, 0)
+
+    def test_no_stamps(self):
+        result = get_clock_in_out([])
+        self.assertIsInstance(result, self.PairTime)
+        self.assertIsNone(result.start)
+        self.assertIsNone(result.end)
+
+    def test_one_stamp(self):
+        result = get_clock_in_out([self.dt])
+        self.assertIsInstance(result, self.PairTime)
+        self.assertEqual(result.start, self.dt)
+        self.assertIsNone(result.end)
+
+    def test_two_stamps(self):
+        result = get_clock_in_out([self.dt, self.dt2])
+        self.assertIsInstance(result, self.PairTime)
+        self.assertEqual(result.start, self.dt)
+        self.assertEqual(result.end, self.dt2)
+
+    def test_multiple_stamps(self):
+        result = get_clock_in_out([self.dt, self.dt2, self.dt3])
+        self.assertIsInstance(result, self.PairTime)
+        self.assertEqual(result.start, self.dt)
+        self.assertEqual(result.end, self.dt3)
+
+
+
+
+class TestGenerateDailyRecord(TestCase):
+    def setUp(self):
+        self.employee = create_employee(create_user(), include_overtime_pay=True)
+        self.day = date(2023, 8, 2)
+        self.working_hour = WorkingHour(begin_time=time(10, 0), end_time=time(19, 0))
+        self.pair_time = PairTime(
+            datetime.combine(self.day, time(10, 0)),
+            datetime.combine(self.day, time(19, 0)),
+        )
+
+    @patch("sao.working_status.get_working_status", return_value=WorkingStatus.C_KINMU)
+    @patch("sao.calendar.is_legal_holiday", return_value=False)
+    @patch("sao.calendar.is_holiday", return_value=False)
+    @patch("sao.core.get_employee_hour")
+    @patch("sao.core.get_clock_in_out")
+    def test_generate_daily_record_normal(
+        self, mock_get_clock_in_out, mock_get_employee_hour, mock_is_holiday, mock_is_legal_holiday, mock_get_working_status
+    ):
+        # 平日、出勤退勤あり
+        # Setup
+        stamps = [datetime(2023, 8, 2, 10, 0), datetime(2023, 8, 2, 19, 0)]
+        mock_get_clock_in_out.return_value = PairTime(stamps[0], stamps[1])
+        mock_get_employee_hour.return_value = self.working_hour
+        self.working_hour.get_paired_time = MagicMock(return_value=self.pair_time)
+
+        # Act
+        generate_daily_record(stamps, self.employee, self.day)
+
+        # Assert
+        record = EmployeeDailyRecord.objects.filter(employee=self.employee, date=self.day).first()
+        self.assertIsNotNone(record)
+        self.assertEqual(record.clock_in, stamps[0])
+        self.assertEqual(record.clock_out, stamps[1])
+        self.assertEqual(record.working_hours_start, self.pair_time.start)
+        self.assertEqual(record.working_hours_end, self.pair_time.end)
+        self.assertEqual(record.status, WorkingStatus.C_KINMU)
+
+
+    @patch("sao.working_status.get_working_status", return_value=WorkingStatus.C_KEKKIN)
+    @patch("sao.calendar.is_legal_holiday", return_value=False)
+    @patch("sao.calendar.is_holiday", return_value=False)
+    @patch("sao.core.get_employee_hour")
+    @patch("sao.core.get_clock_in_out")
+    def test_generate_daily_record_no_stamp(
+        self, mock_get_clock_in_out, mock_get_employee_hour, mock_is_holiday, mock_is_legal_holiday, mock_get_working_status
+    ):
+        # 平日、出勤退勤なし
+        stamps = []
+        mock_get_clock_in_out.return_value = PairTime(None, None)
+        mock_get_employee_hour.return_value = self.working_hour
+        self.working_hour.get_paired_time = MagicMock(return_value=self.pair_time)
+
+        # Act
+        generate_daily_record(stamps, self.employee, self.day)
+
+        # Assert
+        record = EmployeeDailyRecord.objects.filter(employee=self.employee, date=self.day).first()
+        self.assertIsNotNone(record)
+        self.assertEqual(record.clock_in, None)
+        self.assertEqual(record.clock_out, None)
+        self.assertEqual(record.working_hours_start, self.pair_time.start)
+        self.assertEqual(record.working_hours_end, self.pair_time.end)
+        self.assertEqual(record.status, WorkingStatus.C_KEKKIN)
+
+    @patch("sao.core.get_working_status", return_value=WorkingStatus.C_HOUTEIGAI_KYUJITU)
+    @patch("sao.core.is_legal_holiday", return_value=False)
+    @patch("sao.core.is_holiday", return_value=True)
+    @patch("sao.core.get_employee_hour")
+    @patch("sao.core.get_clock_in_out")
+    def test_generate_daily_record_holiday(
+        self, mock_get_clock_in_out, mock_get_employee_hour, mock_is_holiday, mock_is_legal_holiday, mock_get_working_status
+    ):
+        # 法定外休日、出勤退勤あり->打刻そのまま
+        # Setup
+        stamps = [datetime(2023, 8, 2, 10, 0), datetime(2023, 8, 2, 19, 0)]
+        mock_get_clock_in_out.return_value = PairTime(stamps[0], stamps[1])
+        mock_get_employee_hour.return_value = self.working_hour
+        # get_paired_time should not be called, but if it is, return normal
+        self.working_hour.get_paired_time = MagicMock(return_value=self.pair_time)
+
+        # Act
+        generate_daily_record(stamps, self.employee, self.day)
+
+        # Assert
+        record = EmployeeDailyRecord.objects.filter(employee=self.employee, date=self.day).first()
+        self.assertIsNotNone(record)
+        self.assertEqual(record.working_hours_start, None)
+        self.assertEqual(record.working_hours_end, None)
+        self.assertEqual(record.clock_in, stamps[0])
+        self.assertEqual(record.clock_out, stamps[1])
+        self.assertEqual(record.status, WorkingStatus.C_HOUTEIGAI_KYUJITU)
+
+
+    @patch("sao.core.get_working_status", return_value=WorkingStatus.C_HOUTEI_KYUJITU)
+    @patch("sao.core.is_legal_holiday", return_value=True)
+    @patch("sao.core.is_holiday", return_value=True)
+    @patch("sao.core.get_employee_hour")
+    @patch("sao.core.get_clock_in_out")
+    def test_generate_daily_record_legal_holiday(
+        self, mock_get_clock_in_out, mock_get_employee_hour, mock_is_holiday, mock_is_legal_holiday, mock_get_working_status
+    ):
+        # 法定休日、出勤退勤あり->打刻そのまま
+        # Setup
+        stamps = [datetime(2023, 8, 2, 10, 0), datetime(2023, 8, 2, 19, 0)]
+        mock_get_clock_in_out.return_value = PairTime(stamps[0], stamps[1])
+        mock_get_employee_hour.return_value = self.working_hour
+        # get_paired_time should not be called, but if it is, return normal
+        self.working_hour.get_paired_time = MagicMock(return_value=self.pair_time)
+
+        # Act
+        generate_daily_record(stamps, self.employee, self.day)
+
+        # Assert
+        record = EmployeeDailyRecord.objects.filter(employee=self.employee, date=self.day).first()
+        self.assertIsNotNone(record)
+        self.assertEqual(record.working_hours_start, None)
+        self.assertEqual(record.working_hours_end, None)
+        self.assertEqual(record.clock_in, stamps[0])
+        self.assertEqual(record.clock_out, stamps[1])
+        self.assertEqual(record.status, WorkingStatus.C_HOUTEI_KYUJITU)
+
+    @patch("sao.core.is_holiday", return_value=True)
+    @patch("sao.core.get_employee_hour")
+    def test_generate_daily_record_holiday_no_stamps(self, mock_get_employee_hour, mock_is_holiday):
+        # 休日出勤なし 打刻が空のレコードを作成するい
+        stamps = []
+        mock_get_employee_hour.return_value = self.working_hour
+        generate_daily_record(stamps, self.employee, self.day)
+        record = EmployeeDailyRecord.objects.filter(employee=self.employee, date=self.day).first()
+        self.assertIsNotNone(record)
+        self.assertIsNone(record.clock_in)
+        self.assertIsNone(record.clock_out)
+        self.assertEqual(record.working_hours_start, None)
+        self.assertEqual(record.working_hours_end, None)
+        self.assertEqual(record.status, WorkingStatus.C_KYUJITU)
+
+
+    # @patch("sao.core.get_employee_hour", side_effect=NoAssignedWorkingHourError)
+    # @patch("sao.core.get_clock_in_out")
+    # def test_generate_daily_record_no_working_hour(self, mock_get_clock_in_out, mock_get_employee_hour):
+    #     # 勤務時間未設定->レコード作成しない
+    #     # Setup
+    #     stamps = [datetime(2023, 8, 2, 10, 0)]
+    #     mock_get_clock_in_out.return_value = PairTime(stamps[0], None)
+
+    #     # Act
+    #     generate_daily_record(stamps, self.employee, self.day)
+
+    #     # Assert
+    #     record = EmployeeDailyRecord.objects.filter(employee=self.employee, date=self.day).first()
+    #     self.assertIsNone(record)
+
+
