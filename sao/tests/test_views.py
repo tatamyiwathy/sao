@@ -1,15 +1,11 @@
 import unittest
+import datetime
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from sao import models, utils, core
-import datetime
 from common.utils_for_test import (
-    TEST_ADMIN_USER,
-    TEST_USER,
-    create_client,
     create_employee,
-    create_super_user,
     create_user,
 )
 
