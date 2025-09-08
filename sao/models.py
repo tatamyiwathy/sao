@@ -5,9 +5,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from . import calendar
-from .working_status import WorkingStatus
-from .period import Period
+from sao.calendar import is_holiday
+from sao.working_status import WorkingStatus
+from sao.period import Period
 
 class Employee(models.Model):
     """社員クラス"""
@@ -218,7 +218,7 @@ class EmployeeDailyRecord(models.Model):
         ・打刻日が土曜なのにstatusが休出（法定）
         """
         d = datetime.date(self.date.year, self.date.month, self.date.day)
-        if calendar.is_holiday(d):
+        if is_holiday(d):
             if self.status in [WorkingStatus.C_KINMU, WorkingStatus.C_KEKKIN]:
                 # 休日なのに勤務したこになっている
                 return False
