@@ -1,10 +1,14 @@
-import sao.models as models
-import sao.calendar as calendar
-import sao.core as core
-import sao.period as period
+
+# import sao.models as models
+# import sao.calendar as calendar
+# import sao.core as core
+# import sao.period as period
 import datetime
 
+from sao.models import Employee, WorkingHour, EmployeeHour
+from sao import models, calendar, core, period
 from sao.working_status import WorkingStatus, get_working_status
+from sao.attendance import Attendance
 
 
 def create_working_hours():
@@ -108,6 +112,8 @@ def create_timerecord(**kwargs) -> models.EmployeeDailyRecord:
 
 from ..models import DailyAttendanceRecord
 def create_attendance_record(time_record: models.EmployeeDailyRecord) -> models.DailyAttendanceRecord:
+    if time_record is None:
+        raise ValueError("time_record is None")
     attn = core.generate_attendance_record(time_record)
     return attn
 
@@ -170,11 +176,13 @@ def create_time_stamp_data(employee: models.Employee):
         working_hours_start = datetime.datetime.combine(date, datetime.time(10, 0, 0))
         working_hours_end = datetime.datetime.combine(date, datetime.time(19, 0, 0))
 
-        create_timerecord(
+        record = create_timerecord(
                 employee=employee,
                 date=date,
                 stamp=[clock_in, clock_out],
                 working_hours=[working_hours_start, working_hours_end])
+        
+        attendance = create_attendance_record(record)
 
 
 def to_timedelta(time: datetime.datetime) -> datetime.timedelta:
@@ -311,11 +319,5 @@ ACTUAL_WORKING_TIME_SAMPLE = [
 TOTAL_ACTUAL_WORKING_TIME = sum(
     [x[1] for x in ACTUAL_WORKING_TIME_SAMPLE], datetime.timedelta(seconds=0)
 )
-
-
-from ..models import EmployeeDailyRecord
-from ..attendance import Attendance, is_missed_stamp
-def generate_attendance(record: EmployeeDailyRecord) -> Attendance:
-    return Attendance(record)
 
 

@@ -33,5 +33,13 @@ class TestPeriod(unittest.TestCase):
         pt = Period(start, end)
         self.assertFalse(pt.is_empty())
 
+    def test_range(self):
+        start = datetime.datetime(2024, 6, 1, 10, 0)
+        end = datetime.datetime(2024, 6, 30, 10, 0)
+        pt = Period(start, end)
+        for t in pt.range():
+            self.assertTrue(start <= t < end)
+
+
 if __name__ == '__main__':
     unittest.main()

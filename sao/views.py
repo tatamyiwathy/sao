@@ -11,16 +11,43 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
-from . import calendar, core, forms, models, utils, attendance
-from .core import (
+from sao import core, forms, models
+from sao.calendar import (
+    get_first_day, 
+    get_last_day, is_holiday,
+    get_next_month_date,
+    get_last_sunday,
+    get_next_sunday,
+)
+from sao.core import (
     get_employee_hour,
     get_working_hours_tobe_assign,
     NoAssignedWorkingHourError,
     get_day_switch_time,
     normalize_to_business_day,
+    get_monthly_attendance,
+    get_attendance_in_period,
+    fill_missiing_attendance,
 )
-from .const import Const
-from .working_status import WorkingStatus
+from sao.const import Const
+from sao.working_status import WorkingStatus
+from sao.utils import (
+    tally_attendances, 
+    tally_over_work_time,
+    get_employee_type,
+    get_department,
+    get_today_stamp,
+    get_employee_status,
+    attention_overtime,
+    is_empty_stamp,
+    is_missed_stamp,
+    create_user,
+    create_employee,
+    print_total_sec,
+    collect_webstamps,
+)
+from sao.period import Period
+from sao.attendance import Attendance
 
 logger = logging.getLogger("sao")  # views専用のロガー
 
@@ -30,21 +57,21 @@ def home(request):
     ■マイページ
     """
 
-    def list_warnings(attn: attendance.Attendance, today: datetime.date) -> dict:
+    def list_warnings(attn: Attendance, today: datetime.date) -> dict:
         """警告をリストアップする"""
         warnings = {}
         if attn.remark:
             # 処理済み
             return {}
 
-        if (today - attn.date).days < 2:
+        if (today - attn.date.date()).days < 2:
             # 猶予期間
             return {}
 
-        if utils.is_missed_stamp(attn.clock_in, attn.clock_out):
+        if is_missed_stamp(attn.clock_in, attn.clock_out):
             # 打刻が片方だけ
             warnings["missed_stamp"] = True
-        if not calendar.is_holiday(attn.date) and utils.is_empty_stamp(
+        if not is_holiday(attn.date.date()) and is_empty_stamp(
             attn.clock_in, attn.clock_out
         ):
             # 平日で打刻なし
@@ -58,22 +85,22 @@ def home(request):
         if attn.late > Const.TD_ZERO:
             # 遅刻
             warnings["tardy"] = True
-        if attn.before > Const.TD_ZERO:
+        if attn.actual_work > Const.TD_ZERO:
             # 早退
             warnings["leave_early"] = True
         if attn.night > Const.TD_ZERO:
             # 深夜
             warnings["midnight_work"] = True
 
-        if attn.steppingout > Const.TD_ZERO:
+        if attn.stepping_out > Const.TD_ZERO:
             # 外出
             warnings["steppingout"] = True
 
         return warnings
 
-    def is_need_overwork_notification(attn: attendance.Attendance, today: datetime.date) -> bool:
+    def is_need_overwork_notification(attn: Attendance, today: datetime.date) -> bool:
         """残業の通知が必要かどうかを判定する"""
-        if attn.summed_out_of_time <= datetime.timedelta(hours=25):
+        if attn.total_over <= datetime.timedelta(hours=25):
             return False
 
         if attn.remark:
@@ -84,7 +111,7 @@ def home(request):
             # 猶予期間
             return False
 
-        if calendar.is_holiday(attn.date) and utils.is_empty_stamp(
+        if is_holiday(attn.date) and is_empty_stamp(
             attn.clock_in, attn.clock_out
         ):
             return False
@@ -92,7 +119,7 @@ def home(request):
         return True
 
     def set_warning_message(
-        attendances: list, view_date: datetime.date, today: datetime.date
+        attendances: list[Attendance], view_date: datetime.date, today: datetime.date
     ) -> list:
         """警告メッセージを設定する"""
         for attn in attendances:
@@ -116,8 +143,8 @@ def home(request):
 
         if (
             employee.include_overtime_pay
-            and (attendances[-1].summed_out_of_time <= datetime.timedelta(hours=25))
-            and (attendances[-1].summed_out_of_time > datetime.timedelta(hours=23))
+            and (attendances[-1].total_over <= datetime.timedelta(hours=25))
+            and (attendances[-1].total_over > datetime.timedelta(hours=23))
         ):
             if view_date.year == today.year and view_date.month == today.month:
                 messages.warning(
@@ -131,23 +158,24 @@ def home(request):
         employee: models.Employee, view_date: datetime.date, today: datetime.date
     ):
         """勤務者のマイページを作成する"""
-        # 集計
-        records = core.collect_timerecord_by_month(employee, view_date)
-        try:
-            attendances = attendance.tally_monthly_attendance(view_date.month, records)
-        except NoAssignedWorkingHourError:
-            # 勤務時間が割り当てられていない
-            attendances = []
-
+        first_day = datetime.datetime.combine(get_first_day(view_date), datetime.time(0,0))
+        next_month_first_day = datetime.datetime.combine(get_last_day(view_date) + datetime.timedelta(days=1), datetime.time(0,0))
+        period = Period( first_day, next_month_first_day )
+        # 月次集計
+        attendances = get_attendance_in_period(employee, period.start.date(), period.end.date())
+        # 欠損日補完
+        attendances = fill_missiing_attendance(employee, period, attendances)
+        # 時間外労働時間を集計する
+        attendances[-1].total_over = tally_over_work_time(view_date.month, attendances)
         # messageで警告を表示する
         if employee.employee_type == models.Employee.TYPE_PERMANENT_STAFF:
             attendances = set_warning_message(attendances, view_date, today)
 
         # 集計する
-        summed_up = attendance.sumup_attendances(attendances)
+        summed_up = tally_attendances(attendances)
 
         # 時間外勤務についての警告
-        warn_class, warn_title = utils.attention_overtime(summed_up["out_of_time"])
+        warn_class, warn_title = attention_overtime(summed_up["out_of_time"])
 
         # 計算結果をまるめる
         rounded = core.round_result(summed_up)
@@ -197,8 +225,8 @@ def home(request):
         try:
             office_hours = get_working_hours_tobe_assign(employee).working_hours
         except ValueError:
-            sumup = attendance.sumup_attendances([])
-            rounded = core.round_result(sumup)
+            attendaces = tally_attendances([])
+            rounded = core.round_result(attendaces)
             return render(
                 request,
                 "sao/attendance_detail.html",
@@ -206,7 +234,7 @@ def home(request):
                     "employee": employee,
                     "year": today.year,
                     "month": today.month,
-                    "total_result": sumup,
+                    "total_result": attendaces,
                     "rounded_result": rounded,
                     "today": today,
                     "mypage": True,
@@ -214,7 +242,7 @@ def home(request):
             )
 
     # 本日の打刻を取得する
-    (fromTime, toTime) = utils.get_today_stamp(employee, today)
+    (fromTime, toTime) = get_today_stamp(employee, today)
 
     # 表示月を決定する
     if request.method == "POST":
@@ -243,38 +271,28 @@ def staff_detail(request, employee, year, month):
     ■勤務実績ー詳細
     """
     employee = models.Employee.objects.get(employee_no=employee)
-    from_date = datetime.date(year=year, month=month, day=1)
-    to_date = calendar.get_next_month_date(from_date)
+    from_date = datetime.datetime.combine(datetime.date(year=year, month=month, day=1), datetime.time(0,0))
+    to_date = datetime.datetime.combine(get_next_month_date(from_date), datetime.time(0,0)) + datetime.timedelta(days=1)
+    period = Period( from_date, to_date )
+
     office_hours = get_employee_hour(employee, datetime.date.today())
 
-    query = (
-        models.EmployeeDailyRecord.objects.filter(employee=employee)
-        .filter(date__gte=from_date)
-        .filter(date__lt=to_date)
-        .order_by("date")
-    )
+    # 期間
+    attendances = get_attendance_in_period(employee, from_date, to_date)
+    # 欠損日補完
+    attendances = fill_missiing_attendance(employee, period, attendances)
+    total_overtime = tally_over_work_time(from_date.month, attendances)
 
-    try:
-        calculated = attendance.tally_monthly_attendance(from_date.month, query)
-    except NoAssignedWorkingHourError:
-        return render(
-            request,
-            "sao/attendance_detail_empty.html",
-            {
-                "message": f"{employee}の勤務時間が設定されていないため勤怠が表示できません"
-            },
-        )
-
-    summed_up = attendance.sumup_attendances(calculated)
+    summed_up = tally_attendances(attendances)
     rounded_result = core.round_result(summed_up)
 
-    daycount = core.count_days(calculated, from_date)
+    daycount = core.count_days(attendances, from_date)
 
     return render(
         request,
         "sao/attendance_detail.html",
         {
-            "duty_result": calculated,
+            "duty_result": attendances,
             "total_result": summed_up,
             "rounded_result": rounded_result,
             "employee": employee,
@@ -412,8 +430,8 @@ def employee_list(request):
 
     for e in employees:
         manager = e.is_manager()
-        employee_type = utils.get_employee_type(e.employee_type)
-        department = utils.get_department(e.department)
+        employee_type = get_employee_type(e.employee_type)
+        department = get_department(e.department)
         try:
             recently = get_working_hours_tobe_assign(e)  # 直近から適用される勤務時間
             try:
@@ -424,7 +442,7 @@ def employee_list(request):
         except ValueError:
             working_hour = "未設定"
 
-        employee_status = utils.get_employee_status(e, datetime.date.today())
+        employee_status = get_employee_status(e, datetime.date.today())
 
         employee_data = {
             "department": department,
@@ -520,33 +538,17 @@ def employee_record(request):
             from_date = datetime.datetime.strptime(
                 form.cleaned_data["yearmonth"], "%Y-%m"
             ).date()
-            to_date = calendar.get_next_month_date(from_date)
+            to_date = get_next_month_date(from_date)
 
-            last_sunday = calendar.get_last_sunday(from_date)
-            next_sunday = calendar.get_next_sunday(to_date)
+            last_sunday = get_last_sunday(from_date)
+            next_sunday = get_next_sunday(to_date)
 
             # 前月の最終日曜日から次月の最初の日曜日までのデータを集める
-            records = (
-                models.EmployeeDailyRecord.objects.filter(employee=employee)
-                .filter(date__gte=last_sunday)
-                .filter(date__lt=next_sunday)
-                .order_by("date")
-            )
-            if len(records) <= 0:
+            attendances = get_attendance_in_period(employee, last_sunday, next_sunday)
+            if len(attendances) <= 0:
                 pass
             else:
-                try:
-                    calculated = attendance.tally_monthly_attendance(from_date.month, records)
-                except NoAssignedWorkingHourError:
-                    return render(
-                        request,
-                        "sao/attendance_detail_empty.html",
-                        {
-                            "message": f"{employee}の勤務時間が設定されていないため勤怠が表示できません"
-                        },
-                    )
-
-                printable_calculated = calculated
+                printable_calculated = attendances
 
                 # 集計
                 summed_up = attendance.sumup_attendances(calculated)
@@ -580,38 +582,27 @@ def employee_record(request):
         from_date = datetime.date(
             int(request.GET["year"]), int(request.GET["month"]), 1
         )
-        to_date = calendar.get_next_month_date(from_date)
+        to_date = get_next_month_date(from_date)
 
         form = forms.StaffYearMonthForm()
 
         # 前月の最終日曜日から次月の最初の日曜日までのデータを集める
-        records = (
-            employee.employeedailyrecord_set.filter(employee=employee)
-            .filter(date__gte=calendar.get_last_sunday(from_date))
-            .filter(date__lt=calendar.get_next_sunday(to_date))
-            .order_by("date")
-        )
+        attendances = get_attendance_in_period(employee, get_last_sunday(from_date), get_next_sunday(to_date))
+        start = datetime.datetime.combine(get_last_sunday(from_date), datetime.time(0,0))
+        end = datetime.datetime.combine(get_next_sunday(to_date), datetime.time(0,0)) + datetime.timedelta(days=1)
+        period = Period( start, end )
+        attendances = fill_missiing_attendance(employee, period, attendances)
+        attendances[-1].total_over = tally_over_work_time(from_date.month, attendances)
 
-        try:
-            calculated = attendance.tally_monthly_attendance(from_date.month, records)
-        except NoAssignedWorkingHourError:
-            return render(
-                request,
-                "sao/attendance_detail_empty.html",
-                {
-                    "message": f"{employee}の勤務時間が設定されていないため勤怠が表示できません"
-                },
-            )
+        printable_calculated = attendances
 
-        printable_calculated = calculated
-
-        summed_up = attendance.sumup_attendances(calculated)
+        summed_up = tally_attendances(attendances)
         printable_summed_up = summed_up
 
         rounded = core.round_result(summed_up)
         printable_rounded = rounded
 
-        week_work_time = core.accumulate_weekly_working_hours(records)
+        week_work_time = core.accumulate_weekly_working_hours(attendances)
 
         return render(
             request,
@@ -685,10 +676,10 @@ def add_employee(request):
         employee_no = form.cleaned_data["employee_no"]
 
         # アカウント作成
-        user = utils.create_user(form.cleaned_data["accountname"], sei, mei, form.cleaned_data["accountname"], form.cleaned_data['email'])
+        user = create_user(form.cleaned_data["accountname"], sei, mei, form.cleaned_data["accountname"], form.cleaned_data['email'])
 
         # スタッフ作成
-        employee = utils.create_employee(
+        employee = create_employee(
             employee_no=employee_no,
             name=name,
             join_date=form.cleaned_data["join_date"],
@@ -760,9 +751,14 @@ def attendance_summary(request):
             ).date()
         else:
             form = forms.YearMonthForm()
-            from_date = calendar.get_first_day(datetime.date.today())
+            from_date = get_first_day(datetime.date.today())
 
-        to_date = calendar.get_next_month_date(from_date)
+        to_date = get_next_month_date(from_date)
+
+        start = datetime.datetime.combine(from_date, datetime.time(0,0))
+        end = datetime.datetime.combine(to_date, datetime.time(0,0)) + datetime.timedelta(days=1)
+        period = Period( start, end )
+
 
         hide_deactive_staff = False
         if "f_deactive" in request.GET:
@@ -777,30 +773,18 @@ def attendance_summary(request):
         else:
             employees = employees.order_by("-user__is_active", "employee_no")
 
-        stamps = models.EmployeeDailyRecord.objects.filter(date__gte=from_date).filter(
-            date__lt=to_date
-        )
         for employee in employees:
-            records = stamps.filter(employee=employee).order_by("date")
-
-            try:
-                calculated = attendance.tally_monthly_attendance(from_date.month, records)
-            except NoAssignedWorkingHourError:
-                return render(
-                    request,
-                    "sao/attendance_detail_empty.html",
-                    {
-                        "message": f"{employee}の勤務時間が設定されていないため勤怠が表示できません"
-                    },
-                )
-
-            daycount = core.count_days(calculated, from_date)
-
-            summed_up = attendance.sumup_attendances(calculated)
+            attendances = get_attendance_in_period(employee, from_date, to_date)
+            if len(attendances) <= 0:
+                continue
+            attendances = fill_missiing_attendance(employee, period, attendances)
+            total_overwork = tally_over_work_time(from_date.month, attendances)
+            daycount = core.count_days(attendances, from_date)
+            summed_up = tally_attendances(attendances)
 
             summary = {
-                "type": utils.get_employee_type(employee.employee_type),
-                "department": utils.get_department(employee.department),
+                "type": get_employee_type(employee.employee_type),
+                "department": get_department(employee.department),
                 "employee": employee,
                 "daycount": daycount,
                 "overtime_work": summed_up["out_of_time"],
@@ -1028,13 +1012,13 @@ def download_csv(request, employee_no, year, month):
             "",
             "",
             "",
-            utils.print_total_sec(summed_up["work"].total_seconds()),
-            utils.print_total_sec(summed_up["late"].total_seconds()),
-            utils.print_total_sec(summed_up["before"].total_seconds()),
-            utils.print_total_sec(summed_up["out_of_time"].total_seconds()),
-            utils.print_total_sec(summed_up["night"].total_seconds()),
-            utils.print_total_sec(summed_up["legal_holiday"].total_seconds()),
-            utils.print_total_sec(summed_up["holiday"].total_seconds()),
+            print_total_sec(summed_up["work"].total_seconds()),
+            print_total_sec(summed_up["late"].total_seconds()),
+            print_total_sec(summed_up["before"].total_seconds()),
+            print_total_sec(summed_up["out_of_time"].total_seconds()),
+            print_total_sec(summed_up["night"].total_seconds()),
+            print_total_sec(summed_up["legal_holiday"].total_seconds()),
+            print_total_sec(summed_up["holiday"].total_seconds()),
         ]
     )
 
@@ -1044,13 +1028,13 @@ def download_csv(request, employee_no, year, month):
             "",
             "",
             "",
-            utils.print_total_sec(rounded["work"].total_seconds()),
-            utils.print_total_sec(rounded["late"].total_seconds()),
-            utils.print_total_sec(rounded["before"].total_seconds()),
-            utils.print_total_sec(rounded["out_of_time"].total_seconds()),
-            utils.print_total_sec(rounded["night"].total_seconds()),
-            utils.print_total_sec(rounded["legal_holiday"].total_seconds()),
-            utils.print_total_sec(rounded["holiday"].total_seconds()),
+            print_total_sec(rounded["work"].total_seconds()),
+            print_total_sec(rounded["late"].total_seconds()),
+            print_total_sec(rounded["before"].total_seconds()),
+            print_total_sec(rounded["out_of_time"].total_seconds()),
+            print_total_sec(rounded["night"].total_seconds()),
+            print_total_sec(rounded["legal_holiday"].total_seconds()),
+            print_total_sec(rounded["holiday"].total_seconds()),
         ]
     )
     return response
@@ -1340,7 +1324,7 @@ def day_switch(request):
             continue
 
         # WebTimeStampを集める
-        stamps = utils.collect_webstamps(employee, date)
+        stamps = collect_webstamps(employee, date)
 
         # EmployeeDailyRecordを生成する
         core.generate_daily_record([x.stamp for x in stamps], employee, date)
@@ -1372,7 +1356,7 @@ def day_switch(request):
             logger.error(f"Web打刻データの削除に失敗しました: {employee} {date} {e}")
             continue
 
-        stamps = utils.collect_webstamps(employee, date)
+        stamps = collect_webstamps(employee, date)
         
     logger.info(f"{date} の切り替え作業が完了しました")
     return HttpResponse("day switch done for " + str(date))

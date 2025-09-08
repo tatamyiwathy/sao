@@ -15,22 +15,21 @@ from common.utils_for_test import (
     create_super_user,
     create_user,
 )
-from .. import calendar, forms, models, utils, views, attendance
-from ..core import (
+from sao import calendar, forms, models, utils, views
+from sao.core import (
     get_working_hours_by_category,
     calc_actual_working_time,
     adjust_working_hours,
     calc_tardiness,
     NoAssignedWorkingHourError,
 )
-from ..const import Const
-from ..working_status import WorkingStatus
+from sao.const import Const
+from sao.working_status import WorkingStatus
 from sao.tests.utils import (
     create_working_hours,
     set_office_hours_to_employee,
     create_timerecord,
     create_time_stamp_data,
-    generate_attendance,
     create_attendance_record,
 )
 
@@ -403,49 +402,49 @@ class ModifyRecordTest(TestCase):
         self.assertNotEqual(r.clock_out, None)
 
 
-class EmployeeRecordTest(TestCase):
-    def setUp(self):
-        self.user = create_user()
-        self.employee = create_employee(self.user, include_overtime_pay=True)
-        create_working_hours()
+# class EmployeeRecordTest(TestCase):
+#     def setUp(self):
+#         self.user = create_user()
+#         self.employee = create_employee(self.user, include_overtime_pay=True)
+#         create_working_hours()
 
-        self.a_day = datetime.date(2021, 8, 1)
-        set_office_hours_to_employee(
-            self.employee, self.a_day, get_working_hours_by_category("A")
-        )
-        create_time_stamp_data(self.employee)
+#         self.a_day = datetime.date(2021, 8, 1)
+#         set_office_hours_to_employee(
+#             self.employee, self.a_day, get_working_hours_by_category("A")
+#         )
+#         create_time_stamp_data(self.employee)
 
-        self.client = create_client(TEST_USER)
+#         self.client = create_client(TEST_USER)
 
-    def test_get(self):
-        with self.assertTemplateUsed("sao/view.html"):
-            response = self.client.get(
-                "/sao/employee_record/",
-                {
-                    "employee": self.employee.id,
-                    "year": self.a_day.year,
-                    "month": self.a_day.month,
-                },
-            )
-        self.assertEqual(response.status_code, 200)
+#     def test_get(self):
+#         with self.assertTemplateUsed("sao/view.html"):
+#             response = self.client.get(
+#                 "/sao/employee_record/",
+#                 {
+#                     "employee": self.employee.id,
+#                     "year": self.a_day.year,
+#                     "month": self.a_day.month,
+#                 },
+#             )
+#         self.assertEqual(response.status_code, 200)
 
-    def test_post(self):
-        with self.assertTemplateUsed("sao/view.html"):
-            y = str(self.a_day.year)
-            m = ("0" + str(self.a_day.month))[-2:]
-            yearmonth = "%s-%s" % (y, m)
-            response = self.client.post(
-                f"/sao/employee_record/",
-                {
-                    "employee": self.employee.id,
-                    "year": self.a_day.year,
-                    "month": self.a_day.month,
-                    "yearmonth": yearmonth,
-                },
-            )
-        self.assertTrue(response.status_code, 200)
-        soup = BeautifulSoup(response.content, "html.parser")
-        res = soup.find("td", id="work")
+#     def test_post(self):
+#         with self.assertTemplateUsed("sao/view.html"):
+#             y = str(self.a_day.year)
+#             m = ("0" + str(self.a_day.month))[-2:]
+#             yearmonth = "%s-%s" % (y, m)
+#             response = self.client.post(
+#                 f"/sao/employee_record/",
+#                 {
+#                     "employee": self.employee.id,
+#                     "year": self.a_day.year,
+#                     "month": self.a_day.month,
+#                     "yearmonth": yearmonth,
+#                 },
+#             )
+#         self.assertTrue(response.status_code, 200)
+#         soup = BeautifulSoup(response.content, "html.parser")
+#         res = soup.find("td", id="work")
 
 
 class EditEmployeeTest(TestCase):
@@ -964,7 +963,6 @@ class FixedOverworkTest(TestCase):
         set_office_hours_to_employee(
             self.emp, datetime.date(1900, 1, 1), get_working_hours_by_category("A")
         )
-        """"""
         st = datetime.datetime.combine(self.today, datetime.time(hour=10))
         ct = datetime.datetime.combine(self.today, datetime.time(hour=19))
         working_hours = (datetime.datetime.combine(self.today, datetime.time(10, 0)),

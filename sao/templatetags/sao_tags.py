@@ -14,12 +14,16 @@ register = template.Library()
 # hh::mm::ss の ssを削除
 @register.filter
 def strip_seconds(delta, empty):
+    if isinstance(delta, str):
+        return empty
     return utils.print_strip_sec(delta.total_seconds(), empty)
 
 
 @register.filter
 def color_ifnot(time, color_word):
     # 60秒未満は切り捨て
+    if isinstance(time, str):
+        return ""
     if time.total_seconds() < 60:
         return ""
     return color_word
@@ -27,12 +31,12 @@ def color_ifnot(time, color_word):
 
 @register.filter
 def is_saturday(date):
-    return calendar.is_saturday(date)
+    return calendar.is_saturday(date.date())
 
 
 @register.filter
 def is_holiday(date):
-    return calendar.is_holiday(date)
+    return calendar.is_holiday(date.date())
 
 
 @register.filter
@@ -44,7 +48,7 @@ def focus_today(date: datetime.date, day: datetime.date) -> str:
 def row_bg_color(attn: attendance.Attendance, today: datetime.date) -> str:
     if attn.date == today:
         return "success"
-    elif attn.is_missing_stamp():
+    elif attn.get_stamp().is_unset():
         return "danger"
     return ""
 
@@ -78,16 +82,16 @@ def warning_midnight(time: datetime.time, attn: attendance.Attendance) -> str:
 
 @register.filter
 def warning_overtime(attn: attendance.Attendance) -> str:
-    if attn.work == Const.TD_ZERO:
+    if attn.actual_work == Const.TD_ZERO:
         return ""
-    return utils.get_overtime_warning(attn.summed_out_of_time)[0]
+    return utils.get_overtime_warning(attn.total_over)[0]
 
 
 @register.filter
 def tooltip_overtime(attn: attendance.Attendance) -> str:
-    if attn.work == Const.TD_ZERO:
+    if attn.actual_work == Const.TD_ZERO:
         return ""
-    return utils.get_overtime_warning(attn.summed_out_of_time)[1]
+    return utils.get_overtime_warning(attn.total_over)[1]
 
 
 @register.filter

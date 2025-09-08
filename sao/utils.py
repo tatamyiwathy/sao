@@ -1,7 +1,8 @@
 import datetime
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from . import models, working_status, core, const
+from sao import models, core
+from sao.attendance import Attendance
 
 def get_today_stamp(employee: models.Employee, date: datetime.date):
     """打刻を取得する"""
@@ -208,4 +209,115 @@ def is_over_half_working_hours(target_time: datetime.datetime,
         return True
     return False
 
+
+# from ..models import EmployeeDailyRecord
+# from ..attendance import Attendance
+# def generate_attendance(record: EmployeeDailyRecord) -> Attendance:
+#     return Attendance(record)
+
+
+# def tally_monthly_attendance(month: int, records: list[EmployeeDailyRecord]) -> list[Attendance]:
+#     """TimeRecordからAttendanceを作成する
+#     month: 対象月
+#     records: TimeRecordのリスト
+
+#     employeeの所定労働時間が設定されていない場合はNoSpecifiedWorkingHoursErrorが発生する
+#     """
+#     result_record = []
+
+#     summed_out_of_time = datetime.timedelta()
+#     for r in records:
+#         if r.date.month != month:
+#             # 対象月の記録ではないので何もしない
+#             continue
+#         # 所定労働時間を取得
+#         attendance = Attendance(r)
+#         summed_out_of_time += attendance.over
+#         attendance.summed_out_of_time = summed_out_of_time
+#         result_record.append(attendance)
+#     return result_record
+
+def tally_over_work_time(month: int, attendances: list[Attendance]) -> datetime.timedelta:
+    """時間外勤務時間の合計を計算する
+    month: 対象月
+    records: 集計対象月の勤怠記録
+    """
+    over_work_time = datetime.timedelta()
+    for attn in attendances:
+        if attn.date.month != month:
+            # 対象月の記録ではないので何もしない
+            continue
+        # 所定労働時間を取得
+        over_work_time += attn.over
+    return over_work_time
+
+
+# def sumup_attendances(attendances: list[Attendance]) -> dict:
+#     """
+#     勤務評価結果の集計をする
+#     引数       result CalculatedRecordの配列
+#     """
+
+#     summed_up = {
+#         "work": datetime.timedelta(),
+#         "late": datetime.timedelta(),
+#         "before": datetime.timedelta(),
+#         "steppingout": datetime.timedelta(),
+#         "out_of_time": datetime.timedelta(),
+#         "over_8h": datetime.timedelta(),
+#         "night": datetime.timedelta(),
+#         "legal_holiday": datetime.timedelta(),
+#         "holiday": datetime.timedelta(),
+#         "accumulated_overtime": datetime.timedelta(),
+#     }
+#     for attn in attendances:
+#         if attn.work:
+#             summed_up["work"] += attn.work
+#             summed_up["late"] += attn.late
+#             summed_up["before"] += attn.before
+#             summed_up["steppingout"] += attn.steppingout
+#             summed_up["out_of_time"] += attn.out_of_time
+#             summed_up["over_8h"] += attn.over_8h
+#             summed_up["night"] += attn.night
+#             summed_up["legal_holiday"] += attn.legal_holiday
+#             summed_up["holiday"] += attn.holiday
+
+#             if not is_legal_holiday(attn.date):
+#                 summed_up["accumulated_overtime"] += attn.out_of_time
+#     return summed_up
+
+
+def tally_attendances(attendances: list[Attendance]) -> dict:
+    """
+    勤務評価結果の集計をする
+    引数       result CalculatedRecordの配列
+    """
+
+    summed_up = {
+        "work": datetime.timedelta(),
+        "late": datetime.timedelta(),
+        "before": datetime.timedelta(),
+        "steppingout": datetime.timedelta(),
+        "out_of_time": datetime.timedelta(),
+        "over_8h": datetime.timedelta(),
+        "night": datetime.timedelta(),
+        "legal_holiday": datetime.timedelta(),
+        "holiday": datetime.timedelta(),
+        "accumulated_overtime": datetime.timedelta(),
+    }
+    for attn in attendances:
+        if attn.actual_work:
+            summed_up["work"] += attn.actual_work
+            summed_up["late"] += attn.late
+            summed_up["before"] += attn.early_leave
+            summed_up["steppingout"] += attn.stepping_out
+            summed_up["out_of_time"] += attn.over
+            summed_up["over_8h"] += attn.over_8h
+            summed_up["night"] += attn.night
+            summed_up["legal_holiday"] += attn.legal_holiday
+            summed_up["holiday"] += attn.holiday
+
+            if not is_legal_holiday(attn.date):
+                summed_up["accumulated_overtime"] += attn.over
+    return summed_up
 
