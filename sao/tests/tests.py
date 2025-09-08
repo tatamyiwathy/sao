@@ -25,11 +25,13 @@ from ..core import (
 )
 from ..const import Const
 from ..working_status import WorkingStatus
-from .utils import (
+from sao.tests.utils import (
     create_working_hours,
     set_office_hours_to_employee,
     create_timerecord,
     create_time_stamp_data,
+    generate_attendance,
+    create_attendance_record,
 )
 
 class FunctionTest(TestCase):
@@ -706,8 +708,8 @@ class TimeCalculationTest(TestCase):
             )
             self.assertEqual(r.status, scenario[1])
             self.assertTrue(r.is_valid_status())
-            attn = attendance.generate_attendance(r)
-            self.assertEqual(attn.before, scenario[2])
+            attn = create_attendance_record(r)
+            self.assertEqual(attn.early_leave, scenario[2])
 
     def test_overtime(self):
         set_office_hours_to_employee(
@@ -718,31 +720,37 @@ class TimeCalculationTest(TestCase):
                 [datetime.datetime.combine(self.today, Const.OCLOCK_0930), datetime.datetime.combine(self.today, Const.OCLOCK_1900)],
                 [],
                 Const.TD_ZERO,
+                "scenario 1",
             ),  # 9:30 - 19:00で超過なし
             (
                 [datetime.datetime.combine(self.today, Const.OCLOCK_1000), datetime.datetime.combine(self.today, Const.OCLOCK_1900)],
                 [],
                 Const.TD_ZERO,
+                "scenario 2",
             ),  # 10:00 - 19:00で超過なし
             (
                 [datetime.datetime.combine(self.today, Const.OCLOCK_1100), datetime.datetime.combine(self.today, Const.OCLOCK_2000)],
                 [],
                 Const.TD_ZERO,
+                "scenario 3",
             ),  # 11:00 - 20:00で超過なし
             (
                 [datetime.datetime.combine(self.today, Const.OCLOCK_1000), datetime.datetime.combine(self.today, Const.OCLOCK_2000)],
                 [],
                 Const.TD_1H,
+                "scenario 4",
             ),  # 10:00 - 20:00で1H超過
             (
                 [datetime.datetime.combine(self.today, Const.OCLOCK_1100), datetime.datetime.combine(self.today, Const.OCLOCK_2100)],
                 [],
                 Const.TD_1H,
+                "scenario 5",
             ),  # 11:00 - 21:00で1H超過
             (
                 [datetime.datetime.combine(self.today, Const.OCLOCK_1000), datetime.datetime.combine(self.today, Const.OCLOCK_2000)],
                 [Const.OCLOCK_1400, Const.OCLOCK_1500],
                 Const.TD_ZERO,
+                "scenario 6",
             ),  # 10:00 - 20:00外出1Hで超過なし
         ]
 
@@ -752,14 +760,14 @@ class TimeCalculationTest(TestCase):
         for scenario in scenarios:
             r = create_timerecord(stamp=scenario[0], working_hours=working_hours, date=self.today, employee=self.emp)
             if len(scenario[1]) > 0:
+                # 外出データを登録する
                 out_time = datetime.datetime.combine(self.today, scenario[1][0])
                 ret_time = datetime.datetime.combine(self.today, scenario[1][1])
                 models.SteppingOut(
                     employee=self.emp, out_time=out_time, return_time=ret_time
                 ).save()
-
-            attn = attendance.generate_attendance(r)
-            self.assertEqual(attn.out_of_time, scenario[2])
+            attn = create_attendance_record(r)
+            self.assertEqual(attn.over, scenario[2])
 
     def test_work_day(self):
         set_office_hours_to_employee(
@@ -772,7 +780,7 @@ class TimeCalculationTest(TestCase):
                             datetime.datetime.combine(self.today, datetime.time(19, 0))]
         r = create_timerecord(
             stamp=[st, ct], working_hours=working_hours, date=self.today, employee=self.emp)
-        attn = attendance.generate_attendance(r)
+        attn = create_attendance_record(r)
         self.assertEqual(attn.legal_holiday, Const.TD_ZERO)
         self.assertEqual(attn.holiday, Const.TD_ZERO)
 
@@ -793,7 +801,7 @@ class TimeCalculationTest(TestCase):
             status=WorkingStatus.C_HOUTEI_KYUJITU,
             working_hours=working_hours
         )
-        attn = attendance.generate_attendance(r)
+        attn = create_attendance_record(r)
         self.assertEqual(attn.legal_holiday, Const.TD_3H)
 
     def test_holiday(self):
@@ -812,10 +820,10 @@ class TimeCalculationTest(TestCase):
             status=WorkingStatus.C_KYUJITU,
             working_hours=working_hours
         )
-        attn = attendance.generate_attendance(r)
+        attn = create_attendance_record(r)
         self.assertEqual(attn.clock_in, None)
         self.assertEqual(attn.clock_out, None)
-        self.assertEqual(attn.work, Const.TD_ZERO)
+        self.assertEqual(attn.actual_work, Const.TD_ZERO)
 
     def test_holiday_work(self):
         """休日出勤 work=TD_9H"""
@@ -835,8 +843,8 @@ class TimeCalculationTest(TestCase):
             status=WorkingStatus.C_HOUTEI_KYUJITU,
             working_hours=working_hours
         )
-        attn = attendance.generate_attendance(r)
-        self.assertEqual(attn.work, Const.TD_9H)
+        attn = create_attendance_record(r)
+        self.assertEqual(attn.actual_work, Const.TD_9H)
 
     def test_missing_timestamp(self):
         set_office_hours_to_employee(
@@ -856,7 +864,7 @@ class TimeCalculationTest(TestCase):
             working_hours=working_hours
         )
         r.clock_out = None
-        attn = attendance.generate_attendance(r)
+        attn = create_attendance_record(r)
         self.assertEqual(attn.holiday, Const.TD_ZERO)
 
     def test_afternoon_holiday(self):
@@ -899,8 +907,8 @@ class TimeCalculationTest(TestCase):
                 employee=self.emp,
                 status=scenario[1],
             )
-            attn = attendance.generate_attendance(r)
-            self.assertEqual(attn.work, scenario[2])
+            attn = create_attendance_record(r)
+            self.assertEqual(attn.actual_work, scenario[2])
 
 
 class ManagerTest(TestCase):
@@ -936,8 +944,8 @@ class FixedOverworkTest(TestCase):
         working_hours = (datetime.datetime.combine(self.today, datetime.time(10, 0)),
                             datetime.datetime.combine(self.today, datetime.time(19, 0)))
         r = create_timerecord(stamp=[st, ct], working_hours=working_hours, date=self.day, employee=self.emp)
-        attn = attendance.generate_attendance(r)
-        self.assertEqual(attn.out_of_time, Const.TD_2H)
+        attn = create_attendance_record(r)
+        self.assertEqual(attn.over, Const.TD_2H)
 
     def test_over_8h(self):
         set_office_hours_to_employee(
@@ -949,7 +957,7 @@ class FixedOverworkTest(TestCase):
         working_hours = (datetime.datetime.combine(self.today, datetime.time(10, 0)),
                             datetime.datetime.combine(self.today, datetime.time(19, 0)))
         r = create_timerecord(stamp=[st, ct], working_hours=working_hours, date=self.today, employee=self.emp)
-        attn = attendance.generate_attendance(r)
+        attn = create_attendance_record(r)
         self.assertEqual(attn.over_8h, Const.TD_4H)
 
     def test_no_over_8h(self):
@@ -962,7 +970,7 @@ class FixedOverworkTest(TestCase):
         working_hours = (datetime.datetime.combine(self.today, datetime.time(10, 0)),
                             datetime.datetime.combine(self.today, datetime.time(19, 0)))
         r = create_timerecord(stamp=[st, ct], working_hours=working_hours, date=self.today, employee=self.emp)
-        attn = attendance.generate_attendance(r)
+        attn = create_attendance_record(r)
         self.assertEqual(attn.over_8h, Const.TD_ZERO)
 
     def test_night_time(self):
@@ -979,7 +987,7 @@ class FixedOverworkTest(TestCase):
         working_hours = (datetime.datetime.combine(self.today, datetime.time(10, 0)),
                             datetime.datetime.combine(self.today, datetime.time(19, 0)))
         r = create_timerecord(stamp=[st, ct], working_hours=working_hours, date=self.today, employee=self.emp)
-        attn = attendance.generate_attendance(r)
+        attn = create_attendance_record(r)
         self.assertEqual(attn.night, Const.TD_ZERO)
 
         """深夜をオーバー:22:01"""
@@ -987,7 +995,7 @@ class FixedOverworkTest(TestCase):
         working_hours = (datetime.datetime.combine(self.today, datetime.time(10, 0)),
                             datetime.datetime.combine(self.today, datetime.time(19, 0)))
         r = create_timerecord(stamp=[st, ct], working_hours=working_hours, date=self.today, employee=self.emp)
-        attn = attendance.generate_attendance(r)
+        attn = create_attendance_record(r)
         self.assertEqual(attn.night, make_timedelta(60))
 
 
@@ -1010,8 +1018,8 @@ class NoIncludeOverPayTest(TestCase):
         working_hours = (datetime.datetime.combine(self.today, datetime.time(10, 0)),
                             datetime.datetime.combine(self.today, datetime.time(19, 0)))
         r = create_timerecord(stamp=[st, ct], working_hours=working_hours, date=self.day, employee=self.emp)
-        attn = attendance.generate_attendance(r)
-        self.assertEqual(attn.out_of_time, Const.TD_ZERO)
+        attn = create_attendance_record(r)
+        self.assertEqual(attn.over, Const.TD_ZERO)
 
 
 """含み残業が適用されるスタッフの時間外打刻"""
@@ -1035,8 +1043,8 @@ class IncludeOverPayedTest(TestCase):
         working_hours = (datetime.datetime.combine(self.today, datetime.time(10, 0)),
                             datetime.datetime.combine(self.today, datetime.time(19, 0)))
         r = create_timerecord(stamp=[st, ct], working_hours=working_hours, date=self.day, employee=self.emp)
-        attn = attendance.generate_attendance(r)
-        self.assertEqual(attn.out_of_time, Const.TD_2H)
+        attn = create_attendance_record(r)
+        self.assertEqual(attn.over, Const.TD_2H)
 
     def test_over_8h(self):
         set_office_hours_to_employee(
@@ -1048,7 +1056,7 @@ class IncludeOverPayedTest(TestCase):
         working_hours = (datetime.datetime.combine(self.today, datetime.time(10, 0)),
                             datetime.datetime.combine(self.today, datetime.time(19, 0)))
         r = create_timerecord(stamp=[st, ct], working_hours=working_hours, date=self.today, employee=self.emp)
-        attn = attendance.generate_attendance(r)
+        attn = create_attendance_record(r)
         self.assertEqual(attn.over_8h, Const.TD_4H)
 
     def test_night_time(self):
@@ -1061,7 +1069,7 @@ class IncludeOverPayedTest(TestCase):
         working_hours = (datetime.datetime.combine(self.today, datetime.time(10, 0)),
                             datetime.datetime.combine(self.today, datetime.time(19, 0)))
         r = create_timerecord(stamp=[st, ct], working_hours=working_hours, date=self.today, employee=self.emp)
-        attn = attendance.generate_attendance(r)
+        attn = create_attendance_record(r)
         self.assertNotEquals(attn.night, Const.TD_ZERO)
 
 

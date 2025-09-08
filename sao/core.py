@@ -285,6 +285,19 @@ def calc_leave_early(
         return Const.TD_ZERO
     return close_time - clock_out
 
+"""
+    外出
+"""
+def calc_stepping_out(employee: Employee, stamp: Period ) -> datetime.timedelta:
+    if stamp.is_unset():
+        return Const.TD_ZERO
+    total_steppingout=Const.TD_ZERO
+    so_employee = SteppingOut.objects.filter(employee=employee)
+    so_period = so_employee.filter(out_time__gte=stamp.start, return_time__lt=stamp.end)
+    for steppingout in so_period:
+        total_steppingout += steppingout.duration()
+    return total_steppingout
+
 
 def tally_steppingout(timerecord: EmployeeDailyRecord) -> datetime.timedelta:
     """
@@ -313,7 +326,7 @@ def tally_steppingout(timerecord: EmployeeDailyRecord) -> datetime.timedelta:
 def calc_overtime(
     record: EmployeeDailyRecord,
     actual_work: datetime.timedelta,
-    scheduled_working_period: datetime.timedelta,
+    working_dutaion: datetime.timedelta,
 ) -> datetime.timedelta:
     """時間外勤務の時間を計算する
 
@@ -332,8 +345,8 @@ def calc_overtime(
         return Const.TD_ZERO
 
     overtime = Const.TD_ZERO
-    if actual_work > scheduled_working_period:
-        overtime = actual_work - scheduled_working_period
+    if actual_work > working_dutaion:
+        overtime = actual_work - working_dutaion
     return overtime
 
 
@@ -725,7 +738,7 @@ def generate_daily_record(stamps: list[datetime.datetime], employee: Employee, d
     ).save()
 
 
-def generate_attendance_record(record: EmployeeDailyRecord):
+def generate_attendance_record(record: EmployeeDailyRecord) -> DailyAttendanceRecord:
     """DailyAttendanceRecordを生成する"""
     attendance = DailyAttendanceRecord(time_record=record)
         
@@ -735,13 +748,14 @@ def generate_attendance_record(record: EmployeeDailyRecord):
     
     # 調整された出勤時間、退勤時間
     working_hours = adjust_working_hours(record)
-
+    # 外出時間
+    stepping_out = calc_stepping_out(record.employee, Period(begin_work, end_work))
     # 予定勤務時間
     assumed_working_time = calc_assumed_working_time(record, working_hours.start, working_hours.end)
-
     # 実労働時間(休息分は差し引かれてる)
-    actual_working_time = calc_actual_working_time(record, working_hours.start, working_hours.end, Const.TD_ZERO)
+    actual_working_time = calc_actual_working_time(record, working_hours.start, working_hours.end, stepping_out)
 
+    # 勤怠詳細を計算してセットする
     attendance.actual_work = actual_working_time
     attendance.late = calc_tardiness(record, working_hours.start)
     attendance.early_leave = calc_leave_early(record, working_hours.end)
@@ -751,5 +765,10 @@ def generate_attendance_record(record: EmployeeDailyRecord):
         attendance.night = calc_midnight_work(record)
     attendance.legal_holiday = calc_legal_holiday(record, actual_working_time)
     attendance.holiday = calc_holiday(record, actual_working_time)
+    attendance.stepping_out = stepping_out
     attendance.status = record.status
-    attendance.save()
+    try:
+        attendance.save()
+    except Exception as e:
+        logger.error(f"Failed to save DailyAttendanceRecord: {e}")
+    return attendance

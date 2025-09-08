@@ -369,7 +369,7 @@ class WebTimeStamp(models.Model):
 
 
 class SteppingOut(models.Model):
-    """外出"""
+    """ユーザーが外出した時間を記録する"""
 
     employee = models.ForeignKey(
         "Employee", blank=True, null=True, on_delete=models.CASCADE
@@ -377,6 +377,10 @@ class SteppingOut(models.Model):
     out_time = models.DateTimeField(blank=True, null=True)
     return_time = models.DateTimeField(blank=True, null=True)
 
+    def duration(self) -> datetime.timedelta:
+        if self.out_time is None or self.return_time is None:
+            return datetime.timedelta()
+        return self.return_time - self.out_time
 
 class DaySwitchTime(models.Model):
     """日付切替時間"""
@@ -549,4 +553,5 @@ class DailyAttendanceRecord(models.Model):
 
     
 
-
+    def __str__(self):
+        return "%s %s" % (self.time_record.employee, self.time_record.date)

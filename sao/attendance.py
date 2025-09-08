@@ -28,66 +28,20 @@ class Attendance:
         self.date = None
         self.clock_in = None  # 実打刻時間
         self.clock_out = None
-        self.adjusted_from = None  # 調整後の時間
-        self.adjusted_to = None  #
-        self.work = Const.TD_ZERO  # 実労働時間
+        self.actual_work = Const.TD_ZERO  # 実労働時間
         self.late = Const.TD_ZERO  # 遅刻
-        self.before = Const.TD_ZERO  # 早退
-        self.steppingout = Const.TD_ZERO  # 外出
-        self.out_of_time = Const.TD_ZERO  # 時間外
-        self.summed_out_of_time = Const.TD_ZERO  # 積算時間外
+        self.early_leave = Const.TD_ZERO  # 早退
+        self.stepping_out = Const.TD_ZERO  # 外出
+        self.over = Const.TD_ZERO  # 時間外
         self.over_8h = Const.TD_ZERO  # 割増=8時間を超えた分
         self.night = Const.TD_ZERO  # 深夜=10時以降
         self.legal_holiday = Const.TD_ZERO  # 法定休日
         self.holiday = Const.TD_ZERO  # 法定外休日
-        self.accumulated_overtime = 0
-        self.accepted_overtime = 0  # 残業届け済み
         self.remark = ""  # 届け
-        self.eval_code = WorkingStatus.C_NONE
-        self.record_id = 0
+        self.status = WorkingStatus.C_NONE
         self.flag = ""
         self.is_absent = False
         self.warnings = {}
-
-
-
-        # 所定の始業、終業、勤務時間を取得する
-        working_hours = adjust_working_hours(record)
-        working_time = calc_assumed_working_time(record, working_hours.start, working_hours.end)
-
-        # 外出時間
-        steppingout = tally_steppingout(record)
-
-        # 実労働時間(休息分は差し引かれてる)
-        actual_work = calc_actual_working_time(record, working_hours.start, working_hours.end, steppingout)
-
-        self.date = record.date
-        self.remark = record.remark
-        self.eval_code = record.status
-        self.work = actual_work
-        self.late = calc_tardiness(record, working_hours.start)
-        self.before = calc_leave_early(record, working_hours.end)
-        self.steppingout = steppingout
-        self.out_of_time = calc_overtime(record, actual_work, working_time)
-        if self.out_of_time.total_seconds() > 0:
-            self.over_8h = calc_over_8h(record, actual_work)
-            self.night = calc_midnight_work(record)
-        self.legal_holiday = calc_legal_holiday(record, actual_work)
-        self.holiday = calc_holiday(record, actual_work)
-        self.date = record.date
-        self.clock_in = record.get_clock_in().time() if record.get_clock_in() else None
-        self.clock_out = record.get_clock_out().time() if record.get_clock_out() else None
-        self.record_id = record.id
-
-        self.is_absent = False
-        if self.eval_code in [
-            WorkingStatus.C_KEKKIN,
-            WorkingStatus.C_YUUKYUU,
-            WorkingStatus.C_DAIKYUU,
-            WorkingStatus.C_TOKUBETUKYUU,
-        ]:
-            self.is_absent = True
-        self.accepted_overtime = record.is_overtime_work_permitted
 
 
 
@@ -95,27 +49,21 @@ class Attendance:
     def is_valid(self):
         if self.date is None:
             return False
-        if self.eval_code is WorkingStatus.C_NONE:
+        if self.status is WorkingStatus.C_NONE:
             return False
         return True
 
     def __str__(self):
         s = str(self.clock_in) + " "
         s += str(self.clock_out) + " "
-        s += str(self.work) + " "
+        s += str(self.actual_work) + " "
         s += str(self.late) + " "
         return s
 
     def is_missing_stamp(self):
-        if self.eval_code is not WorkingStatus.C_KINMU:
+        if self.status is not WorkingStatus.C_KINMU:
             return False
         return is_missed_stamp(self.clock_in, self.clock_out)
-
-def generate_attendance(record: EmployeeDailyRecord) -> Attendance:
-    if not record.is_valid_status():
-        logger.warning("勤怠記録(%s)とeval_code(%s)が不一致" % (record, record.status))
-    return Attendance(record)
-
 
 def tally_monthly_attendance(month: int, records: list[EmployeeDailyRecord]) -> list[Attendance]:
     """TimeRecordからAttendanceを作成する

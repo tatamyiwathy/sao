@@ -9,7 +9,15 @@ class Period:
         return (self.start, self.end)
     
     def is_empty(self) -> bool:
+        """ 開始時間も終了時間もNoneならTrueを返す """
         return self.start is None and self.end is None
+    
+    def is_unset(self) -> bool:
+        """ 開始時間か終了時間のどちらかがNoneならTrueを返す """
+        return self.start is None or self.end is None
+    def is_filled(self) -> bool:
+        """ 開始時間も終了時間もNoneでなければTrueを返す """
+        return self.start is not None and self.end is not None
     
     def duration(self) -> datetime.timedelta | None:
         """ 終了時間 - 開始時間 を返す。どちらかがNoneならNoneを返す """

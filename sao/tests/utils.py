@@ -106,6 +106,10 @@ def create_timerecord(**kwargs) -> models.EmployeeDailyRecord:
     timerecord.save()
     return timerecord
 
+from ..models import DailyAttendanceRecord
+def create_attendance_record(time_record: models.EmployeeDailyRecord) -> models.DailyAttendanceRecord:
+    attn = core.generate_attendance_record(time_record)
+    return attn
 
 def create_time_stamp_data(employee: models.Employee):
     """テスト用のタイムシートデータを生成する"""
@@ -307,3 +311,11 @@ ACTUAL_WORKING_TIME_SAMPLE = [
 TOTAL_ACTUAL_WORKING_TIME = sum(
     [x[1] for x in ACTUAL_WORKING_TIME_SAMPLE], datetime.timedelta(seconds=0)
 )
+
+
+from ..models import EmployeeDailyRecord
+from ..attendance import Attendance, is_missed_stamp
+def generate_attendance(record: EmployeeDailyRecord) -> Attendance:
+    return Attendance(record)
+
+
