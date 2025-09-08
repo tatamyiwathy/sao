@@ -2,8 +2,15 @@ import re
 import datetime
 from django import forms
 from django.core.exceptions import ObjectDoesNotExist
-from .models import Employee, EmployeeHour, Holiday, EmployeeDailyRecord, WorkingHour, DaySwitchTime
-from .working_status import WorkingStatus
+from sao.models import (
+    Employee, 
+    EmployeeHour, 
+    Holiday, 
+    EmployeeDailyRecord, 
+    WorkingHour, 
+    DaySwitchTime
+)
+from sao.working_status import WorkingStatus
 
 
 class WorkingHourAssignForm(forms.ModelForm):
