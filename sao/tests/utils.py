@@ -1,8 +1,10 @@
 import sao.models as models
 import sao.calendar as calendar
+import sao.core as core
+import sao.period as period
 import datetime
 
-from sao.working_status import WorkingStatus
+from sao.working_status import WorkingStatus, get_working_status
 
 
 def create_working_hours():
@@ -48,80 +50,58 @@ def set_office_hours_to_employee(
 
 def create_timerecord(**kwargs) -> models.EmployeeDailyRecord:
     """タイムレコード作成
-    stamp: [出勤打刻, 退社打刻]
+    stamp: datetime [出勤打刻, 退社打刻]
+    working_hours: datetime [開始、終了]
     status: WorkingStatus
     date: 打刻日時
-    adjusted_clock_in: datetime.time
-    adjusted_clock_out: datetime.time
     employee: models.Employee
 
     """
 
     clock_in = None
     clock_out = None
+    working_hours_start = None
+    working_hours_end = None
     status = WorkingStatus.C_NONE
-    adjusted_clockin = None
-    adjusted_clockout = None
 
-    if kwargs["stamp"][0] is not None:
-        clock_in = datetime.datetime.combine(kwargs["date"], kwargs["stamp"][0])
-
-    if kwargs["stamp"][1] is not None:
-        clock_out = datetime.datetime.combine(kwargs["date"], kwargs["stamp"][1])
+    if kwargs["stamp"]:
+        if kwargs["stamp"][0] is not None:
+            clock_in = kwargs["stamp"][0]
+        if kwargs["stamp"][1] is not None:
+            clock_out = kwargs["stamp"][1]
 
     if None not in [clock_in, clock_out]:
         # 退社打刻がAM0:00-4:59の時は日付を次の日にする
         if clock_in > clock_out:
-            if clock_out.time() < datetime.time(hour=5):
+            if clock_out.time() < core.get_day_switch_time():
                 clock_out += datetime.timedelta(days=1)
             else:
                 raise ValueError("fromTime > toTime")
 
+    if kwargs["working_hours"]:
+        if kwargs["working_hours"][0] is not None:
+            working_hours_start = kwargs["working_hours"][0]
+        if kwargs["working_hours"][1] is not None:
+            working_hours_end = kwargs["working_hours"][1]
+
+
     if "status" in kwargs:
         status = kwargs["status"]
     else:
-        if calendar.is_holiday(kwargs["date"]):
-            if None not in [clock_in, clock_out]:
-                if calendar.is_legal_holiday(kwargs["date"]):
-                    # 日曜出勤
-                    status = WorkingStatus.C_HOUTEI_KYUJITU
-                else:
-                    # 土曜・祝日出勤
-                    status = WorkingStatus.C_HOUTEIGAI_KYUJITU
-            else:
-                status = WorkingStatus.C_KYUJITU
-        else:
-            if [clock_in, clock_out] == [None, None]:
-                # 平日で記録なし
-                status = WorkingStatus.C_KEKKIN
-            else:
-                status = WorkingStatus.C_KINMU
-
-    if "adjusted_clock_in" in kwargs.keys() and kwargs["adjusted_clock_in"] is not None:
-        adjusted_clockin = datetime.datetime.combine(
-            kwargs["date"], kwargs["adjusted_clock_in"]
-        )
-    if (
-        "adjusted_clock_out" in kwargs.keys()
-        and kwargs["adjusted_clock_out"] is not None
-    ):
-        adjusted_clockout = datetime.datetime.combine(
-            kwargs["date"], kwargs["adjusted_clock_out"]
-        )
-
-    if None not in [adjusted_clockin, adjusted_clockout]:
-        if adjusted_clockin > adjusted_clockout:
-            raise ValueError("clockin > clockout")
-
-    accepted_overtime = True if adjusted_clockin and adjusted_clockout else False
+        is_holiday = calendar.is_holiday(kwargs["date"])
+        is_legal_holiday = calendar.is_legal_holiday(kwargs["date"])
+        stamp = period.Period(clock_in, clock_out)
+        status = get_working_status(is_holiday, is_legal_holiday, not stamp.is_empty())
 
     timerecord = models.EmployeeDailyRecord(
         date=kwargs["date"],
         employee=kwargs["employee"],
         clock_in=clock_in,
         clock_out=clock_out,
+        working_hours_start=working_hours_start,
+        working_hours_end=working_hours_end,
         status=status,
-        is_overtime_work_permitted=accepted_overtime,
+        is_overtime_work_permitted=False
     )
     timerecord.save()
     return timerecord
@@ -131,7 +111,7 @@ def create_time_stamp_data(employee: models.Employee):
     """テスト用のタイムシートデータを生成する"""
     TEST_STAMP = [
         ("2021/8/1", None, None),
-        ("2021/8/2", "13:00:00", "19:00:00"),  # 遅刻 6h勤務
+        ("2021/8/2", "13:00:00", "19:00:00"),  # （月）遅刻 6h勤務
         ("2021/8/3", "9:40:00", "20:00:00"),  # 1hour overtime work
         ("2021/8/4", "9:35:00", "19:47:00"),
         ("2021/8/5", "9:38:00", "20:32:00"),
@@ -179,11 +159,18 @@ def create_time_stamp_data(employee: models.Employee):
             if stamp[2]
             else None
         )
+        if clock_in:
+            clock_in = datetime.datetime.combine(date, clock_in)
+        if clock_out:
+            clock_out = datetime.datetime.combine(date, clock_out)
+        working_hours_start = datetime.datetime.combine(date, datetime.time(10, 0, 0))
+        working_hours_end = datetime.datetime.combine(date, datetime.time(19, 0, 0))
+
         create_timerecord(
-            employee=employee,
-            date=date,
-            stamp=[clock_in, clock_out],
-        )
+                employee=employee,
+                date=date,
+                stamp=[clock_in, clock_out],
+                working_hours=[working_hours_start, working_hours_end])
 
 
 def to_timedelta(time: datetime.datetime) -> datetime.timedelta:

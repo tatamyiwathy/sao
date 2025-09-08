@@ -2,7 +2,7 @@ import unittest
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from sao import models, utils
+from sao import models, utils, core
 import datetime
 from common.utils_for_test import (
     TEST_ADMIN_USER,
@@ -57,4 +57,39 @@ class TimeClockViewTests(TestCase):
         stamps = response.context["stamps"]
         for stamp in stamps:
             self.assertEqual(stamp.employee, self.e)
+
+class DaySwitchViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.u = create_user()
+        self.e = create_employee(self.u, include_overtime_pay=True)
+        self.e.join_date = datetime.date(2020, 1, 1)
+        self.e.leave_date = datetime.date(2099, 12, 31)
+        self.e.save()
+        self.date = datetime.date.today()
+        self.url = reverse("sao:day_switch")
+        # Patch utils functions to avoid side effects
+        self._collect_webstamp = utils.collect_webstamp
+        self._generate_daily_record = core.generate_daily_record
+        self._generate_attendance_record = core.generate_attendance_record
+        utils.collect_webstamp = lambda employee, date: []
+        core.generate_daily_record = lambda stamps, employee, date: models.EmployeeDailyRecord.objects.create(employee=employee, date=date)
+        core.generate_attendance_record = lambda record: None
+
+    def tearDown(self):
+        utils.collect_webstamp = self._collect_webstamp
+        core.generate_daily_record = self._generate_daily_record
+        core.generate_attendance_record = self._generate_attendance_record
+
+    def test_day_switch_post_creates_daily_record(self):
+        response = self.client.post(self.url, {"date": self.date.strftime("%Y-%m-%d")})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"day switch done", response.content)
+        self.assertTrue(models.EmployeeDailyRecord.objects.filter(employee=self.e, date=self.date).exists())
+
+    def test_day_switch_get_returns_done(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"day switch done", response.content)
+
 

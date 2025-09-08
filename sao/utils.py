@@ -1,16 +1,15 @@
 import datetime
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from .models import Employee, WebTimeStamp
-from .core import get_day_switch_time
+from . import models, working_status, core, const
 
-def get_today_stamp(employee: Employee, date: datetime.date):
+def get_today_stamp(employee: models.Employee, date: datetime.date):
     """打刻を取得する"""
     fromTime = "--:--:--"
     toTime = "--:--:--"
 
-    day_begin = datetime.datetime.combine(date, get_day_switch_time())
-    stamps = WebTimeStamp.objects.filter(
+    day_begin = datetime.datetime.combine(date, core.get_day_switch_time())
+    stamps = models.WebTimeStamp.objects.filter(
         employee=employee, stamp__gte=day_begin
     ).order_by("stamp")
 
@@ -56,9 +55,9 @@ def attention_overtime(overtime: datetime.timedelta) -> tuple:
 def get_employee_type(type):
     """雇用形態コードを文字列にする"""
     name = ""
-    if type == Employee.TYPE_PERMANENT_STAFF:
+    if type == models.Employee.TYPE_PERMANENT_STAFF:
         name = "正社員"
-    elif type == Employee.TYPE_TEMPORARY_STAFF:
+    elif type == models.Employee.TYPE_TEMPORARY_STAFF:
         name = "派遣"
     else:
         name = "業務委託"
@@ -68,9 +67,9 @@ def get_employee_type(type):
 def get_department(type):
     """部署コードから文字列にする"""
     name = ""
-    if type == Employee.DEPT_GENERAL:
+    if type == models.Employee.DEPT_GENERAL:
         name = "一般"
-    elif type == Employee.DEPT_DEVELOPMENT:
+    elif type == models.Employee.DEPT_DEVELOPMENT:
         name = "開発"
     return name
 
@@ -92,7 +91,7 @@ def create_user(username, last, first, password=None, email=None) -> User:
     return user
 
 
-def create_employee(**kwargs) -> Employee:
+def create_employee(**kwargs) -> models.Employee:
     """雇用者を作成する"""
     payed_holiday = kwargs["payed_holiday"] if "payed_holiday" in kwargs.keys() else 0.0
     leave_date = (
@@ -105,7 +104,7 @@ def create_employee(**kwargs) -> Employee:
         if "include_overtime_pay" in kwargs.keys()
         else False
     )
-    employee = Employee(
+    employee = models.Employee(
         employee_no=kwargs["employee_no"],
         name=kwargs["name"],
         join_date=kwargs["join_date"],
@@ -122,7 +121,7 @@ def create_employee(**kwargs) -> Employee:
 
 def get_employee_status(employee, date):
     """雇用者のステータスを文字列にする"""
-    if employee.employee_type == Employee.TYPE_PERMANENT_STAFF:
+    if employee.employee_type == models.Employee.TYPE_PERMANENT_STAFF:
         if employee.join_date > date:
             return "未入社"
         elif employee.leave_date < date:
@@ -138,30 +137,24 @@ def get_employee_status(employee, date):
             return "契約中"
 
 
-def collect_webstamp(employee_no: int, date: datetime.date):
+def collect_webstamp(employee: models.Employee, date: datetime.date) -> list[datetime.datetime]:
     """WebStampから日にちを指定してスタンプを収集"""
-    day_begin = datetime.datetime.combine(date, get_day_switch_time())
+    day_begin = datetime.datetime.combine(date, core.get_day_switch_time())
     day_end = day_begin + datetime.timedelta(days=1)
-    stamps = WebTimeStamp.objects.filter(
-        employee=employee_no, stamp__gte=day_begin, stamp__lt=day_end
+    stamps = models.WebTimeStamp.objects.filter(
+        employee=employee, stamp__gte=day_begin, stamp__lt=day_end
+    ).order_by("stamp")
+    return [ x.stamp for x in stamps if x.stamp is not None ]
+
+from django.db.models.query import QuerySet
+def collect_webstamps(employee: models.Employee, date: datetime.date) -> QuerySet:
+    """WebStampから日にちを指定してスタンプを収集"""
+    day_begin = datetime.datetime.combine(date, core.get_day_switch_time())
+    day_end = day_begin + datetime.timedelta(days=1)
+    stamps = models.WebTimeStamp.objects.filter(
+        employee=employee, stamp__gte=day_begin, stamp__lt=day_end
     ).order_by("stamp")
     return stamps
-
-
-def make_sesamo_form_stamp(employee: Employee, stamp: datetime.datetime):
-    """セサモ形式の打刻データを生成する"""
-    # 出退勤管理, 0-03-#-01-#, アクセス制御 , 打刻時刻, 000 区画外, 002 出退勤管理, カード番号, ユーザー, 雇用者番号
-    return [
-        '"出退勤管理"',
-        "",
-        "",
-        f'"{stamp.strftime("%Y-%m-%d %H:%M:%S")}"',
-        "",
-        "",
-        "",
-        "",
-        f'"{employee.employee_no}"'
-    ]
 
 
 def print_strip_sec(total_sec, empty):
@@ -190,8 +183,10 @@ def print_total_sec(total_sec):
 def is_missed_stamp(clock_in, clock_out):
     """打刻漏れがあるかどうかを判定する"""
     if clock_in and clock_out:
+        # どちらもある
         return False
     if not clock_in and not clock_out:
+        # どちらもない
         return False
 
     return True
@@ -199,9 +194,18 @@ def is_missed_stamp(clock_in, clock_out):
 
 def is_empty_stamp(clock_in, clock_out):
     """打刻がないかどうかを判定する"""
-    if clock_in:
-        return False
-    if clock_out:
-        return False
-    return True
+    return True if (clock_in,clock_out)==(None,None) else False
+
+
+def is_over_half_working_hours(target_time: datetime.datetime,
+        employee: models.Employee, working_hours: tuple[datetime.datetime, datetime.datetime]) -> bool:
+    
+    """所定労働時間の半分を超えているかどうか"""
+    begin_time = working_hours[0]
+    end_time = working_hours[1]
+    duration = end_time - begin_time
+    if target_time > begin_time + duration / 2:
+        return True
+    return False
+
 

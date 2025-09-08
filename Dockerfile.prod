@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     gcc \
     gettext-base \
+    curl \
     && apt-get clean
 
 WORKDIR /app

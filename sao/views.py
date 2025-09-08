@@ -558,9 +558,6 @@ def employee_record(request):
 
                 week_work_time = core.accumulate_weekly_working_hours(records)
 
-                # for r in calculated:
-                #     print(r.record_id)
-
                 return render(
                     request,
                     "sao/view.html",
@@ -643,7 +640,6 @@ def edit_employee(request, employee_no):
     employee = get_object_or_404(models.Employee, employee_no=employee_no)
     if request.method == "POST":
         form = forms.EditEmployeeForm(request.POST, instance=employee)
-        print("nande")
         if form.is_valid():
             is_manager = form.cleaned_data["manager"]
             employee = form.save()
@@ -1025,7 +1021,7 @@ def download_csv(request, employee_no, year, month):
                 r.holiday,
             ]
         )
-    print(summed_up["out_of_time"])
+    # print(summed_up["out_of_time"])
     writer.writerow(
         [
             "",
@@ -1316,3 +1312,70 @@ def day_switch_time_edit(request, id):
             'form': form,
         },
     )
+
+@csrf_exempt
+def day_switch(request):
+    """日時切り替え処理"""
+
+    if request.method == "POST":
+        date = request.POST.get("date")
+        if not date:
+            return HttpResponse("no date")
+        date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+    else:
+        date = datetime.date.today() - datetime.timedelta(days=1)  # 昨日
+
+    logger.info(f"{date} の切り替え作業を開始します")
+
+    # WebTimeStampを集めてEmployeeDailyRecordを生成する
+    employees = models.Employee.objects.filter(
+                    user__is_active=True).filter(
+                        join_date__lte=date).filter(
+                        leave_date__gte=date)
+    for employee in employees:
+        logger.info(f"処理中: {employee} {date}")
+
+        if models.EmployeeDailyRecord.objects.filter(employee=employee, date=date).exists():
+            logger.info("  勤務記録が既に存在しているためスキップします")
+            continue
+
+        # WebTimeStampを集める
+        stamps = utils.collect_webstamps(employee, date)
+
+        # EmployeeDailyRecordを生成する
+        core.generate_daily_record([x.stamp for x in stamps], employee, date)
+
+        # EmployeeDailyRecordを集めてDailyAttendanceRecordを生成する
+        records = models.EmployeeDailyRecord.objects.filter(employee=employee, date=date)
+        if len(records) != 1:
+            logger.error(f"勤務実績が生成されませんでした: {employee} {date}")
+            continue
+
+        # DailyAttendanceRecordを生成する
+        try:
+            core.generate_attendance_record(records[0])
+        except Exception as e:
+            logger.error(f"勤務実績の生成に失敗しました: {employee} {date} {e}")
+            continue
+
+        attn = models.DailyAttendanceRecord.objects.filter(time_record=records[0])
+        if len(attn) == 1:
+            logger.info(f"勤務実績を生成しました: {employee} {date}")
+        else:
+            logger.error(f"勤務実績の生成に失敗しました: {employee} {date}")
+            continue
+
+        # WebTimeStampを削除する
+        try:
+            stamps.delete()  
+        except Exception as e:
+            logger.error(f"Web打刻データの削除に失敗しました: {employee} {date} {e}")
+            continue
+
+        stamps = utils.collect_webstamps(employee, date)
+        
+    logger.info(f"{date} の切り替え作業が完了しました")
+    return HttpResponse("day switch done for " + str(date))
+
+
+

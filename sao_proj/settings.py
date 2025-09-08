@@ -200,7 +200,6 @@ else:
         LOGFILEDIR = os.path.join(BASE_DIR, "logs")
     if not os.path.exists(LOGFILEDIR):
         os.makedirs(LOGFILEDIR)
-        print(f"✏Created log directory: {LOGFILEDIR}")
 
 
 # ログの使い方

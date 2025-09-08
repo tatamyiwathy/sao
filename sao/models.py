@@ -7,6 +7,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from . import calendar
 from .working_status import WorkingStatus
+from .period import Period
 
 class Employee(models.Model):
     """社員クラス"""
@@ -129,15 +130,35 @@ class WorkingHour(models.Model):
             return False
         return self.begin_time < self.end_time
 
-
+    def get_paired_time(self, date: datetime.date) -> Period:
+        """勤務時間の始業と終業をペアで取得する
+        引数:
+            date    対象の日付
+        戻り値:
+            Period    始業と終業のペア
+        例外:
+            ValueError  勤務時間が不正
+        """
+        if not self.is_valid():
+            raise ValueError("Invalid working hour")
+        start = datetime.datetime.combine(date, self.begin_time)
+        end = datetime.datetime.combine(date, self.end_time)
+        return Period(start=start, end=end)
+    
 class EmployeeDailyRecord(models.Model):
     """就業実績クラス"""
 
     employee = models.ForeignKey("Employee", on_delete=models.CASCADE)
     date = models.DateField()
 
+    # 打刻した時間
     clock_in = models.DateTimeField(null=True, blank=True)
     clock_out = models.DateTimeField(null=True, blank=True)
+
+    # 所定の勤務時間
+    working_hours_start = models.DateTimeField(null=True, blank=True)
+    working_hours_end = models.DateTimeField(null=True, blank=True)
+
     # 勤務状況
     status = models.IntegerField(null=True, blank=True, choices=WorkingStatus.choices)
     # 残業が許可されている
@@ -174,17 +195,14 @@ class EmployeeDailyRecord(models.Model):
         if self.clock_out is None:
             return None
         return self.clock_out.replace(second=0, microsecond=0)
-
-    # 修正された始業を取得する
-    def get_modified_clockin(self) -> datetime.datetime | None:
-        clock_in = self.get_clock_in()
-        return clock_in.replace(second=0, microsecond=0)
-
-    # 修正された終業のdatetime.datetimeを取得する
-    def get_modified_clockout(self) -> datetime.datetime | None:
-        clock_out = self.get_clock_out()
-        return clock_out.replace(second=0, microsecond=0)
-
+    def get_clock_in_out(self) -> Period:
+        """出退勤のペアを取得する"""
+        return Period(start=self.get_clock_in(), end=self.get_clock_out())
+    
+    def get_scheduled_time(self) -> Period:
+        """予定勤務時間のペアを取得する"""
+        return Period(start=self.working_hours_start, end=self.working_hours_end)
+    
     # 休日出勤か
     def is_holidaywork(self) -> bool:
         if self.status is WorkingStatus.C_NONE:
@@ -251,12 +269,6 @@ class EmployeeDailyRecord(models.Model):
                 return False
 
         # ステータスは有効
-        return True
-
-    #   打刻時刻の正当性チェック
-    def is_valid_timestamp(self) -> bool:
-        if self.clock_in > self.clock_out:
-            return False
         return True
 
 
@@ -472,6 +484,69 @@ class Progress(models.Model):
 
 
 class Foo(models.Model):
-    """テスト"""
+    """テストで使用するモデル"""
 
     pass
+
+
+class DailyAttendanceRecord(models.Model):
+    """日次勤怠集計"""
+
+    create_at = models.DateTimeField(default=datetime.datetime.now)
+    update_at = models.DateTimeField(auto_now=True)
+    
+    time_record = models.OneToOneField(
+        EmployeeDailyRecord, 
+        on_delete=models.PROTECT,
+        related_name="attendance_record"
+    )
+    
+    # 調整後の時間
+    clock_in = models.DateTimeField(null=True, blank=True)
+    clock_out = models.DateField(null=True, blank=True)
+    # 実労働時間
+    actual_working_time = models.DurationField(null=True, blank=True)
+    # 遅刻
+    late_time = models.DurationField(null=True, blank=True)
+    # 早退
+    early_leave = models.DurationField(null=True, blank=True)
+    # 外出
+    stepping_out = models.DurationField(null=True, blank=True)
+    # 時間外労働
+    over_time = models.DurationField(null=True, blank=True)
+    # 割増=8時間を超えた分
+    over_8h = models.DurationField(null=True, blank=True)
+    # 深夜=22時以降
+    night_work = models.DurationField(null=True, blank=True)
+    # 法定休日
+    legal_holiday_work = models.DurationField(null=True, blank=True)
+    # 法定外休日
+    holiday_work = models.DurationField(null=True, blank=True)
+    # 届け
+    remark = models.CharField(max_length=128, null=True, blank=True)
+    # 勤務状況
+    status = models.IntegerField(
+        null=True, blank=True, choices=WorkingStatus.choices
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.time_record = kwargs["time_record"] if "time_record" in kwargs else None
+        self.clock_in = kwargs["clock_in"] if "clock_in" in kwargs else None
+        self.clock_out = kwargs["clock_out"] if "clock_out" in kwargs else None
+        self.actual_working_time = kwargs["actual_working_time"] if "actual_working_time" in kwargs else None
+        self.late_time = kwargs["late_time"] if "late_time" in kwargs else None
+        self.early_leave = kwargs["early_leave"] if "early_leave" in kwargs else None
+        self.stepping_out = kwargs["stepping_out"] if "stepping_out" in kwargs else None
+        self.over_time = kwargs["over_time"] if "over_time" in kwargs else None
+        self.over_8h = kwargs["over_8h"] if "over_8h" in kwargs else None
+        self.night_work = kwargs["night_work"] if "night_work" in kwargs else None
+        self.legal_holiday_work = kwargs["legal_holiday_work"] if "legal_holiday_work" in kwargs else None
+        self.holiday_work = kwargs["holiday_work"] if "holiday_work" in kwargs else None
+        self.remark = kwargs["remark"] if "remark" in kwargs else ""
+        self.status = kwargs["status"] if "status" in kwargs else None
+
+    
+
+

@@ -29,3 +29,5 @@ class Const:
     OCLOCK_1930 = datetime.time(hour=19, minute=30)
     OCLOCK_2000 = datetime.time(hour=20)
     OCLOCK_2100 = datetime.time(hour=21)
+
+    NIGHT_WORK_START = datetime.time(hour=22)
