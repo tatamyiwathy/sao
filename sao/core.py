@@ -3,7 +3,7 @@ import datetime
 import sao.calendar
 import logging
 
-from .models import (
+from sao.models import (
     EmployeeDailyRecord,
     Employee,
     SteppingOut,
@@ -12,12 +12,11 @@ from .models import (
     DaySwitchTime,
     DailyAttendanceRecord,    
 )
-from .working_status import WorkingStatus
-from .const import Const
-from .calendar import is_holiday, is_legal_holiday,get_first_day, get_last_day
-from .period import Period
-from .working_status import get_working_status
-from .attendance import Attendance
+from sao.const import Const
+from sao.calendar import is_holiday, is_legal_holiday,get_first_day, get_last_day
+from sao.period import Period
+from sao.working_status import WorkingStatus, get_working_status
+from sao.attendance import Attendance
 from dateutil.relativedelta import relativedelta
 
 
@@ -46,6 +45,9 @@ def get_adjusted_working_hours(status: int, working_hour: Period) -> Period:
     elif status in WorkingStatus.AFTERNOON_OFF_NO_REST:
         # 休息なしなので休息１時間分ずらす
         end = end - duration / 2 - Const.TD_1H
+    else:
+        pass
+    
     return Period(start, end)
 
 def adjust_working_hours(record: EmployeeDailyRecord) -> Period:

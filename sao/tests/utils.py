@@ -1,12 +1,9 @@
-
-# import sao.models as models
-# import sao.calendar as calendar
-# import sao.core as core
-# import sao.period as period
 import datetime
 
-from sao.models import Employee, WorkingHour, EmployeeHour
-from sao import models, calendar, core, period
+from sao.models import Employee, WorkingHour, EmployeeHour,EmployeeDailyRecord, DailyAttendanceRecord
+from sao.calendar import is_holiday,is_legal_holiday
+from sao.core import generate_attendance_record, get_day_switch_time
+from sao.period import Period
 from sao.working_status import WorkingStatus, get_working_status
 from sao.attendance import Attendance
 
@@ -14,19 +11,19 @@ from sao.attendance import Attendance
 def create_working_hours():
     """勤務時間種別テーブル作成"""
 
-    models.WorkingHour(
+    WorkingHour(
         begin_time=datetime.time(10, 0, 0),
         end_time=datetime.time(19, 0, 0),
         category="A",
     ).save()
 
-    models.WorkingHour(
+    WorkingHour(
         begin_time=datetime.time(9, 30, 0),
         end_time=datetime.time(17, 30, 0),
         category="E",
     ).save()
 
-    models.WorkingHour(
+    WorkingHour(
         begin_time=datetime.time(10, 30, 0),
         end_time=datetime.time(19, 30, 0),
         category="H",
@@ -34,10 +31,10 @@ def create_working_hours():
 
 
 def set_office_hours_to_employee(
-    employee: models.Employee,
+    employee: Employee,
     date_from: datetime.date,
-    working_hours: models.WorkingHour,
-) -> models.EmployeeHour:
+    working_hours: WorkingHour,
+) -> EmployeeHour:
     """
     スタッフに勤務時間を設定する
 
@@ -45,59 +42,30 @@ def set_office_hours_to_employee(
     有効になる日付を指定して設定する
 
     """
-    t = models.EmployeeHour(
+    t = EmployeeHour(
         employee=employee, date=date_from, working_hours=working_hours
     )
     t.save()
     return t
 
 
-def create_timerecord(**kwargs) -> models.EmployeeDailyRecord:
+def create_timerecord(**kwargs) -> EmployeeDailyRecord:
     """タイムレコード作成
     stamp: datetime [出勤打刻, 退社打刻]
     working_hours: datetime [開始、終了]
     status: WorkingStatus
     date: 打刻日時
-    employee: models.Employee
+    employee: Employee
 
     """
 
-    clock_in = None
-    clock_out = None
-    working_hours_start = None
-    working_hours_end = None
-    status = WorkingStatus.C_NONE
+    clock_in = kwargs["stamp"][0] if "stamp" in kwargs else None
+    clock_out = kwargs["stamp"][1] if "stamp" in kwargs else None
+    working_hours_start = kwargs["working_hours"][0] if "working_hours" in kwargs else None
+    working_hours_end = kwargs["working_hours"][1] if "working_hours" in kwargs else None
+    status = kwargs["status"] if "status" in kwargs else None
 
-    if kwargs["stamp"]:
-        if kwargs["stamp"][0] is not None:
-            clock_in = kwargs["stamp"][0]
-        if kwargs["stamp"][1] is not None:
-            clock_out = kwargs["stamp"][1]
-
-    if None not in [clock_in, clock_out]:
-        # 退社打刻がAM0:00-4:59の時は日付を次の日にする
-        if clock_in > clock_out:
-            if clock_out.time() < core.get_day_switch_time():
-                clock_out += datetime.timedelta(days=1)
-            else:
-                raise ValueError("fromTime > toTime")
-
-    if kwargs["working_hours"]:
-        if kwargs["working_hours"][0] is not None:
-            working_hours_start = kwargs["working_hours"][0]
-        if kwargs["working_hours"][1] is not None:
-            working_hours_end = kwargs["working_hours"][1]
-
-
-    if "status" in kwargs:
-        status = kwargs["status"]
-    else:
-        is_holiday = calendar.is_holiday(kwargs["date"])
-        is_legal_holiday = calendar.is_legal_holiday(kwargs["date"])
-        stamp = period.Period(clock_in, clock_out)
-        status = get_working_status(is_holiday, is_legal_holiday, not stamp.is_empty())
-
-    timerecord = models.EmployeeDailyRecord(
+    timerecord = EmployeeDailyRecord(
         date=kwargs["date"],
         employee=kwargs["employee"],
         clock_in=clock_in,
@@ -105,19 +73,18 @@ def create_timerecord(**kwargs) -> models.EmployeeDailyRecord:
         working_hours_start=working_hours_start,
         working_hours_end=working_hours_end,
         status=status,
-        is_overtime_work_permitted=False
+
     )
     timerecord.save()
     return timerecord
 
-from ..models import DailyAttendanceRecord
-def create_attendance_record(time_record: models.EmployeeDailyRecord) -> models.DailyAttendanceRecord:
+def create_attendance_record(time_record: EmployeeDailyRecord) -> DailyAttendanceRecord:
     if time_record is None:
         raise ValueError("time_record is None")
-    attn = core.generate_attendance_record(time_record)
+    attn = generate_attendance_record(time_record)
     return attn
 
-def create_time_stamp_data(employee: models.Employee):
+def create_time_stamp_data(employee: Employee):
     """テスト用のタイムシートデータを生成する"""
     TEST_STAMP = [
         ("2021/8/1", None, None),
