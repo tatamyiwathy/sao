@@ -505,23 +505,23 @@ class DailyAttendanceRecord(models.Model):
     clock_in = models.DateTimeField(null=True, blank=True)
     clock_out = models.DateField(null=True, blank=True)
     # 実労働時間
-    actual_working_time = models.DurationField(null=True, blank=True)
+    actual_work = models.DurationField(null=True, blank=True)
     # 遅刻
-    late_time = models.DurationField(null=True, blank=True)
+    late = models.DurationField(null=True, blank=True)
     # 早退
     early_leave = models.DurationField(null=True, blank=True)
     # 外出
     stepping_out = models.DurationField(null=True, blank=True)
     # 時間外労働
-    over_time = models.DurationField(null=True, blank=True)
+    over = models.DurationField(null=True, blank=True)
     # 割増=8時間を超えた分
     over_8h = models.DurationField(null=True, blank=True)
     # 深夜=22時以降
-    night_work = models.DurationField(null=True, blank=True)
+    night = models.DurationField(null=True, blank=True)
     # 法定休日
-    legal_holiday_work = models.DurationField(null=True, blank=True)
+    legal_holiday = models.DurationField(null=True, blank=True)
     # 法定外休日
-    holiday_work = models.DurationField(null=True, blank=True)
+    holiday = models.DurationField(null=True, blank=True)
     # 届け
     remark = models.CharField(max_length=128, null=True, blank=True)
     # 勤務状況
@@ -535,15 +535,15 @@ class DailyAttendanceRecord(models.Model):
         self.time_record = kwargs["time_record"] if "time_record" in kwargs else None
         self.clock_in = kwargs["clock_in"] if "clock_in" in kwargs else None
         self.clock_out = kwargs["clock_out"] if "clock_out" in kwargs else None
-        self.actual_working_time = kwargs["actual_working_time"] if "actual_working_time" in kwargs else None
-        self.late_time = kwargs["late_time"] if "late_time" in kwargs else None
+        self.actual_work = kwargs["actual_work"] if "actual_work" in kwargs else None
+        self.late = kwargs["late"] if "late" in kwargs else None
         self.early_leave = kwargs["early_leave"] if "early_leave" in kwargs else None
         self.stepping_out = kwargs["stepping_out"] if "stepping_out" in kwargs else None
-        self.over_time = kwargs["over_time"] if "over_time" in kwargs else None
+        self.over = kwargs["over"] if "over" in kwargs else None
         self.over_8h = kwargs["over_8h"] if "over_8h" in kwargs else None
-        self.night_work = kwargs["night_work"] if "night_work" in kwargs else None
-        self.legal_holiday_work = kwargs["legal_holiday_work"] if "legal_holiday_work" in kwargs else None
-        self.holiday_work = kwargs["holiday_work"] if "holiday_work" in kwargs else None
+        self.night = kwargs["night"] if "night" in kwargs else None
+        self.legal_holiday = kwargs["legal_holiday"] if "legal_holiday" in kwargs else None
+        self.holiday = kwargs["holiday"] if "holiday" in kwargs else None
         self.remark = kwargs["remark"] if "remark" in kwargs else ""
         self.status = kwargs["status"] if "status" in kwargs else None
 

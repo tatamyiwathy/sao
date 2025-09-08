@@ -742,14 +742,14 @@ def generate_attendance_record(record: EmployeeDailyRecord):
     # 実労働時間(休息分は差し引かれてる)
     actual_working_time = calc_actual_working_time(record, working_hours.start, working_hours.end, Const.TD_ZERO)
 
-    attendance.actual_working_time = actual_working_time
-    attendance.late_time = calc_tardiness(record, working_hours.start)
+    attendance.actual_work = actual_working_time
+    attendance.late = calc_tardiness(record, working_hours.start)
     attendance.early_leave = calc_leave_early(record, working_hours.end)
-    attendance.over_time = calc_overtime(record, actual_working_time, assumed_working_time)
-    if attendance.over_time is not None and attendance.over_time.total_seconds() > 0:
+    attendance.over = calc_overtime(record, actual_working_time, assumed_working_time)
+    if attendance.over is not None and attendance.over.total_seconds() > 0:
         attendance.over_8h = calc_over_8h(record, actual_working_time)
-        attendance.night_work = calc_midnight_work(record)
-    attendance.legal_holiday_work = calc_legal_holiday(record, actual_working_time)
-    attendance.holiday_work = calc_holiday(record, actual_working_time)
+        attendance.night = calc_midnight_work(record)
+    attendance.legal_holiday = calc_legal_holiday(record, actual_working_time)
+    attendance.holiday = calc_holiday(record, actual_working_time)
     attendance.status = record.status
     attendance.save()

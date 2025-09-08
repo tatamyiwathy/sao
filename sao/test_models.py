@@ -27,15 +27,15 @@ class DailyAttendanceRecordModelTest(unittest.TestCase):
         )
         self.assertIsNotNone(record.pk)
         self.assertEqual(record.time_record, self.time_record)
-        self.assertIsNone(record.actual_working_time)
-        self.assertIsNone(record.late_time)
+        self.assertIsNone(record.actual_work)
+        self.assertIsNone(record.late)
         self.assertIsNone(record.early_leave)
         self.assertIsNone(record.stepping_out)
-        self.assertIsNone(record.over_time)
+        self.assertIsNone(record.over)
         self.assertIsNone(record.over_8h)
-        self.assertIsNone(record.night_work)
-        self.assertIsNone(record.legal_holiday_work)
-        self.assertIsNone(record.holiday_work)
+        self.assertIsNone(record.night)
+        self.assertIsNone(record.legal_holiday)
+        self.assertIsNone(record.holiday)
         self.assertEqual(record.remark, "")
         self.assertIsNone(record.status)
         record.delete()
@@ -45,29 +45,29 @@ class DailyAttendanceRecordModelTest(unittest.TestCase):
             time_record=self.time_record,
             clock_in=datetime.datetime(2024, 6, 1, 9, 0),
             clock_out=datetime.date(2024, 6, 1),
-            actual_working_time=datetime.timedelta(hours=8),
-            late_time=datetime.timedelta(minutes=10),
+            actual_work=datetime.timedelta(hours=8),
+            late=datetime.timedelta(minutes=10),
             early_leave=datetime.timedelta(minutes=5),
             stepping_out=datetime.timedelta(minutes=30),
-            over_time=datetime.timedelta(hours=1),
+            over=datetime.timedelta(hours=1),
             over_8h=datetime.timedelta(minutes=30),
-            night_work=datetime.timedelta(minutes=20),
-            legal_holiday_work=datetime.timedelta(hours=0),
-            holiday_work=datetime.timedelta(hours=0),
+            night=datetime.timedelta(minutes=20),
+            legal_holiday=datetime.timedelta(hours=0),
+            holiday=datetime.timedelta(hours=0),
             remark="Test remark",
             status=1,
         )
         self.assertEqual(record.clock_in, datetime.datetime(2024, 6, 1, 9, 0))
         self.assertEqual(record.clock_out, datetime.date(2024, 6, 1))
-        self.assertEqual(record.actual_working_time, datetime.timedelta(hours=8))
-        self.assertEqual(record.late_time, datetime.timedelta(minutes=10))
+        self.assertEqual(record.actual_work, datetime.timedelta(hours=8))
+        self.assertEqual(record.late, datetime.timedelta(minutes=10))
         self.assertEqual(record.early_leave, datetime.timedelta(minutes=5))
         self.assertEqual(record.stepping_out, datetime.timedelta(minutes=30))
-        self.assertEqual(record.over_time, datetime.timedelta(hours=1))
+        self.assertEqual(record.over, datetime.timedelta(hours=1))
         self.assertEqual(record.over_8h, datetime.timedelta(minutes=30))
-        self.assertEqual(record.night_work, datetime.timedelta(minutes=20))
-        self.assertEqual(record.legal_holiday_work, datetime.timedelta(hours=0))
-        self.assertEqual(record.holiday_work, datetime.timedelta(hours=0))
+        self.assertEqual(record.night, datetime.timedelta(minutes=20))
+        self.assertEqual(record.legal_holiday, datetime.timedelta(hours=0))
+        self.assertEqual(record.holiday, datetime.timedelta(hours=0))
         self.assertEqual(record.remark, "Test remark")
         self.assertEqual(record.status, 1)
         record.delete()
