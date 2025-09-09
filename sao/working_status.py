@@ -1,5 +1,6 @@
 class WorkingStatus:
     """勤務状態を表す定数"""
+
     C_NONE = 0
     C_KINMU = 1
     C_KEKKIN = 2
@@ -118,8 +119,9 @@ class WorkingStatus:
     ]
 
 
-
-def determine_working_status(is_holiday: bool, is_legal_holiday: bool, has_stamp: bool) -> int:
+def determine_working_status(
+    is_holiday: bool, is_legal_holiday: bool, has_stamp: bool
+) -> int:
     """
     ☑勤務状態を判定する
 
@@ -131,19 +133,18 @@ def determine_working_status(is_holiday: bool, is_legal_holiday: bool, has_stamp
     if is_holiday is False and is_legal_holiday is True:
         raise ValueError("法定休日のときは休日でなければなりません")
 
-                # holiday, legal_hokiday, has_stamp, status
-    conditions = [ (True, False, False, WorkingStatus.C_KYUJITU),  # 休日で記録なし
-                   (True, True, False, WorkingStatus.C_KYUJITU),  # 法的休日で記録なし
-                   (True, False, True, WorkingStatus.C_HOUTEIGAI_KYUJITU),  # 法定外休日出勤
-                   (True, True, True, WorkingStatus.C_HOUTEI_KYUJITU),  # 法定休日出勤
-                   (False, False, False, WorkingStatus.C_KEKKIN),  # 平日で記録なし
-                    (False, False, True, WorkingStatus.C_KINMU)  # 平日出勤
-                  ]
+        # holiday, legal_hokiday, has_stamp, status
+    conditions = [
+        (True, False, False, WorkingStatus.C_KYUJITU),  # 休日で記録なし
+        (True, True, False, WorkingStatus.C_KYUJITU),  # 法的休日で記録なし
+        (True, False, True, WorkingStatus.C_HOUTEIGAI_KYUJITU),  # 法定外休日出勤
+        (True, True, True, WorkingStatus.C_HOUTEI_KYUJITU),  # 法定休日出勤
+        (False, False, False, WorkingStatus.C_KEKKIN),  # 平日で記録なし
+        (False, False, True, WorkingStatus.C_KINMU),  # 平日出勤
+    ]
 
     for c in conditions:
         if (c[0] == is_holiday) and (c[1] == is_legal_holiday) and (c[2] == has_stamp):
             return c[3]
 
     return WorkingStatus.C_NONE
-
-
