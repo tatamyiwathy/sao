@@ -147,17 +147,6 @@ def collect_webstamp(employee: models.Employee, date: datetime.date) -> list[dat
     ).order_by("stamp")
     return [ x.stamp for x in stamps if x.stamp is not None ]
 
-from django.db.models.query import QuerySet
-def collect_webstamps(employee: models.Employee, date: datetime.date) -> QuerySet:
-    """WebStampから日にちを指定してスタンプを収集"""
-    day_begin = datetime.datetime.combine(date, core.get_day_switch_time())
-    day_end = day_begin + datetime.timedelta(days=1)
-    stamps = models.WebTimeStamp.objects.filter(
-        employee=employee, stamp__gte=day_begin, stamp__lt=day_end
-    ).order_by("stamp")
-    return stamps
-
-
 def print_strip_sec(total_sec, empty):
     """秒数をhh:mm形式にして返す"""
     h, m = divmod(total_sec // 60, 60)

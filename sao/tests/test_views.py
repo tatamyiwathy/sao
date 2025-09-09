@@ -8,6 +8,10 @@ from common.utils_for_test import (
     create_employee,
     create_user,
 )
+from sao.tests.utils import (
+    create_working_hours,
+    set_office_hours_to_employee,
+)
 
 class TimeClockViewTests(TestCase):
     def setUp(self):
@@ -59,29 +63,27 @@ class DaySwitchViewTests(TestCase):
         self.client = Client()
         self.u = create_user()
         self.e = create_employee(self.u, include_overtime_pay=True)
-        self.e.join_date = datetime.date(2020, 1, 1)
-        self.e.leave_date = datetime.date(2099, 12, 31)
-        self.e.save()
+        create_working_hours()
+        set_office_hours_to_employee(
+            self.e, datetime.date(1901, 1, 1), core.get_working_hours_by_category("A")
+        )
+
         self.date = datetime.date.today()
         self.url = reverse("sao:day_switch")
         # Patch utils functions to avoid side effects
         self._collect_webstamp = utils.collect_webstamp
         self._generate_daily_record = core.generate_daily_record
         self._generate_attendance_record = core.generate_attendance_record
-        utils.collect_webstamp = lambda employee, date: []
-        core.generate_daily_record = lambda stamps, employee, date: models.EmployeeDailyRecord.objects.create(employee=employee, date=date)
-        core.generate_attendance_record = lambda record: None
-
-    def tearDown(self):
-        utils.collect_webstamp = self._collect_webstamp
-        core.generate_daily_record = self._generate_daily_record
-        core.generate_attendance_record = self._generate_attendance_record
 
     def test_day_switch_post_creates_daily_record(self):
+        """日付変更処理がPOSTで呼ばれたとき、EmployeeDailyRecordが作成されること
+            (打刻がなくてもEmployeeDailyRecordは生成される)
+        """
         response = self.client.post(self.url, {"date": self.date.strftime("%Y-%m-%d")})
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"day switch done", response.content)
         self.assertTrue(models.EmployeeDailyRecord.objects.filter(employee=self.e, date=self.date).exists())
+        self.assertTrue(models.DailyAttendanceRecord.objects.all().exists())
 
     def test_day_switch_get_returns_done(self):
         response = self.client.get(self.url)

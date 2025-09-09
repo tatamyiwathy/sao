@@ -3,6 +3,7 @@ import datetime
 import sao.calendar
 import logging
 
+from django.db import transaction
 from sao.models import (
     EmployeeDailyRecord,
     Employee,
@@ -11,6 +12,7 @@ from sao.models import (
     WorkingHour,
     DaySwitchTime,
     DailyAttendanceRecord,    
+    WebTimeStamp
 )
 from sao.const import Const
 from sao.calendar import is_holiday, is_legal_holiday,get_first_day, get_last_day
@@ -772,8 +774,11 @@ def get_clock_in_out(stamps: list[datetime.datetime]) -> Period:
     return Period(stamps[0], stamps[-1])
 
 
-def generate_daily_record(stamps: list[datetime.datetime], employee: Employee, date: datetime.date):
+def generate_daily_record(stamps: list[datetime.datetime], employee: Employee, date: datetime.date) ->EmployeeDailyRecord|None:
     """EmployeeDailyRecordを生成する
+
+        stampが空の時でもEmployDailyRecordを生成する
+        もし勤務時間が設定されていないときは処理しない
     引数:
         stamps      打刻のリスト。空のときもあるし、1件のときもあるし、2件以上のときもある
         employee    対象の社員
@@ -790,11 +795,13 @@ def generate_daily_record(stamps: list[datetime.datetime], employee: Employee, d
             scheduled_time = Period(None, None)
     except NoAssignedWorkingHourError:
         # 勤務時間が設定されていないので処理しない
+        logger.warning(f"勤務時間が設定されていません {employee.name} {date}")
         return
 
     working_status = get_working_status(is_holiday(date), is_legal_holiday(date), not clock_in_out.is_empty())
 
-    EmployeeDailyRecord(
+    logger.debug(f"generate_daily_record: {employee.name} {date} {stamps} -> {clock_in_out}")
+    return EmployeeDailyRecord.objects.create(
         employee=employee,
         date=date,
         clock_in=clock_in_out.start,
@@ -802,11 +809,11 @@ def generate_daily_record(stamps: list[datetime.datetime], employee: Employee, d
         working_hours_start = scheduled_time.start,
         working_hours_end = scheduled_time.end,
         status=working_status,
-    ).save()
-
+    )
 
 def generate_attendance_record(record: EmployeeDailyRecord) -> DailyAttendanceRecord:
     """DailyAttendanceRecordを生成する"""
+
     attendance = DailyAttendanceRecord(time_record=record)
         
     # 所定の始業、終業、勤務時間を取得する
@@ -842,3 +849,61 @@ def generate_attendance_record(record: EmployeeDailyRecord) -> DailyAttendanceRe
     except Exception as e:
         logger.error(f"Failed to save DailyAttendanceRecord: {e}")
     return attendance
+
+
+def finalize_daily_record(employee: Employee, date: datetime.date):
+    """EmployeeDailyRecordとDailyAttendanceRecordを生成する"""
+
+    if EmployeeDailyRecord.objects.filter(employee=employee, date=date).exists():
+        logger.info("  勤務記録が既に存在しているためスキップします")
+        return
+
+    # WebTimeStampを集める
+    stamps = collect_webstamps(employee, date)
+
+    try:
+        with transaction.atomic():
+            # EmployeeDailyRecordを生成する
+            record = generate_daily_record([x.stamp for x in stamps], employee, date)
+            if record is None:
+                logger.info(f"  打刻データが存在しないためスキップします")
+                return
+
+            # recordからDailyAttendanceRecordを生成する
+            generate_attendance_record(record)
+    except Exception as e:
+        logger.error(f"  切り替え処理に失敗しました: {employee} {date} {e}")
+        return
+
+    # 確認
+    if not EmployeeDailyRecord.objects.filter(employee=employee, date=date).exists():
+        logger.error(f"EmployeeDailyRecordが生成されませんでした: {employee} {date}")
+        return
+    else:
+        logger.info("EmployeeDailyRecordを生成しました")
+    if not DailyAttendanceRecord.objects.filter(time_record__employee=employee, time_record__date=date).exists():
+        logger.error(f"DailyAttendanceRecordが生成されませんでした: {employee} {date}")
+        return
+    else:
+        logger.info("DailyAttendanceRecordを生成しました")
+
+    # WebTimeStampを削除する
+    try:
+        stamps.delete()  
+    except Exception as e:
+        logger.error(f"Web打刻データの削除に失敗しました: {employee} {date} {e}")
+    
+    return
+
+
+from django.db.models.query import QuerySet
+def collect_webstamps(employee: Employee, date: datetime.date) -> QuerySet:
+    """WebStampから日にちを指定してスタンプを収集"""
+    day_begin = datetime.datetime.combine(date, get_day_switch_time())
+    day_end = day_begin + datetime.timedelta(days=1)
+    stamps = WebTimeStamp.objects.filter(
+        employee=employee, stamp__gte=day_begin, stamp__lt=day_end
+    ).order_by("stamp")
+    return stamps
+
+

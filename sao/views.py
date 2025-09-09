@@ -28,6 +28,7 @@ from sao.core import (
     get_monthly_attendance,
     get_attendance_in_period,
     fill_missiing_attendance,
+    finalize_daily_record,
 )
 from sao.const import Const
 from sao.working_status import WorkingStatus
@@ -44,7 +45,6 @@ from sao.utils import (
     create_user,
     create_employee,
     print_total_sec,
-    collect_webstamps,
 )
 from sao.period import Period
 from sao.attendance import Attendance
@@ -1299,7 +1299,9 @@ def day_switch_time_edit(request, id):
 
 @csrf_exempt
 def day_switch(request):
-    """日時切り替え処理"""
+    """ 日時切り替え処理
+        POSTで渡されたdateの前日の打刻を処理する
+    """
 
     if request.method == "POST":
         date = request.POST.get("date")
@@ -1319,45 +1321,11 @@ def day_switch(request):
     for employee in employees:
         logger.info(f"処理中: {employee} {date}")
 
-        if models.EmployeeDailyRecord.objects.filter(employee=employee, date=date).exists():
-            logger.info("  勤務記録が既に存在しているためスキップします")
-            continue
+        # 打刻から勤怠記録を生成する
+        finalize_daily_record(employee, date)
 
-        # WebTimeStampを集める
-        stamps = collect_webstamps(employee, date)
 
-        # EmployeeDailyRecordを生成する
-        core.generate_daily_record([x.stamp for x in stamps], employee, date)
 
-        # EmployeeDailyRecordを集めてDailyAttendanceRecordを生成する
-        records = models.EmployeeDailyRecord.objects.filter(employee=employee, date=date)
-        if len(records) != 1:
-            logger.error(f"勤務実績が生成されませんでした: {employee} {date}")
-            continue
-
-        # DailyAttendanceRecordを生成する
-        try:
-            core.generate_attendance_record(records[0])
-        except Exception as e:
-            logger.error(f"勤務実績の生成に失敗しました: {employee} {date} {e}")
-            continue
-
-        attn = models.DailyAttendanceRecord.objects.filter(time_record=records[0])
-        if len(attn) == 1:
-            logger.info(f"勤務実績を生成しました: {employee} {date}")
-        else:
-            logger.error(f"勤務実績の生成に失敗しました: {employee} {date}")
-            continue
-
-        # WebTimeStampを削除する
-        try:
-            stamps.delete()  
-        except Exception as e:
-            logger.error(f"Web打刻データの削除に失敗しました: {employee} {date} {e}")
-            continue
-
-        stamps = collect_webstamps(employee, date)
-        
     logger.info(f"{date} の切り替え作業が完了しました")
     return HttpResponse("day switch done for " + str(date))
 
