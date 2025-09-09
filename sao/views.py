@@ -13,8 +13,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from sao import core, forms, models
 from sao.calendar import (
-    get_first_day, 
-    get_last_day, is_holiday,
+    get_first_day,
+    get_last_day,
+    is_holiday,
     get_next_month_date,
     get_last_sunday,
     get_next_sunday,
@@ -33,7 +34,7 @@ from sao.core import (
 from sao.const import Const
 from sao.working_status import WorkingStatus
 from sao.utils import (
-    tally_attendances, 
+    tally_attendances,
     tally_over_work_time,
     get_employee_type,
     get_department,
@@ -50,6 +51,7 @@ from sao.period import Period
 from sao.attendance import Attendance
 
 logger = logging.getLogger("sao")  # views専用のロガー
+
 
 @login_required
 def home(request):
@@ -111,9 +113,7 @@ def home(request):
             # 猶予期間
             return False
 
-        if is_holiday(attn.date) and is_empty_stamp(
-            attn.clock_in, attn.clock_out
-        ):
+        if is_holiday(attn.date) and is_empty_stamp(attn.clock_in, attn.clock_out):
             return False
 
         return True
@@ -158,11 +158,17 @@ def home(request):
         employee: models.Employee, view_date: datetime.date, today: datetime.date
     ):
         """勤務者のマイページを作成する"""
-        first_day = datetime.datetime.combine(get_first_day(view_date), datetime.time(0,0))
-        next_month_first_day = datetime.datetime.combine(get_last_day(view_date) + datetime.timedelta(days=1), datetime.time(0,0))
-        period = Period( first_day, next_month_first_day )
+        first_day = datetime.datetime.combine(
+            get_first_day(view_date), datetime.time(0, 0)
+        )
+        next_month_first_day = datetime.datetime.combine(
+            get_last_day(view_date) + datetime.timedelta(days=1), datetime.time(0, 0)
+        )
+        period = Period(first_day, next_month_first_day)
         # 月次集計
-        attendances = get_attendance_in_period(employee, period.start.date(), period.end.date())
+        attendances = get_attendance_in_period(
+            employee, period.start.date(), period.end.date()
+        )
         # 欠損日補完
         attendances = fill_missiing_attendance(employee, period, attendances)
         # 時間外労働時間を集計する
@@ -271,9 +277,13 @@ def staff_detail(request, employee, year, month):
     ■勤務実績ー詳細
     """
     employee = models.Employee.objects.get(employee_no=employee)
-    from_date = datetime.datetime.combine(datetime.date(year=year, month=month, day=1), datetime.time(0,0))
-    to_date = datetime.datetime.combine(get_next_month_date(from_date), datetime.time(0,0)) + datetime.timedelta(days=1)
-    period = Period( from_date, to_date )
+    from_date = datetime.datetime.combine(
+        datetime.date(year=year, month=month, day=1), datetime.time(0, 0)
+    )
+    to_date = datetime.datetime.combine(
+        get_next_month_date(from_date), datetime.time(0, 0)
+    ) + datetime.timedelta(days=1)
+    period = Period(from_date, to_date)
 
     office_hours = get_employee_hour(employee, datetime.date.today())
 
@@ -334,7 +344,9 @@ def employee_hour_view(request, employee_no):
             date = form.cleaned_data["date"]
             if date < employee.join_date:
                 messages.error(request, "入社日以前の日付は設定できません")
-            elif not models.EmployeeHour.objects.filter(employee=employee, date=date).exists():
+            elif not models.EmployeeHour.objects.filter(
+                employee=employee, date=date
+            ).exists():
                 form.save()
                 logger.info("%sが%sを追加した" % (request.user, employee_hour))
             else:
@@ -343,9 +355,11 @@ def employee_hour_view(request, employee_no):
         form = forms.WorkingHourAssignForm(
             instance=employee, initial={"date": datetime.date.today()}
         )
-    employee_hours = models.EmployeeHour.objects.filter(
-        employee=employee
-    ).filter(date__gte=datetime.date.today()).order_by("-date")
+    employee_hours = (
+        models.EmployeeHour.objects.filter(employee=employee)
+        .filter(date__gte=datetime.date.today())
+        .order_by("-date")
+    )
 
     return render(
         request,
@@ -354,7 +368,7 @@ def employee_hour_view(request, employee_no):
             "employee": employee,
             "office_hours": employee_hours,
             "form": form,
-            "today": datetime.date.today()
+            "today": datetime.date.today(),
         },
     )
 
@@ -587,10 +601,16 @@ def employee_record(request):
         form = forms.StaffYearMonthForm()
 
         # 前月の最終日曜日から次月の最初の日曜日までのデータを集める
-        attendances = get_attendance_in_period(employee, get_last_sunday(from_date), get_next_sunday(to_date))
-        start = datetime.datetime.combine(get_last_sunday(from_date), datetime.time(0,0))
-        end = datetime.datetime.combine(get_next_sunday(to_date), datetime.time(0,0)) + datetime.timedelta(days=1)
-        period = Period( start, end )
+        attendances = get_attendance_in_period(
+            employee, get_last_sunday(from_date), get_next_sunday(to_date)
+        )
+        start = datetime.datetime.combine(
+            get_last_sunday(from_date), datetime.time(0, 0)
+        )
+        end = datetime.datetime.combine(
+            get_next_sunday(to_date), datetime.time(0, 0)
+        ) + datetime.timedelta(days=1)
+        period = Period(start, end)
         attendances = fill_missiing_attendance(employee, period, attendances)
         attendances[-1].total_over = tally_over_work_time(from_date.month, attendances)
 
@@ -676,7 +696,13 @@ def add_employee(request):
         employee_no = form.cleaned_data["employee_no"]
 
         # アカウント作成
-        user = create_user(form.cleaned_data["accountname"], sei, mei, form.cleaned_data["accountname"], form.cleaned_data['email'])
+        user = create_user(
+            form.cleaned_data["accountname"],
+            sei,
+            mei,
+            form.cleaned_data["accountname"],
+            form.cleaned_data["email"],
+        )
 
         # スタッフ作成
         employee = create_employee(
@@ -722,14 +748,21 @@ def leave_from_company(request, employee_no):
             messages.success(request, f"{employee}を{leave_date}付で退職にしました")
             return redirect("sao:employee_list")
 
-    if employee.leave_date < datetime.date(2099,12,31):
+    if employee.leave_date < datetime.date(2099, 12, 31):
         if employee.leave_date < datetime.date.today():
             messages.info(request, f"{employee}は{employee.leave_date}に退社しています")
         else:
             messages.info(request, f"{employee}は{employee.leave_date}に退社予定です")
-    return render(request, "sao/leave_from_company.html", {
-        "form": form, "employee": employee, "leaved": employee.leave_date < datetime.date(2099,12,31)
-    })
+    return render(
+        request,
+        "sao/leave_from_company.html",
+        {
+            "form": form,
+            "employee": employee,
+            "leaved": employee.leave_date < datetime.date(2099, 12, 31),
+        },
+    )
+
 
 @login_required
 def cancel_leave_from_company(request, employee_no):
@@ -755,10 +788,11 @@ def attendance_summary(request):
 
         to_date = get_next_month_date(from_date)
 
-        start = datetime.datetime.combine(from_date, datetime.time(0,0))
-        end = datetime.datetime.combine(to_date, datetime.time(0,0)) + datetime.timedelta(days=1)
-        period = Period( start, end )
-
+        start = datetime.datetime.combine(from_date, datetime.time(0, 0))
+        end = datetime.datetime.combine(
+            to_date, datetime.time(0, 0)
+        ) + datetime.timedelta(days=1)
+        period = Period(start, end)
 
         hide_deactive_staff = False
         if "f_deactive" in request.GET:
@@ -813,11 +847,11 @@ def time_clock(request):
     if request.method == "POST":
         models.WebTimeStamp(employee=employee, stamp=stamp).save()
 
-
     day_switch_time = get_day_switch_time()
     business_day = normalize_to_business_day(stamp)
     stamps = models.WebTimeStamp.objects.filter(
-        employee=employee, stamp__gte=datetime.datetime.combine(business_day.date(), day_switch_time)
+        employee=employee,
+        stamp__gte=datetime.datetime.combine(business_day.date(), day_switch_time),
     ).order_by("-stamp")
     return render(
         request, "sao/time_clock.html", {"employee": employee, "stamps": stamps}
@@ -873,9 +907,10 @@ def holiday_settings(request):
 
     holidays = models.Holiday.objects.all().order_by("date")
     return render(
-        request, "sao/holiday_settings.html", 
-            {"form": form, "holidays": holidays}
+        request, "sao/holiday_settings.html", {"form": form, "holidays": holidays}
     )
+
+
 @login_required
 def delete_holiday(request, id):
     """公休日設定削除"""
@@ -884,6 +919,7 @@ def delete_holiday(request, id):
     logger.info("%sが公休日(%s)を削除しました" % (request.user, holiday))
     messages.success(request, f"{holiday}を削除しました")
     return redirect("sao:holiday_settings")
+
 
 def progress(request, pk):
     """現在の進捗ページ"""
@@ -947,7 +983,9 @@ def download_csv(request, employee_no, year, month):
     except NoAssignedWorkingHourError:
         sumup = attendance.sumup_attendances([])
         rounded = core.round_result(sumup)
-        messages.warning(request, f"・{employee}の打刻データが存在しないためCVSの出力ができません")
+        messages.warning(
+            request, f"・{employee}の打刻データが存在しないためCVSの出力ができません"
+        )
         return render(
             request,
             "sao/attendance_detail.html",
@@ -1214,69 +1252,77 @@ def fix_holiday(request):
 
     return HttpResponse("done")
 
+
 @login_required
 def working_hours_view(request):
     return render(
         request,
         "sao/working_hours_list.html",
         {
-            'working_hours': list(models.WorkingHour.objects.filter(is_active=True)),
+            "working_hours": list(models.WorkingHour.objects.filter(is_active=True)),
         },
     )
 
+
 @login_required
 def add_working_hours(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         form = forms.WorkingHourForm(request.POST)
         if form.is_valid():
             working_hour = form.save()
-            messages.success(request, f'勤務時間「{working_hour.category}」を追加しました。')
-            return redirect('sao:working_hours_view')
+            messages.success(
+                request, f"勤務時間「{working_hour.category}」を追加しました。"
+            )
+            return redirect("sao:working_hours_view")
     else:
         form = forms.WorkingHourForm()
-    return redirect('sao:working_hours_view')
+    return redirect("sao:working_hours_view")
+
 
 @login_required
 def del_working_hours(request, id):
     working_hour = get_object_or_404(models.WorkingHour, id=id)
     working_hour.is_active = False
     working_hour.save()
-    messages.success(request, f'勤務時間「{working_hour.category}」を削除しました。')
-    return redirect('sao:working_hours_view')
+    messages.success(request, f"勤務時間「{working_hour.category}」を削除しました。")
+    return redirect("sao:working_hours_view")
+
 
 @login_required
 def update_working_hours(request, id):
-    logger.info("update working hours")    
+    logger.info("update working hours")
     workinghour = get_object_or_404(models.WorkingHour, id=id)
 
     if request.method == "POST":
         form = forms.WorkingHourForm(request.POST, instance=workinghour)
         if form.is_valid():
             working_hour = form.save()
-            messages.success(request, f'勤務時間「{working_hour.category}」を更新しました。')
+            messages.success(
+                request, f"勤務時間「{working_hour.category}」を更新しました。"
+            )
         else:
             # バリデーションエラー時
             for field, errors in form.errors.items():
                 for error in errors:
-                    messages.error(request, f'{field}: {error}')
-    return redirect('sao:working_hours_view')
+                    messages.error(request, f"{field}: {error}")
+    return redirect("sao:working_hours_view")
+
 
 @login_required
 def day_switch_time_view(request):
 
     # DaySwitchTimeは1件しか存在しないので、なければ作成する
     if not models.DaySwitchTime.objects.exists():
-        models.DaySwitchTime.objects.create(
-            switch_time = datetime.time(hour=5, minute=0)
-        )
+        models.DaySwitchTime.objects.create(switch_time=datetime.time(hour=5, minute=0))
 
     return render(
         request,
         "sao/day_switch_time_view.html",
         {
-            'day_switch_time': models.DaySwitchTime.objects.all()[0],
+            "day_switch_time": models.DaySwitchTime.objects.all()[0],
         },
     )
+
 
 def day_switch_time_edit(request, id):
 
@@ -1285,22 +1331,28 @@ def day_switch_time_edit(request, id):
     if request.method == "POST":
         if form.is_valid():
             day_switch_time = form.save()
-            messages.success(request, f'日付切り替え時間を「{day_switch_time.switch_time}」に変更しました。')
-            logger.info(f'日付切り替え時間を「{day_switch_time.switch_time}」に変更しました。')
-            return redirect('sao:day_switch_time_view')
+            messages.success(
+                request,
+                f"日付切り替え時間を「{day_switch_time.switch_time}」に変更しました。",
+            )
+            logger.info(
+                f"日付切り替え時間を「{day_switch_time.switch_time}」に変更しました。"
+            )
+            return redirect("sao:day_switch_time_view")
 
     return render(
         request,
         "sao/day_switch_time_edit.html",
         {
-            'form': form,
+            "form": form,
         },
     )
 
+
 @csrf_exempt
 def day_switch(request):
-    """ 日時切り替え処理
-        POSTで渡されたdateの前日の打刻を処理する
+    """日時切り替え処理
+    POSTで渡されたdateの前日の打刻を処理する
     """
 
     if request.method == "POST":
@@ -1314,20 +1366,16 @@ def day_switch(request):
     logger.info(f"{date} の切り替え作業を開始します")
 
     # WebTimeStampを集めてEmployeeDailyRecordを生成する
-    employees = models.Employee.objects.filter(
-                    user__is_active=True).filter(
-                        join_date__lte=date).filter(
-                        leave_date__gte=date)
+    employees = (
+        models.Employee.objects.filter(user__is_active=True)
+        .filter(join_date__lte=date)
+        .filter(leave_date__gte=date)
+    )
     for employee in employees:
         logger.info(f"処理中: {employee} {date}")
 
         # 打刻から勤怠記録を生成する
         finalize_daily_record(employee, date)
 
-
-
     logger.info(f"{date} の切り替え作業が完了しました")
     return HttpResponse("day switch done for " + str(date))
-
-
-
