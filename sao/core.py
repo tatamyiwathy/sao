@@ -855,7 +855,7 @@ def finalize_daily_record(employee: Employee, date: datetime.date):
     """EmployeeDailyRecordとDailyAttendanceRecordを生成する"""
 
     if EmployeeDailyRecord.objects.filter(employee=employee, date=date).exists():
-        logger.info("  勤務記録が既に存在しているためスキップします")
+        logger.info("勤務記録が既に存在しているためスキップします")
         return
 
     # WebTimeStampを集める
@@ -866,7 +866,7 @@ def finalize_daily_record(employee: Employee, date: datetime.date):
             # EmployeeDailyRecordを生成する
             record = generate_daily_record([x.stamp for x in stamps], employee, date)
             if record is None:
-                logger.info(f"  打刻データが存在しないためスキップします")
+                logger.info(f"打刻データが存在しないためスキップします")
                 return
 
             # recordからDailyAttendanceRecordを生成する
