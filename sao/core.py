@@ -17,7 +17,7 @@ from sao.models import (
 from sao.const import Const
 from sao.calendar import is_holiday, is_legal_holiday,get_first_day, get_last_day
 from sao.period import Period
-from sao.working_status import WorkingStatus, get_working_status
+from sao.working_status import WorkingStatus, determine_working_status
 from sao.attendance import Attendance
 from dateutil.relativedelta import relativedelta
 
@@ -798,7 +798,7 @@ def generate_daily_record(stamps: list[datetime.datetime], employee: Employee, d
         logger.warning(f"勤務時間が設定されていません {employee.name} {date}")
         return
 
-    working_status = get_working_status(is_holiday(date), is_legal_holiday(date), not clock_in_out.is_empty())
+    working_status = determine_working_status(is_holiday(date), is_legal_holiday(date), not clock_in_out.is_empty())
 
     logger.debug(f"generate_daily_record: {employee.name} {date} {stamps} -> {clock_in_out}")
     return EmployeeDailyRecord.objects.create(

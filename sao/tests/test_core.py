@@ -778,13 +778,13 @@ class TestGenerateDailyRecord(TestCase):
             datetime.combine(self.day, time(19, 0)),
         )
 
-    @patch("sao.working_status.get_working_status", return_value=WorkingStatus.C_KINMU)
+    @patch("sao.working_status.determine_working_status", return_value=WorkingStatus.C_KINMU)
     @patch("sao.calendar.is_legal_holiday", return_value=False)
     @patch("sao.calendar.is_holiday", return_value=False)
     @patch("sao.core.get_employee_hour")
     @patch("sao.core.get_clock_in_out")
     def test_generate_daily_record_normal(
-        self, mock_get_clock_in_out, mock_get_employee_hour, mock_is_holiday, mock_is_legal_holiday, mock_get_working_status
+        self, mock_get_clock_in_out, mock_get_employee_hour, mock_is_holiday, mock_is_legal_holiday, mock_determine_working_status
     ):
         # 平日、出勤退勤あり
         # Setup
@@ -806,13 +806,13 @@ class TestGenerateDailyRecord(TestCase):
         self.assertEqual(record.status, WorkingStatus.C_KINMU)
 
 
-    @patch("sao.working_status.get_working_status", return_value=WorkingStatus.C_KEKKIN)
+    @patch("sao.working_status.determine_working_status", return_value=WorkingStatus.C_KEKKIN)
     @patch("sao.calendar.is_legal_holiday", return_value=False)
     @patch("sao.calendar.is_holiday", return_value=False)
     @patch("sao.core.get_employee_hour")
     @patch("sao.core.get_clock_in_out")
     def test_generate_daily_record_no_stamp(
-        self, mock_get_clock_in_out, mock_get_employee_hour, mock_is_holiday, mock_is_legal_holiday, mock_get_working_status
+        self, mock_get_clock_in_out, mock_get_employee_hour, mock_is_holiday, mock_is_legal_holiday, mock_determine_working_status
     ):
         # 平日、出勤退勤なし
         stamps = []
@@ -832,13 +832,13 @@ class TestGenerateDailyRecord(TestCase):
         self.assertEqual(record.working_hours_end, self.period.end)
         self.assertEqual(record.status, WorkingStatus.C_KEKKIN)
 
-    @patch("sao.core.get_working_status", return_value=WorkingStatus.C_HOUTEIGAI_KYUJITU)
+    @patch("sao.core.determine_working_status", return_value=WorkingStatus.C_HOUTEIGAI_KYUJITU)
     @patch("sao.core.is_legal_holiday", return_value=False)
     @patch("sao.core.is_holiday", return_value=True)
     @patch("sao.core.get_employee_hour")
     @patch("sao.core.get_clock_in_out")
     def test_generate_daily_record_holiday(
-        self, mock_get_clock_in_out, mock_get_employee_hour, mock_is_holiday, mock_is_legal_holiday, mock_get_working_status
+        self, mock_get_clock_in_out, mock_get_employee_hour, mock_is_holiday, mock_is_legal_holiday, mock_determine_working_status
     ):
         # 法定外休日、出勤退勤あり->打刻そのまま
         # Setup
@@ -861,13 +861,13 @@ class TestGenerateDailyRecord(TestCase):
         self.assertEqual(record.status, WorkingStatus.C_HOUTEIGAI_KYUJITU)
 
 
-    @patch("sao.core.get_working_status", return_value=WorkingStatus.C_HOUTEI_KYUJITU)
+    @patch("sao.core.determine_working_status", return_value=WorkingStatus.C_HOUTEI_KYUJITU)
     @patch("sao.core.is_legal_holiday", return_value=True)
     @patch("sao.core.is_holiday", return_value=True)
     @patch("sao.core.get_employee_hour")
     @patch("sao.core.get_clock_in_out")
     def test_generate_daily_record_legal_holiday(
-        self, mock_get_clock_in_out, mock_get_employee_hour, mock_is_holiday, mock_is_legal_holiday, mock_get_working_status
+        self, mock_get_clock_in_out, mock_get_employee_hour, mock_is_holiday, mock_is_legal_holiday, mock_determine_working_status
     ):
         # 法定休日、出勤退勤あり->打刻そのまま
         # Setup
