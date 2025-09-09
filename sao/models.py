@@ -5,9 +5,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from . import calendar
-from .working_status import WorkingStatus
-from .period import Period
+from sao.calendar import is_holiday
+from sao.working_status import WorkingStatus
+from sao.period import Period
 
 class Employee(models.Model):
     """社員クラス"""
@@ -218,7 +218,7 @@ class EmployeeDailyRecord(models.Model):
         ・打刻日が土曜なのにstatusが休出（法定）
         """
         d = datetime.date(self.date.year, self.date.month, self.date.day)
-        if calendar.is_holiday(d):
+        if is_holiday(d):
             if self.status in [WorkingStatus.C_KINMU, WorkingStatus.C_KEKKIN]:
                 # 休日なのに勤務したこになっている
                 return False
@@ -369,7 +369,7 @@ class WebTimeStamp(models.Model):
 
 
 class SteppingOut(models.Model):
-    """外出"""
+    """ユーザーが外出した時間を記録する"""
 
     employee = models.ForeignKey(
         "Employee", blank=True, null=True, on_delete=models.CASCADE
@@ -377,6 +377,10 @@ class SteppingOut(models.Model):
     out_time = models.DateTimeField(blank=True, null=True)
     return_time = models.DateTimeField(blank=True, null=True)
 
+    def duration(self) -> datetime.timedelta:
+        if self.out_time is None or self.return_time is None:
+            return datetime.timedelta()
+        return self.return_time - self.out_time
 
 class DaySwitchTime(models.Model):
     """日付切替時間"""
@@ -505,48 +509,56 @@ class DailyAttendanceRecord(models.Model):
     clock_in = models.DateTimeField(null=True, blank=True)
     clock_out = models.DateField(null=True, blank=True)
     # 実労働時間
-    actual_working_time = models.DurationField(null=True, blank=True)
+    actual_work = models.DurationField(default=datetime.timedelta(0))
     # 遅刻
-    late_time = models.DurationField(null=True, blank=True)
+    late = models.DurationField(default=datetime.timedelta(0))
     # 早退
-    early_leave = models.DurationField(null=True, blank=True)
+    early_leave = models.DurationField(default=datetime.timedelta(0))
     # 外出
-    stepping_out = models.DurationField(null=True, blank=True)
+    stepping_out = models.DurationField(default=datetime.timedelta(0))
     # 時間外労働
-    over_time = models.DurationField(null=True, blank=True)
+    over = models.DurationField(default=datetime.timedelta(0))
     # 割増=8時間を超えた分
-    over_8h = models.DurationField(null=True, blank=True)
+    over_8h = models.DurationField(default=datetime.timedelta(0))
     # 深夜=22時以降
-    night_work = models.DurationField(null=True, blank=True)
+    night = models.DurationField(default=datetime.timedelta(0))
     # 法定休日
-    legal_holiday_work = models.DurationField(null=True, blank=True)
+    legal_holiday = models.DurationField(default=datetime.timedelta(0))
     # 法定外休日
-    holiday_work = models.DurationField(null=True, blank=True)
+    holiday = models.DurationField(default=datetime.timedelta(0))
     # 届け
     remark = models.CharField(max_length=128, null=True, blank=True)
     # 勤務状況
     status = models.IntegerField(
         null=True, blank=True, choices=WorkingStatus.choices
     )
-
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.time_record = kwargs["time_record"] if "time_record" in kwargs else None
         self.clock_in = kwargs["clock_in"] if "clock_in" in kwargs else None
         self.clock_out = kwargs["clock_out"] if "clock_out" in kwargs else None
-        self.actual_working_time = kwargs["actual_working_time"] if "actual_working_time" in kwargs else None
-        self.late_time = kwargs["late_time"] if "late_time" in kwargs else None
-        self.early_leave = kwargs["early_leave"] if "early_leave" in kwargs else None
-        self.stepping_out = kwargs["stepping_out"] if "stepping_out" in kwargs else None
-        self.over_time = kwargs["over_time"] if "over_time" in kwargs else None
-        self.over_8h = kwargs["over_8h"] if "over_8h" in kwargs else None
-        self.night_work = kwargs["night_work"] if "night_work" in kwargs else None
-        self.legal_holiday_work = kwargs["legal_holiday_work"] if "legal_holiday_work" in kwargs else None
-        self.holiday_work = kwargs["holiday_work"] if "holiday_work" in kwargs else None
+        self.actual_work = kwargs["actual_work"] if "actual_work" in kwargs else datetime.timedelta(0)
+        self.late = kwargs["late"] if "late" in kwargs else datetime.timedelta(0)
+        self.early_leave = kwargs["early_leave"] if "early_leave" in kwargs else datetime.timedelta(0)
+        self.stepping_out = kwargs["stepping_out"] if "stepping_out" in kwargs else datetime.timedelta(0)
+        self.over = kwargs["over"] if "over" in kwargs else datetime.timedelta(0)
+        self.over_8h = kwargs["over_8h"] if "over_8h" in kwargs else datetime.timedelta(0)
+        self.night = kwargs["night"] if "night" in kwargs else datetime.timedelta(0)
+        self.legal_holiday = kwargs["legal_holiday"] if "legal_holiday" in kwargs else datetime.timedelta(0)
+        self.holiday = kwargs["holiday"] if "holiday" in kwargs else datetime.timedelta(0)
         self.remark = kwargs["remark"] if "remark" in kwargs else ""
         self.status = kwargs["status"] if "status" in kwargs else None
 
     
 
+    def __str__(self):
+        if self.time_record is None:
+            return "No TimeRecord"
+        if self.time_record.employee is None:
+            return "No Employee"
+        return "%s %s" % (self.time_record.employee, self.time_record.date)
 
+    def get_over(self) -> datetime.timedelta:
+        return self.over

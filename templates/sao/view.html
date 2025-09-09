@@ -202,9 +202,14 @@
 				<td></td>
 				{% endif %}
 				{%endif%}
-				<td><a class="btn btn-default" href={% url 'sao:modify_record' r.record_id year month %}>
+				<td>
+					{% if r.daily_attendance_record %}
+					<a class="btn btn-default" href="{% url 'sao:modify_record' r.daily_attendance_record_pk year month %}>
 						<span class="oi oi-pencil"></span>
-					</a></td>
+						
+					</a>
+					{% endif %}
+				</td>
 			</tr>
 			{% endfor %}
 
