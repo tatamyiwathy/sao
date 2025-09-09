@@ -18,13 +18,11 @@ import os
 from sys import argv
 from dotenv import load_dotenv
 
+# テスト環境かどうか
+IS_TEST = os.environ.get("IS_TEST") == "true"
 
-if argv and 1 < len(argv):
-    IS_TEST = "test" == argv[1]
-else:
-    IS_TEST = False
 
-# Load environment variables from .env file
+# .env ファイルを読み込む
 load_dotenv()
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -214,6 +212,12 @@ if IS_TEST:
     LOGGING = {
         "version": 1,
         "disable_existing_loggers": False,
+        "formatters": {
+            "testprefix": {
+                "()": "sao_proj.text_prefix_formatter.TestPrefixFormatter",  # パスに注意
+                "format": "%(levelname)s:%(name)s:%(message)s",
+            },
+        },
         "handlers": {
             "console": {
                 "class": "logging.StreamHandler",
@@ -223,6 +227,10 @@ if IS_TEST:
         "formatters": {
             "dev": {
                 "format": "[%(levelname)s] %(module)s.%(funcName)s(%(lineno)d) %(message)s"
+            },
+            "console": {
+                "class": "logging.StreamHandler",
+                "formatter": "testprefix",  # フォーマッタを指定
             },
         },
         "root": {
@@ -236,7 +244,7 @@ if IS_TEST:
                 "propagate": False,
             },
         },
-    }
+    }    
 else:
     LOGGING = {
         "version": 1,
