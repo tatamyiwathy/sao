@@ -215,18 +215,24 @@ if IS_TEST:
         "version": 1,
         "disable_existing_loggers": False,
         "handlers": {
-            "null": {
-                "class": "logging.NullHandler",
+            "console": {
+                "class": "logging.StreamHandler",
+                "level": "DEBUG",
+                "formatter": "dev",  # フォーマッタは必要に応じて
+            },        },
+        "formatters": {
+            "dev": {
+                "format": "[%(levelname)s] %(module)s.%(funcName)s(%(lineno)d) %(message)s"
             },
         },
         "root": {
-            "handlers": ["null"],
+            "handlers": ["console"],
             "level": "WARNING",
         },
         "loggers": {
             "sao": {
-                "handlers": ["null"],
-                "level": "ERROR",  # エラーのみ
+                "handlers": ["console"],
+                "level": "DEBUG",  # エラーのみ
                 "propagate": False,
             },
         },
