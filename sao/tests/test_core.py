@@ -915,7 +915,7 @@ class TestFinalizeDailyRecord(TestCase):
         mock_EmployeeDailyRecord.objects.filter.return_value.exists.return_value = True
         with patch("sao.core.logger") as mock_logger:
             finalize_daily_record(self.employee, self.day)
-            mock_logger.info.assert_called_with("勤務記録が既に存在しているためスキップします")
+            mock_logger.info.assert_called_with("[test]勤務記録が既に存在しているためスキップします")
 
     @patch("sao.core.EmployeeDailyRecord")
     @patch("sao.core.collect_webstamps")
@@ -928,7 +928,7 @@ class TestFinalizeDailyRecord(TestCase):
         mock_generate_daily_record.return_value = None
         with patch("sao.core.logger") as mock_logger:
             finalize_daily_record(self.employee, self.day)
-            mock_logger.info.assert_any_call(f"打刻データが存在しないためスキップします")
+            mock_logger.info.assert_any_call(f"[test]打刻データが存在しないためスキップします")
 
     @patch("sao.core.EmployeeDailyRecord")
     @patch("sao.core.DailyAttendanceRecord")
@@ -945,8 +945,8 @@ class TestFinalizeDailyRecord(TestCase):
         mock_DailyAttendanceRecord.objects.filter.return_value.exists.return_value = True
         with patch("sao.core.logger") as mock_logger:
             finalize_daily_record(self.employee, self.day)
-            mock_logger.info.assert_any_call("EmployeeDailyRecordを生成しました")
-            mock_logger.info.assert_any_call("DailyAttendanceRecordを生成しました")
+            mock_logger.info.assert_any_call("[test]EmployeeDailyRecordを生成しました")
+            mock_logger.info.assert_any_call("[test]DailyAttendanceRecordを生成しました")
 
     @patch("sao.core.EmployeeDailyRecord")
     @patch("sao.core.collect_webstamps")
@@ -959,7 +959,7 @@ class TestFinalizeDailyRecord(TestCase):
         mock_generate_daily_record.side_effect = Exception("fail")
         with patch("sao.core.logger") as mock_logger:
             finalize_daily_record(self.employee, self.day)
-            self.assertTrue(any("切り替え処理に失敗しました" in str(call) for call in mock_logger.error.call_args_list))
+            self.assertTrue(any("[test]レコードの生成に失敗しました" in str(call) for call in mock_logger.error.call_args_list))
 
     @patch("sao.core.EmployeeDailyRecord")
     @patch("sao.core.DailyAttendanceRecord")
@@ -976,7 +976,7 @@ class TestFinalizeDailyRecord(TestCase):
         mock_DailyAttendanceRecord.objects.filter.return_value.exists.return_value = False
         with patch("sao.core.logger") as mock_logger:
             finalize_daily_record(self.employee, self.day)
-            mock_logger.error.assert_any_call(f"EmployeeDailyRecordが生成されませんでした: {self.employee} {self.day}")
+            mock_logger.error.assert_any_call(f"[test]EmployeeDailyRecordが生成されませんでした: {self.employee} {self.day}")
 
     @patch("sao.core.EmployeeDailyRecord")
     @patch("sao.core.DailyAttendanceRecord")
@@ -994,6 +994,6 @@ class TestFinalizeDailyRecord(TestCase):
         mock_DailyAttendanceRecord.objects.filter.return_value.exists.return_value = True
         with patch("sao.core.logger") as mock_logger:
             finalize_daily_record(self.employee, self.day)
-            self.assertTrue(any("Web打刻データの削除に失敗しました" in str(call) for call in mock_logger.error.call_args_list))
+            self.assertTrue(any("[test]Web打刻データの削除に失敗しました" in str(call) for call in mock_logger.error.call_args_list))
 
 

@@ -214,23 +214,15 @@ if IS_TEST:
         "disable_existing_loggers": False,
         "formatters": {
             "testprefix": {
-                "()": "sao_proj.text_prefix_formatter.TestPrefixFormatter",  # パスに注意
-                "format": "%(levelname)s:%(name)s:%(message)s",
+                "()": "sao_proj.sao_logging_formatter.SaoLoggingFormatter",  # パスに注意
+                "format": "[%(levelname)s] %(module)s.%(funcName)s(%(lineno)d) %(message)s",
+                
             },
         },
         "handlers": {
             "console": {
                 "class": "logging.StreamHandler",
-                "level": "DEBUG",
-                "formatter": "dev",  # フォーマッタは必要に応じて
-            },        },
-        "formatters": {
-            "dev": {
-                "format": "[%(levelname)s] %(module)s.%(funcName)s(%(lineno)d) %(message)s"
-            },
-            "console": {
-                "class": "logging.StreamHandler",
-                "formatter": "testprefix",  # フォーマッタを指定
+                "formatter": "testprefix",
             },
         },
         "root": {

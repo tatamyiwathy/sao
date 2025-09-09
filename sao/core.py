@@ -855,7 +855,7 @@ def finalize_daily_record(employee: Employee, date: datetime.date):
     """EmployeeDailyRecordとDailyAttendanceRecordを生成する"""
 
     if EmployeeDailyRecord.objects.filter(employee=employee, date=date).exists():
-        logger.info("勤務記録が既に存在しているためスキップします")
+        logger.info("[test]勤務記録が既に存在しているためスキップします")
         return
 
     # WebTimeStampを集める
@@ -866,32 +866,32 @@ def finalize_daily_record(employee: Employee, date: datetime.date):
             # EmployeeDailyRecordを生成する
             record = generate_daily_record([x.stamp for x in stamps], employee, date)
             if record is None:
-                logger.info(f"打刻データが存在しないためスキップします")
+                logger.info(f"[test]打刻データが存在しないためスキップします")
                 return
 
             # recordからDailyAttendanceRecordを生成する
             generate_attendance_record(record)
     except Exception as e:
-        logger.error(f"  切り替え処理に失敗しました: {employee} {date} {e}")
+        logger.error(f"[test]レコードの生成に失敗しました: {employee} {date} {e}")
         return
 
     # 確認
     if not EmployeeDailyRecord.objects.filter(employee=employee, date=date).exists():
-        logger.error(f"EmployeeDailyRecordが生成されませんでした: {employee} {date}")
+        logger.error(f"[test]EmployeeDailyRecordが生成されませんでした: {employee} {date}")
         return
     else:
-        logger.info("EmployeeDailyRecordを生成しました")
+        logger.info("[test]EmployeeDailyRecordを生成しました")
     if not DailyAttendanceRecord.objects.filter(time_record__employee=employee, time_record__date=date).exists():
         logger.error(f"DailyAttendanceRecordが生成されませんでした: {employee} {date}")
         return
     else:
-        logger.info("DailyAttendanceRecordを生成しました")
+        logger.info("[test]DailyAttendanceRecordを生成しました")
 
     # WebTimeStampを削除する
     try:
         stamps.delete()  
     except Exception as e:
-        logger.error(f"Web打刻データの削除に失敗しました: {employee} {date} {e}")
+        logger.error(f"[test]Web打刻データの削除に失敗しました: {employee} {date} {e}")
     
     return
 
