@@ -1,15 +1,26 @@
 from datetime import date, time, datetime, timedelta
 from django.test import TestCase
 from common.utils_for_test import create_user, create_employee
-from sao.models import EmployeeDailyRecord, SteppingOut
+from sao.models import (
+    EmployeeDailyRecord, 
+    SteppingOut,
+    DaySwitchTime,
+    Employee,
+    WorkingHour,
+    EmployeeDailyRecord, 
+    DailyAttendanceRecord, 
+    WebTimeStamp
+)
 from sao.tests.utils import (
     create_working_hours,
     set_office_hours_to_employee,
     create_time_stamp_data,
     TOTAL_ACTUAL_WORKING_TIME,
 )
-from sao import attendance
-from sao.utils import tally_over_work_time, tally_attendances
+from sao.utils import (
+    tally_over_work_time,
+    tally_attendances
+)
 from sao.core import (
     adjust_working_hours,
     calc_assumed_working_time,
@@ -41,19 +52,15 @@ from sao.core import (
     normalize_to_business_day,
     get_clock_in_out,
     generate_daily_record,
-    get_attendance_in_period
+    get_attendance_in_period,
+    finalize_daily_record
 )
-from ..const import Const
-from ..calendar import monthdays, is_holiday
-from ..working_status import WorkingStatus
-from ..models import DaySwitchTime
-from unittest.mock import patch
-from datetime import datetime, date, time
+from sao.const import Const
+from sao.calendar import monthdays, is_holiday
+from sao.working_status import WorkingStatus
 from django.test import TestCase
-from datetime import date, datetime, time, timedelta
 from unittest.mock import patch, MagicMock
-from ..models import EmployeeDailyRecord, Employee, WorkingHour
-from ..period import Period
+from sao.period import Period
 
 
 # class TallyMonthAttendancesTest(TestCase):
@@ -896,6 +903,98 @@ class TestGenerateDailyRecord(TestCase):
         self.assertEqual(record.working_hours_start, None)
         self.assertEqual(record.working_hours_end, None)
         self.assertEqual(record.status, WorkingStatus.C_KYUJITU)
+
+# class TestFinalizeDailyRecord(TestCase):
+#     def setUp(self):
+#         self.employee = Employee.objects.create(name="Test Employee")
+#         self.day = date(2023, 8, 2)
+
+#     @patch("sao.core.EmployeeDailyRecord")
+#     def test_skip_if_record_exists(self, mock_EmployeeDailyRecord):
+#         # If record exists, should skip and not proceed
+#         mock_EmployeeDailyRecord.objects.filter.return_value.exists.return_value = True
+#         with patch("sao.core.logger") as mock_logger:
+#             finalize_daily_record(self.employee, self.day)
+#             mock_logger.info.assert_called_with("  勤務記録が既に存在しているためスキップします")
+
+#     @patch("sao.core.EmployeeDailyRecord")
+#     @patch("sao.core.collect_webstamps")
+#     @patch("sao.core.transaction")
+#     @patch("sao.core.generate_daily_record")
+#     def test_generate_daily_record_none(self, mock_generate_daily_record, mock_transaction, mock_collect_webstamps, mock_EmployeeDailyRecord):
+#         # If generate_daily_record returns None, should log and return
+#         mock_EmployeeDailyRecord.objects.filter.return_value.exists.return_value = False
+#         mock_collect_webstamps.return_value = []
+#         mock_generate_daily_record.return_value = None
+#         with patch("sao.core.logger") as mock_logger:
+#             finalize_daily_record(self.employee, self.day)
+#             mock_logger.info.assert_any_call(f"  打刻データが存在しないためスキップします")
+
+#     @patch("sao.core.EmployeeDailyRecord")
+#     @patch("sao.core.DailyAttendanceRecord")
+#     @patch("sao.core.collect_webstamps")
+#     @patch("sao.core.transaction")
+#     @patch("sao.core.generate_daily_record")
+#     @patch("sao.core.generate_attendance_record")
+#     def test_successful_finalize(self, mock_generate_attendance_record, mock_generate_daily_record, mock_transaction, mock_collect_webstamps, mock_DailyAttendanceRecord, mock_EmployeeDailyRecord):
+#         # Normal successful case
+#         mock_EmployeeDailyRecord.objects.filter.return_value.exists.side_effect = [False, True]
+#         mock_collect_webstamps.return_value = MagicMock()
+#         mock_collect_webstamps.return_value.__iter__.return_value = [MagicMock(stamp=datetime(2023, 8, 2, 10, 0))]
+#         mock_generate_daily_record.return_value = MagicMock()
+#         mock_DailyAttendanceRecord.objects.filter.return_value.exists.return_value = True
+#         with patch("sao.core.logger") as mock_logger:
+#             finalize_daily_record(self.employee, self.day)
+#             mock_logger.info.assert_any_call("EmployeeDailyRecordを生成しました")
+#             mock_logger.info.assert_any_call("DailyAttendanceRecordを生成しました")
+
+#     @patch("sao.core.EmployeeDailyRecord")
+#     @patch("sao.core.collect_webstamps")
+#     @patch("sao.core.transaction")
+#     @patch("sao.core.generate_daily_record")
+#     def test_exception_in_transaction(self, mock_generate_daily_record, mock_transaction, mock_collect_webstamps, mock_EmployeeDailyRecord):
+#         # Simulate exception in transaction.atomic block
+#         mock_EmployeeDailyRecord.objects.filter.return_value.exists.return_value = False
+#         mock_collect_webstamps.return_value = []
+#         mock_generate_daily_record.side_effect = Exception("fail")
+#         with patch("sao.core.logger") as mock_logger:
+#             finalize_daily_record(self.employee, self.day)
+#             self.assertTrue(any("切り替え処理に失敗しました" in str(call) for call in mock_logger.error.call_args_list))
+
+#     @patch("sao.core.EmployeeDailyRecord")
+#     @patch("sao.core.DailyAttendanceRecord")
+#     @patch("sao.core.collect_webstamps")
+#     @patch("sao.core.transaction")
+#     @patch("sao.core.generate_daily_record")
+#     @patch("sao.core.generate_attendance_record")
+#     def test_missing_records_after_transaction(self, mock_generate_attendance_record, mock_generate_daily_record, mock_transaction, mock_collect_webstamps, mock_DailyAttendanceRecord, mock_EmployeeDailyRecord):
+#         # EmployeeDailyRecord or DailyAttendanceRecord not created after transaction
+#         mock_EmployeeDailyRecord.objects.filter.return_value.exists.side_effect = [False, False]
+#         mock_collect_webstamps.return_value = MagicMock()
+#         mock_collect_webstamps.return_value.__iter__.return_value = [MagicMock(stamp=datetime(2023, 8, 2, 10, 0))]
+#         mock_generate_daily_record.return_value = MagicMock()
+#         mock_DailyAttendanceRecord.objects.filter.return_value.exists.return_value = False
+#         with patch("sao.core.logger") as mock_logger:
+#             finalize_daily_record(self.employee, self.day)
+#             mock_logger.error.assert_any_call(f"EmployeeDailyRecordが生成されませんでした: {self.employee} {self.day}")
+
+#     @patch("sao.core.EmployeeDailyRecord")
+#     @patch("sao.core.DailyAttendanceRecord")
+#     @patch("sao.core.collect_webstamps")
+#     @patch("sao.core.transaction")
+#     @patch("sao.core.generate_daily_record")
+#     @patch("sao.core.generate_attendance_record")
+#     def test_stamps_delete_exception(self, mock_generate_attendance_record, mock_generate_daily_record, mock_transaction, mock_collect_webstamps, mock_DailyAttendanceRecord, mock_EmployeeDailyRecord):
+#         # stamps.delete() raises exception
+#         mock_EmployeeDailyRecord.objects.filter.return_value.exists.side_effect = [False, True]
+#         mock_collect_webstamps.return_value = MagicMock()
+#         mock_collect_webstamps.return_value.__iter__.return_value = [MagicMock(stamp=datetime(2023, 8, 2, 10, 0))]
+#         mock_collect_webstamps.return_value.delete.side_effect = Exception("delete error")
+#         mock_generate_daily_record.return_value = MagicMock()
+#         mock_DailyAttendanceRecord.objects.filter.return_value.exists.return_value = True
+#         with patch("sao.core.logger") as mock_logger:
+#             finalize_daily_record(self.employee, self.day)
+#             self.assertTrue(any("Web打刻データの削除に失敗しました" in str(call) for call in mock_logger.error.call_args_list))
 
 
     # @patch("sao.core.get_employee_hour", side_effect=NoAssignedWorkingHourError)
