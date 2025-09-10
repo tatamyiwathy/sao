@@ -16,7 +16,7 @@ register = template.Library()
 def strip_seconds(delta, empty):
     if isinstance(delta, str):
         return empty
-    return utils.print_strip_sec(delta.total_seconds(), empty)
+    return utils.format_seconds_to_hhmm(delta.total_seconds(), empty)
 
 
 @register.filter

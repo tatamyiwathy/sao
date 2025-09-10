@@ -3,29 +3,39 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from sao import models, core
 from sao.attendance import Attendance
+from sao.period import Period
+from sao.calendar import is_legal_holiday
 
-def get_today_stamp(employee: models.Employee, date: datetime.date):
-    """打刻を取得する"""
+
+def make_web_stamp_string(
+    employee: models.Employee, date: datetime.date
+) -> tuple[str, str]:
+    """
+    web打刻を文字列にして返す
+    例: ("09:00", "18:00") or ("--:--:--", "--:--:--")
+
+    :param employee: 雇用者
+    :param date: 日付
+    :return: (出勤時刻, 退勤時刻) どちらも--:--:--のときは打刻なし
+    """
     fromTime = "--:--:--"
     toTime = "--:--:--"
 
-    day_begin = datetime.datetime.combine(date, core.get_day_switch_time())
+    day_start = datetime.datetime.combine(date, core.get_day_switch_time())
     stamps = models.WebTimeStamp.objects.filter(
-        employee=employee, stamp__gte=day_begin
+        employee=employee, stamp__gte=day_start
     ).order_by("stamp")
 
     if stamps.count() == 0:
         return ("--:--:--", "--:--:--")
     first_stamp = stamps.first()
     last_stamp = stamps.last()
-    if first_stamp is not None and getattr(first_stamp, 'stamp', None) is not None:
-        if first_stamp.stamp is not None:
-            fromTime = first_stamp.stamp.strftime("%H:%M")
-    if last_stamp is not None and getattr(last_stamp, 'stamp', None) is not None:
-        if last_stamp.stamp is not None:
-            toTime = last_stamp.stamp.strftime("%H:%M")
-            if fromTime == toTime:
-                toTime = "--:--:--"
+    if first_stamp is not None and first_stamp.stamp is not None:
+        fromTime = first_stamp.stamp.strftime("%H:%M")
+    if last_stamp is not None and last_stamp.stamp is not None:
+        toTime = last_stamp.stamp.strftime("%H:%M")
+        if fromTime == toTime:
+            toTime = "--:--:--"
     return (fromTime, toTime)
 
 
@@ -53,8 +63,12 @@ def attention_overtime(overtime: datetime.timedelta) -> tuple:
     return get_overtime_warning(overtime)
 
 
-def get_employee_type(type):
-    """雇用形態コードを文字列にする"""
+def get_employee_type_display(type: int) -> str:
+    """雇用形態を文字列にする
+
+    :param type: 雇用形態コード
+    :return: 雇用形態の文字列
+    """
     name = ""
     if type == models.Employee.TYPE_PERMANENT_STAFF:
         name = "正社員"
@@ -65,8 +79,11 @@ def get_employee_type(type):
     return name
 
 
-def get_department(type):
-    """部署コードから文字列にする"""
+def get_department_display(type: int) -> str:
+    """部署コードから文字列にする
+    :param type: 部署コード
+    :return: 部署の文字列
+    """
     name = ""
     if type == models.Employee.DEPT_GENERAL:
         name = "一般"
@@ -76,8 +93,15 @@ def get_department(type):
 
 
 def create_user(username, last, first, password=None, email=None) -> User:
-    """
-    ユーザー作成
+    """ユーザーを作成する
+
+    :param username: ユーザー名
+    :param last: 姓
+    :param first: 名
+    :param password: パスワード
+    :param email: メールアドレス
+    :return: Userオブジェクト
+    すでに存在する場合はそれを返す
     """
     try:
         # すでにいた
@@ -93,7 +117,34 @@ def create_user(username, last, first, password=None, email=None) -> User:
 
 
 def create_employee(**kwargs) -> models.Employee:
-    """雇用者を作成する"""
+    """雇用者を作成する
+
+    必須項目
+    - employee_no
+    - name
+    - employee_type
+    - department
+    - user
+
+    任意項目
+    - join_date (デフォルト: 今日)
+    - leave_date (デフォルト: 2099-12-31)
+    - payed_holiday (デフォルト: 0.0)
+    - include_overtime_pay (デフォルト: False)
+    """
+    if "employee_no" not in kwargs.keys():
+        raise ValueError("employee_no is required")
+    if "name" not in kwargs.keys():
+        raise ValueError("name is required")
+    if "employee_type" not in kwargs.keys():
+        raise ValueError("employee_type is required")
+    if "department" not in kwargs.keys():
+        raise ValueError("department is required")
+    if "user" not in kwargs.keys():
+        raise ValueError("user is required")
+    join_date = (
+        kwargs["join_date"] if "join_date" in kwargs.keys() else datetime.date.today()
+    )
     payed_holiday = kwargs["payed_holiday"] if "payed_holiday" in kwargs.keys() else 0.0
     leave_date = (
         kwargs["leave_date"]
@@ -108,7 +159,7 @@ def create_employee(**kwargs) -> models.Employee:
     employee = models.Employee(
         employee_no=kwargs["employee_no"],
         name=kwargs["name"],
-        join_date=kwargs["join_date"],
+        join_date=join_date,
         leave_date=leave_date,
         payed_holiday=payed_holiday,
         employee_type=kwargs["employee_type"],
@@ -120,8 +171,12 @@ def create_employee(**kwargs) -> models.Employee:
     return employee
 
 
-def get_employee_status(employee, date):
-    """雇用者のステータスを文字列にする"""
+def get_employee_status_display(employee: models.Employee, date: datetime.date) -> str:
+    """雇用者のステータスを文字列にする
+
+    :param employee: 雇用者
+    :param date: 判定日
+    :return: ステータスの文字列"""
     if employee.employee_type == models.Employee.TYPE_PERMANENT_STAFF:
         if employee.join_date > date:
             return "未入社"
@@ -138,17 +193,13 @@ def get_employee_status(employee, date):
             return "契約中"
 
 
-def collect_webstamp(employee: models.Employee, date: datetime.date) -> list[datetime.datetime]:
-    """WebStampから日にちを指定してスタンプを収集"""
-    day_begin = datetime.datetime.combine(date, core.get_day_switch_time())
-    day_end = day_begin + datetime.timedelta(days=1)
-    stamps = models.WebTimeStamp.objects.filter(
-        employee=employee, stamp__gte=day_begin, stamp__lt=day_end
-    ).order_by("stamp")
-    return [ x.stamp for x in stamps if x.stamp is not None ]
+def format_seconds_to_hhmm(total_sec: int, empty: str) -> str:
+    """秒数をhh:mm形式にして返す
 
-def print_strip_sec(total_sec, empty):
-    """秒数をhh:mm形式にして返す"""
+    total_sec: 秒数
+    empty: 0のときに返す文字列
+    return: hh:mm形式の文字列
+    """
     h, m = divmod(total_sec // 60, 60)
     if h + m == 0:
         return empty
@@ -159,8 +210,12 @@ def print_strip_sec(total_sec, empty):
     return f"{h}:{m}"
 
 
-def print_total_sec(total_sec):
-    """秒数をhh:mm:ss形式にして返す"""
+def format_seconds_to_hhmmss(total_sec: int) -> str:
+    """秒数をhh:mm:ss形式にして返す
+
+    total_sec: 秒数
+    return: hh:mm:ss形式の文字列
+    """
     total_sec = int(total_sec)
     s = total_sec % 60
     m = (total_sec // 60) % 60
@@ -170,8 +225,12 @@ def print_total_sec(total_sec):
     return f"{h}:{m}:{s}"
 
 
-def is_missed_stamp(clock_in, clock_out):
-    """打刻漏れがあるかどうかを判定する"""
+def is_missed_stamp(clock_in: datetime.datetime, clock_out: datetime.datetime) -> bool:
+    """打刻漏れがあるかどうかを判定する
+
+    打刻漏れとは、出勤打刻または退勤打刻のどちらかがない場合
+    どちらもある場合、どちらもない場合は打刻漏れではない
+    """
     if clock_in and clock_out:
         # どちらもある
         return False
@@ -182,51 +241,25 @@ def is_missed_stamp(clock_in, clock_out):
     return True
 
 
-def is_empty_stamp(clock_in, clock_out):
-    """打刻がないかどうかを判定する"""
-    return True if (clock_in,clock_out)==(None,None) else False
+def is_empty_stamp(clock_in: datetime.datetime, clock_out: datetime.datetime) -> bool:
+    """打刻がないかどうかを判定する
+
+    打刻がないとは、出勤打刻も退勤打刻もない場合
+    """
+    return True if (clock_in, clock_out) == (None, None) else False
 
 
-def is_over_half_working_hours(target_time: datetime.datetime,
-        employee: models.Employee, working_hours: tuple[datetime.datetime, datetime.datetime]) -> bool:
-    
-    """所定労働時間の半分を超えているかどうか"""
-    begin_time = working_hours[0]
-    end_time = working_hours[1]
-    duration = end_time - begin_time
-    if target_time > begin_time + duration / 2:
-        return True
-    return False
+def is_filled_stamp(clock_in: datetime.datetime, clock_out: datetime.datetime) -> bool:
+    """打刻があるかどうかを判定する
+
+    打刻があるとは、出勤打刻も退勤打刻もある場合
+    """
+    return not is_empty_stamp(clock_in, clock_out)
 
 
-# from ..models import EmployeeDailyRecord
-# from ..attendance import Attendance
-# def generate_attendance(record: EmployeeDailyRecord) -> Attendance:
-#     return Attendance(record)
-
-
-# def tally_monthly_attendance(month: int, records: list[EmployeeDailyRecord]) -> list[Attendance]:
-#     """TimeRecordからAttendanceを作成する
-#     month: 対象月
-#     records: TimeRecordのリスト
-
-#     employeeの所定労働時間が設定されていない場合はNoSpecifiedWorkingHoursErrorが発生する
-#     """
-#     result_record = []
-
-#     summed_out_of_time = datetime.timedelta()
-#     for r in records:
-#         if r.date.month != month:
-#             # 対象月の記録ではないので何もしない
-#             continue
-#         # 所定労働時間を取得
-#         attendance = Attendance(r)
-#         summed_out_of_time += attendance.over
-#         attendance.summed_out_of_time = summed_out_of_time
-#         result_record.append(attendance)
-#     return result_record
-
-def tally_over_work_time(month: int, attendances: list[Attendance]) -> datetime.timedelta:
+def tally_over_work_time(
+    month: int, attendances: list[Attendance]
+) -> datetime.timedelta:
     """時間外勤務時間の合計を計算する
     month: 対象月
     records: 集計対象月の勤怠記録
@@ -241,48 +274,15 @@ def tally_over_work_time(month: int, attendances: list[Attendance]) -> datetime.
     return over_work_time
 
 
-# def sumup_attendances(attendances: list[Attendance]) -> dict:
-#     """
-#     勤務評価結果の集計をする
-#     引数       result CalculatedRecordの配列
-#     """
-
-#     summed_up = {
-#         "work": datetime.timedelta(),
-#         "late": datetime.timedelta(),
-#         "before": datetime.timedelta(),
-#         "steppingout": datetime.timedelta(),
-#         "out_of_time": datetime.timedelta(),
-#         "over_8h": datetime.timedelta(),
-#         "night": datetime.timedelta(),
-#         "legal_holiday": datetime.timedelta(),
-#         "holiday": datetime.timedelta(),
-#         "accumulated_overtime": datetime.timedelta(),
-#     }
-#     for attn in attendances:
-#         if attn.work:
-#             summed_up["work"] += attn.work
-#             summed_up["late"] += attn.late
-#             summed_up["before"] += attn.before
-#             summed_up["steppingout"] += attn.steppingout
-#             summed_up["out_of_time"] += attn.out_of_time
-#             summed_up["over_8h"] += attn.over_8h
-#             summed_up["night"] += attn.night
-#             summed_up["legal_holiday"] += attn.legal_holiday
-#             summed_up["holiday"] += attn.holiday
-
-#             if not is_legal_holiday(attn.date):
-#                 summed_up["accumulated_overtime"] += attn.out_of_time
-#     return summed_up
-
-
 def tally_attendances(attendances: list[Attendance]) -> dict:
     """
     勤務評価結果の集計をする
-    引数       result CalculatedRecordの配列
+
+    :param attendances: 勤怠記録のリスト
+    :return: 集計結果の辞書
     """
 
-    summed_up = {
+    attendance_tallied = {
         "work": datetime.timedelta(),
         "late": datetime.timedelta(),
         "before": datetime.timedelta(),
@@ -296,17 +296,16 @@ def tally_attendances(attendances: list[Attendance]) -> dict:
     }
     for attn in attendances:
         if attn.actual_work:
-            summed_up["work"] += attn.actual_work
-            summed_up["late"] += attn.late
-            summed_up["before"] += attn.early_leave
-            summed_up["steppingout"] += attn.stepping_out
-            summed_up["out_of_time"] += attn.over
-            summed_up["over_8h"] += attn.over_8h
-            summed_up["night"] += attn.night
-            summed_up["legal_holiday"] += attn.legal_holiday
-            summed_up["holiday"] += attn.holiday
+            attendance_tallied["work"] += attn.actual_work
+            attendance_tallied["late"] += attn.late
+            attendance_tallied["before"] += attn.early_leave
+            attendance_tallied["steppingout"] += attn.stepping_out
+            attendance_tallied["out_of_time"] += attn.over
+            attendance_tallied["over_8h"] += attn.over_8h
+            attendance_tallied["night"] += attn.night
+            attendance_tallied["legal_holiday"] += attn.legal_holiday
+            attendance_tallied["holiday"] += attn.holiday
 
             if not is_legal_holiday(attn.date):
-                summed_up["accumulated_overtime"] += attn.over
-    return summed_up
-
+                attendance_tallied["accumulated_overtime"] += attn.over
+    return attendance_tallied

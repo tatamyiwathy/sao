@@ -4,7 +4,7 @@ from sao.models import Employee, WorkingHour, EmployeeHour,EmployeeDailyRecord, 
 from sao.calendar import is_holiday,is_legal_holiday
 from sao.core import generate_attendance_record, get_day_switch_time
 from sao.period import Period
-from sao.working_status import WorkingStatus, get_working_status
+from sao.working_status import WorkingStatus, determine_working_status
 from sao.attendance import Attendance
 
 
