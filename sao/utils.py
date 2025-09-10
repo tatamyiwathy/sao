@@ -209,7 +209,7 @@ def format_seconds_to_hhmm(total_sec: int, empty: str) -> str:
     return f"{h}:{m}"
 
 
-def format_seconds_to_hhmmss(total_sec: int):
+def format_seconds_to_hhmmss(total_sec: int) -> str:
     """秒数をhh:mm:ss形式にして返す
 
     total_sec: 秒数
