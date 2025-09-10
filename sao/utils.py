@@ -62,8 +62,12 @@ def attention_overtime(overtime: datetime.timedelta) -> tuple:
     return get_overtime_warning(overtime)
 
 
-def get_employee_type(type):
-    """雇用形態コードを文字列にする"""
+def get_employee_type_display(type: int) -> str:
+    """雇用形態を文字列にする
+
+    :param type: 雇用形態コード
+    :return: 雇用形態の文字列
+    """
     name = ""
     if type == models.Employee.TYPE_PERMANENT_STAFF:
         name = "正社員"
@@ -74,8 +78,11 @@ def get_employee_type(type):
     return name
 
 
-def get_department(type):
-    """部署コードから文字列にする"""
+def get_department_display(type: int) -> str:
+    """部署コードから文字列にする
+    :param type: 部署コード
+    :return: 部署の文字列
+    """
     name = ""
     if type == models.Employee.DEPT_GENERAL:
         name = "一般"

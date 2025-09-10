@@ -36,8 +36,8 @@ from sao.working_status import WorkingStatus
 from sao.utils import (
     tally_attendances,
     tally_over_work_time,
-    get_employee_type,
-    get_department,
+    get_employee_type_display,
+    get_department_display,
     make_web_stamp_string,
     get_employee_status,
     attention_overtime,
@@ -444,8 +444,8 @@ def employee_list(request):
 
     for e in employees:
         manager = e.is_manager()
-        employee_type = get_employee_type(e.employee_type)
-        department = get_department(e.department)
+        employee_type = get_employee_type_display(e.employee_type)
+        department = get_department_display(e.department)
         try:
             recently = get_working_hours_tobe_assign(e)  # 直近から適用される勤務時間
             try:
@@ -817,8 +817,8 @@ def attendance_summary(request):
             summed_up = tally_attendances(attendances)
 
             summary = {
-                "type": get_employee_type(employee.employee_type),
-                "department": get_department(employee.department),
+                "type": get_employee_type_display(employee.employee_type),
+                "department": get_department_display(employee.department),
                 "employee": employee,
                 "daycount": daycount,
                 "overtime_work": summed_up["out_of_time"],
