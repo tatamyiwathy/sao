@@ -39,7 +39,7 @@ from sao.utils import (
     get_employee_type_display,
     get_department_display,
     make_web_stamp_string,
-    get_employee_status,
+    get_employee_status_display,
     attention_overtime,
     is_empty_stamp,
     is_missed_stamp,
@@ -456,7 +456,7 @@ def employee_list(request):
         except ValueError:
             working_hour = "未設定"
 
-        employee_status = get_employee_status(e, datetime.date.today())
+        employee_status = get_employee_status_display(e, datetime.date.today())
 
         employee_data = {
             "department": department,

@@ -170,7 +170,7 @@ def create_employee(**kwargs) -> models.Employee:
     return employee
 
 
-def get_employee_status(employee, date):
+def get_employee_status_display(employee: models.Employee, date: datetime.date) -> str:
     """雇用者のステータスを文字列にする"""
     if employee.employee_type == models.Employee.TYPE_PERMANENT_STAFF:
         if employee.join_date > date:
