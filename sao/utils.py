@@ -224,8 +224,12 @@ def format_seconds_to_hhmmss(total_sec: int) -> str:
     return f"{h}:{m}:{s}"
 
 
-def is_missed_stamp(clock_in, clock_out):
-    """打刻漏れがあるかどうかを判定する"""
+def is_missed_stamp(clock_in: datetime.datetime, clock_out: datetime.datetime) -> bool:
+    """打刻漏れがあるかどうかを判定する
+
+    打刻漏れとは、出勤打刻または退勤打刻のどちらかがない場合
+    どちらもある場合、どちらもない場合は打刻漏れではない
+    """
     if clock_in and clock_out:
         # どちらもある
         return False
@@ -236,9 +240,20 @@ def is_missed_stamp(clock_in, clock_out):
     return True
 
 
-def is_empty_stamp(clock_in, clock_out):
-    """打刻がないかどうかを判定する"""
+def is_empty_stamp(clock_in: datetime.datetime, clock_out: datetime.datetime) -> bool:
+    """打刻がないかどうかを判定する
+
+    打刻がないとは、出勤打刻も退勤打刻もない場合
+    """
     return True if (clock_in, clock_out) == (None, None) else False
+
+
+def is_filled_stamp(clock_in: datetime.datetime, clock_out: datetime.datetime) -> bool:
+    """打刻があるかどうかを判定する
+
+    打刻があるとは、出勤打刻も退勤打刻もある場合
+    """
+    return not is_empty_stamp(clock_in, clock_out)
 
 
 def is_over_half_working_hours(
