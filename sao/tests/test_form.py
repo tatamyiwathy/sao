@@ -177,4 +177,5 @@ class RegisterHolidayFromTest(TestCase):
         Holiday.objects.create(date=datetime.date(2017, 1, 1))
         form = RegisterHolidayForm({"date": "2017-01-01"})
         self.assertFalse(form.is_valid())
+        # Todo: assertFormErrorの使い方が間違ってる？
         self.assertFormError(form, None, "すでに登録されています")
