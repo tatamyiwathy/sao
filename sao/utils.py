@@ -282,7 +282,7 @@ def tally_attendances(attendances: list[Attendance]) -> dict:
     :return: 集計結果の辞書
     """
 
-    summed_up = {
+    attendance_tallied = {
         "work": datetime.timedelta(),
         "late": datetime.timedelta(),
         "before": datetime.timedelta(),
@@ -296,16 +296,16 @@ def tally_attendances(attendances: list[Attendance]) -> dict:
     }
     for attn in attendances:
         if attn.actual_work:
-            summed_up["work"] += attn.actual_work
-            summed_up["late"] += attn.late
-            summed_up["before"] += attn.early_leave
-            summed_up["steppingout"] += attn.stepping_out
-            summed_up["out_of_time"] += attn.over
-            summed_up["over_8h"] += attn.over_8h
-            summed_up["night"] += attn.night
-            summed_up["legal_holiday"] += attn.legal_holiday
-            summed_up["holiday"] += attn.holiday
+            attendance_tallied["work"] += attn.actual_work
+            attendance_tallied["late"] += attn.late
+            attendance_tallied["before"] += attn.early_leave
+            attendance_tallied["steppingout"] += attn.stepping_out
+            attendance_tallied["out_of_time"] += attn.over
+            attendance_tallied["over_8h"] += attn.over_8h
+            attendance_tallied["night"] += attn.night
+            attendance_tallied["legal_holiday"] += attn.legal_holiday
+            attendance_tallied["holiday"] += attn.holiday
 
             if not is_legal_holiday(attn.date):
-                summed_up["accumulated_overtime"] += attn.over
-    return summed_up
+                attendance_tallied["accumulated_overtime"] += attn.over
+    return attendance_tallied
