@@ -188,18 +188,6 @@ def get_employee_status_display(employee: models.Employee, date: datetime.date) 
             return "契約中"
 
 
-def collect_webstamp(
-    employee: models.Employee, date: datetime.date
-) -> list[datetime.datetime]:
-    """WebStampから日にちを指定してスタンプを収集"""
-    day_begin = datetime.datetime.combine(date, core.get_day_switch_time())
-    day_end = day_begin + datetime.timedelta(days=1)
-    stamps = models.WebTimeStamp.objects.filter(
-        employee=employee, stamp__gte=day_begin, stamp__lt=day_end
-    ).order_by("stamp")
-    return [x.stamp for x in stamps if x.stamp is not None]
-
-
 def print_strip_sec(total_sec, empty):
     """秒数をhh:mm形式にして返す"""
     h, m = divmod(total_sec // 60, 60)

@@ -13,6 +13,7 @@ from sao.tests.utils import (
     set_office_hours_to_employee,
 )
 
+
 class TimeClockViewTests(TestCase):
     def setUp(self):
         self.client = Client()
@@ -23,7 +24,9 @@ class TimeClockViewTests(TestCase):
     def test_time_clock_get_renders_stamps(self):
         now = datetime.datetime.now().replace(microsecond=0)
         stamp1 = models.WebTimeStamp.objects.create(employee=self.e, stamp=now)
-        stamp2 = models.WebTimeStamp.objects.create(employee=self.e, stamp=now - datetime.timedelta(hours=1))
+        stamp2 = models.WebTimeStamp.objects.create(
+            employee=self.e, stamp=now - datetime.timedelta(hours=1)
+        )
         url = reverse("sao:time_clock")
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -38,7 +41,9 @@ class TimeClockViewTests(TestCase):
     def test_time_clock_stamps_order(self):
         now = datetime.datetime.now().replace(microsecond=0)
         stamp1 = models.WebTimeStamp.objects.create(employee=self.e, stamp=now)
-        stamp2 = models.WebTimeStamp.objects.create(employee=self.e, stamp=now - datetime.timedelta(hours=2))
+        stamp2 = models.WebTimeStamp.objects.create(
+            employee=self.e, stamp=now - datetime.timedelta(hours=2)
+        )
         url = reverse("sao:time_clock")
         response = self.client.get(url)
         stamps = response.context["stamps"]
@@ -58,6 +63,7 @@ class TimeClockViewTests(TestCase):
         for stamp in stamps:
             self.assertEqual(stamp.employee, self.e)
 
+
 class DaySwitchViewTests(TestCase):
     def setUp(self):
         self.client = Client()
@@ -71,23 +77,25 @@ class DaySwitchViewTests(TestCase):
         self.date = datetime.date.today()
         self.url = reverse("sao:day_switch")
         # Patch utils functions to avoid side effects
-        self._collect_webstamp = utils.collect_webstamp
+        self._get_daily_webstamps = core.get_daily_webstamps
         self._generate_daily_record = core.generate_daily_record
         self._generate_attendance_record = core.generate_attendance_record
 
     def test_day_switch_post_creates_daily_record(self):
         """日付変更処理がPOSTで呼ばれたとき、EmployeeDailyRecordが作成されること
-            (打刻がなくてもEmployeeDailyRecordは生成される)
+        (打刻がなくてもEmployeeDailyRecordは生成される)
         """
         response = self.client.post(self.url, {"date": self.date.strftime("%Y-%m-%d")})
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"day switch done", response.content)
-        self.assertTrue(models.EmployeeDailyRecord.objects.filter(employee=self.e, date=self.date).exists())
+        self.assertTrue(
+            models.EmployeeDailyRecord.objects.filter(
+                employee=self.e, date=self.date
+            ).exists()
+        )
         self.assertTrue(models.DailyAttendanceRecord.objects.all().exists())
 
     def test_day_switch_get_returns_done(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"day switch done", response.content)
-
-
