@@ -3,29 +3,38 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from sao import models, core
 from sao.attendance import Attendance
+from sao.period import Period
 
-def get_today_stamp(employee: models.Employee, date: datetime.date):
-    """打刻を取得する"""
+
+def make_web_stamp_string(
+    employee: models.Employee, date: datetime.date
+) -> tuple[str, str]:
+    """
+    web打刻を文字列にして返す
+    例: ("09:00", "18:00") or ("--:--:--", "--:--:--")
+
+    :param employee: 雇用者
+    :param date: 日付
+    :return: (出勤時刻, 退勤時刻) どちらも--:--:--のときは打刻なし
+    """
     fromTime = "--:--:--"
     toTime = "--:--:--"
 
-    day_begin = datetime.datetime.combine(date, core.get_day_switch_time())
+    day_start = datetime.datetime.combine(date, core.get_day_switch_time())
     stamps = models.WebTimeStamp.objects.filter(
-        employee=employee, stamp__gte=day_begin
+        employee=employee, stamp__gte=day_start
     ).order_by("stamp")
 
     if stamps.count() == 0:
         return ("--:--:--", "--:--:--")
     first_stamp = stamps.first()
     last_stamp = stamps.last()
-    if first_stamp is not None and getattr(first_stamp, 'stamp', None) is not None:
-        if first_stamp.stamp is not None:
-            fromTime = first_stamp.stamp.strftime("%H:%M")
-    if last_stamp is not None and getattr(last_stamp, 'stamp', None) is not None:
-        if last_stamp.stamp is not None:
-            toTime = last_stamp.stamp.strftime("%H:%M")
-            if fromTime == toTime:
-                toTime = "--:--:--"
+    if first_stamp is not None and first_stamp.stamp is not None:
+        fromTime = first_stamp.stamp.strftime("%H:%M")
+    if last_stamp is not None and last_stamp.stamp is not None:
+        toTime = last_stamp.stamp.strftime("%H:%M")
+        if fromTime == toTime:
+            toTime = "--:--:--"
     return (fromTime, toTime)
 
 
@@ -138,14 +147,17 @@ def get_employee_status(employee, date):
             return "契約中"
 
 
-def collect_webstamp(employee: models.Employee, date: datetime.date) -> list[datetime.datetime]:
+def collect_webstamp(
+    employee: models.Employee, date: datetime.date
+) -> list[datetime.datetime]:
     """WebStampから日にちを指定してスタンプを収集"""
     day_begin = datetime.datetime.combine(date, core.get_day_switch_time())
     day_end = day_begin + datetime.timedelta(days=1)
     stamps = models.WebTimeStamp.objects.filter(
         employee=employee, stamp__gte=day_begin, stamp__lt=day_end
     ).order_by("stamp")
-    return [ x.stamp for x in stamps if x.stamp is not None ]
+    return [x.stamp for x in stamps if x.stamp is not None]
+
 
 def print_strip_sec(total_sec, empty):
     """秒数をhh:mm形式にして返す"""
@@ -184,12 +196,14 @@ def is_missed_stamp(clock_in, clock_out):
 
 def is_empty_stamp(clock_in, clock_out):
     """打刻がないかどうかを判定する"""
-    return True if (clock_in,clock_out)==(None,None) else False
+    return True if (clock_in, clock_out) == (None, None) else False
 
 
-def is_over_half_working_hours(target_time: datetime.datetime,
-        employee: models.Employee, working_hours: tuple[datetime.datetime, datetime.datetime]) -> bool:
-    
+def is_over_half_working_hours(
+    target_time: datetime.datetime,
+    employee: models.Employee,
+    working_hours: tuple[datetime.datetime, datetime.datetime],
+) -> bool:
     """所定労働時間の半分を超えているかどうか"""
     begin_time = working_hours[0]
     end_time = working_hours[1]
@@ -226,7 +240,10 @@ def is_over_half_working_hours(target_time: datetime.datetime,
 #         result_record.append(attendance)
 #     return result_record
 
-def tally_over_work_time(month: int, attendances: list[Attendance]) -> datetime.timedelta:
+
+def tally_over_work_time(
+    month: int, attendances: list[Attendance]
+) -> datetime.timedelta:
     """時間外勤務時間の合計を計算する
     month: 対象月
     records: 集計対象月の勤怠記録
@@ -309,4 +326,3 @@ def tally_attendances(attendances: list[Attendance]) -> dict:
             if not is_legal_holiday(attn.date):
                 summed_up["accumulated_overtime"] += attn.over
     return summed_up
-

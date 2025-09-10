@@ -38,7 +38,7 @@ from sao.utils import (
     tally_over_work_time,
     get_employee_type,
     get_department,
-    get_today_stamp,
+    make_web_stamp_string,
     get_employee_status,
     attention_overtime,
     is_empty_stamp,
@@ -248,7 +248,7 @@ def home(request):
             )
 
     # 本日の打刻を取得する
-    (fromTime, toTime) = get_today_stamp(employee, today)
+    (fromTime, toTime) = make_web_stamp_string(employee, today)
 
     # 表示月を決定する
     if request.method == "POST":
