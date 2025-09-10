@@ -256,48 +256,6 @@ def is_filled_stamp(clock_in: datetime.datetime, clock_out: datetime.datetime) -
     return not is_empty_stamp(clock_in, clock_out)
 
 
-def is_over_half_working_hours(
-    target_time: datetime.datetime,
-    employee: models.Employee,
-    working_hours: tuple[datetime.datetime, datetime.datetime],
-) -> bool:
-    """所定労働時間の半分を超えているかどうか"""
-    begin_time = working_hours[0]
-    end_time = working_hours[1]
-    duration = end_time - begin_time
-    if target_time > begin_time + duration / 2:
-        return True
-    return False
-
-
-# from ..models import EmployeeDailyRecord
-# from ..attendance import Attendance
-# def generate_attendance(record: EmployeeDailyRecord) -> Attendance:
-#     return Attendance(record)
-
-
-# def tally_monthly_attendance(month: int, records: list[EmployeeDailyRecord]) -> list[Attendance]:
-#     """TimeRecordからAttendanceを作成する
-#     month: 対象月
-#     records: TimeRecordのリスト
-
-#     employeeの所定労働時間が設定されていない場合はNoSpecifiedWorkingHoursErrorが発生する
-#     """
-#     result_record = []
-
-#     summed_out_of_time = datetime.timedelta()
-#     for r in records:
-#         if r.date.month != month:
-#             # 対象月の記録ではないので何もしない
-#             continue
-#         # 所定労働時間を取得
-#         attendance = Attendance(r)
-#         summed_out_of_time += attendance.over
-#         attendance.summed_out_of_time = summed_out_of_time
-#         result_record.append(attendance)
-#     return result_record
-
-
 def tally_over_work_time(
     month: int, attendances: list[Attendance]
 ) -> datetime.timedelta:
