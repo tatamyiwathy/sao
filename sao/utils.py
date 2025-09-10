@@ -92,8 +92,15 @@ def get_department_display(type: int) -> str:
 
 
 def create_user(username, last, first, password=None, email=None) -> User:
-    """
-    ユーザー作成
+    """ユーザーを作成する
+
+    :param username: ユーザー名
+    :param last: 姓
+    :param first: 名
+    :param password: パスワード
+    :param email: メールアドレス
+    :return: Userオブジェクト
+    すでに存在する場合はそれを返す
     """
     try:
         # すでにいた
@@ -109,7 +116,34 @@ def create_user(username, last, first, password=None, email=None) -> User:
 
 
 def create_employee(**kwargs) -> models.Employee:
-    """雇用者を作成する"""
+    """雇用者を作成する
+
+    必須項目
+    - employee_no
+    - name
+    - employee_type
+    - department
+    - user
+
+    任意項目
+    - join_date (デフォルト: 今日)
+    - leave_date (デフォルト: 2099-12-31)
+    - payed_holiday (デフォルト: 0.0)
+    - include_overtime_pay (デフォルト: False)
+    """
+    if "employee_no" not in kwargs.keys():
+        raise ValueError("employee_no is required")
+    if "name" not in kwargs.keys():
+        raise ValueError("name is required")
+    if "employee_type" not in kwargs.keys():
+        raise ValueError("employee_type is required")
+    if "department" not in kwargs.keys():
+        raise ValueError("department is required")
+    if "user" not in kwargs.keys():
+        raise ValueError("user is required")
+    join_date = (
+        kwargs["join_date"] if "join_date" in kwargs.keys() else datetime.date.today()
+    )
     payed_holiday = kwargs["payed_holiday"] if "payed_holiday" in kwargs.keys() else 0.0
     leave_date = (
         kwargs["leave_date"]
@@ -124,7 +158,7 @@ def create_employee(**kwargs) -> models.Employee:
     employee = models.Employee(
         employee_no=kwargs["employee_no"],
         name=kwargs["name"],
-        join_date=kwargs["join_date"],
+        join_date=join_date,
         leave_date=leave_date,
         payed_holiday=payed_holiday,
         employee_type=kwargs["employee_type"],
