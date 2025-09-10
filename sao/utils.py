@@ -4,6 +4,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from sao import models, core
 from sao.attendance import Attendance
 from sao.period import Period
+from sao.calendar import is_legal_holiday
 
 
 def make_web_stamp_string(
@@ -273,45 +274,12 @@ def tally_over_work_time(
     return over_work_time
 
 
-# def sumup_attendances(attendances: list[Attendance]) -> dict:
-#     """
-#     勤務評価結果の集計をする
-#     引数       result CalculatedRecordの配列
-#     """
-
-#     summed_up = {
-#         "work": datetime.timedelta(),
-#         "late": datetime.timedelta(),
-#         "before": datetime.timedelta(),
-#         "steppingout": datetime.timedelta(),
-#         "out_of_time": datetime.timedelta(),
-#         "over_8h": datetime.timedelta(),
-#         "night": datetime.timedelta(),
-#         "legal_holiday": datetime.timedelta(),
-#         "holiday": datetime.timedelta(),
-#         "accumulated_overtime": datetime.timedelta(),
-#     }
-#     for attn in attendances:
-#         if attn.work:
-#             summed_up["work"] += attn.work
-#             summed_up["late"] += attn.late
-#             summed_up["before"] += attn.before
-#             summed_up["steppingout"] += attn.steppingout
-#             summed_up["out_of_time"] += attn.out_of_time
-#             summed_up["over_8h"] += attn.over_8h
-#             summed_up["night"] += attn.night
-#             summed_up["legal_holiday"] += attn.legal_holiday
-#             summed_up["holiday"] += attn.holiday
-
-#             if not is_legal_holiday(attn.date):
-#                 summed_up["accumulated_overtime"] += attn.out_of_time
-#     return summed_up
-
-
 def tally_attendances(attendances: list[Attendance]) -> dict:
     """
     勤務評価結果の集計をする
-    引数       result CalculatedRecordの配列
+
+    :param attendances: 勤怠記録のリスト
+    :return: 集計結果の辞書
     """
 
     summed_up = {
