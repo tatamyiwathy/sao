@@ -45,7 +45,7 @@ from sao.utils import (
     is_missed_stamp,
     create_user,
     create_employee,
-    print_total_sec,
+    format_seconds_to_hhmmss,
 )
 from sao.period import Period
 from sao.attendance import Attendance
@@ -1050,13 +1050,13 @@ def download_csv(request, employee_no, year, month):
             "",
             "",
             "",
-            print_total_sec(summed_up["work"].total_seconds()),
-            print_total_sec(summed_up["late"].total_seconds()),
-            print_total_sec(summed_up["before"].total_seconds()),
-            print_total_sec(summed_up["out_of_time"].total_seconds()),
-            print_total_sec(summed_up["night"].total_seconds()),
-            print_total_sec(summed_up["legal_holiday"].total_seconds()),
-            print_total_sec(summed_up["holiday"].total_seconds()),
+            format_seconds_to_hhmmss(summed_up["work"].total_seconds()),
+            format_seconds_to_hhmmss(summed_up["late"].total_seconds()),
+            format_seconds_to_hhmmss(summed_up["before"].total_seconds()),
+            format_seconds_to_hhmmss(summed_up["out_of_time"].total_seconds()),
+            format_seconds_to_hhmmss(summed_up["night"].total_seconds()),
+            format_seconds_to_hhmmss(summed_up["legal_holiday"].total_seconds()),
+            format_seconds_to_hhmmss(summed_up["holiday"].total_seconds()),
         ]
     )
 
@@ -1066,13 +1066,13 @@ def download_csv(request, employee_no, year, month):
             "",
             "",
             "",
-            print_total_sec(rounded["work"].total_seconds()),
-            print_total_sec(rounded["late"].total_seconds()),
-            print_total_sec(rounded["before"].total_seconds()),
-            print_total_sec(rounded["out_of_time"].total_seconds()),
-            print_total_sec(rounded["night"].total_seconds()),
-            print_total_sec(rounded["legal_holiday"].total_seconds()),
-            print_total_sec(rounded["holiday"].total_seconds()),
+            format_seconds_to_hhmmss(rounded["work"].total_seconds()),
+            format_seconds_to_hhmmss(rounded["late"].total_seconds()),
+            format_seconds_to_hhmmss(rounded["before"].total_seconds()),
+            format_seconds_to_hhmmss(rounded["out_of_time"].total_seconds()),
+            format_seconds_to_hhmmss(rounded["night"].total_seconds()),
+            format_seconds_to_hhmmss(rounded["legal_holiday"].total_seconds()),
+            format_seconds_to_hhmmss(rounded["holiday"].total_seconds()),
         ]
     )
     return response

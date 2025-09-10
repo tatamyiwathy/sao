@@ -171,7 +171,11 @@ def create_employee(**kwargs) -> models.Employee:
 
 
 def get_employee_status_display(employee: models.Employee, date: datetime.date) -> str:
-    """雇用者のステータスを文字列にする"""
+    """雇用者のステータスを文字列にする
+
+    :param employee: 雇用者
+    :param date: 判定日
+    :return: ステータスの文字列"""
     if employee.employee_type == models.Employee.TYPE_PERMANENT_STAFF:
         if employee.join_date > date:
             return "未入社"
@@ -188,8 +192,13 @@ def get_employee_status_display(employee: models.Employee, date: datetime.date) 
             return "契約中"
 
 
-def print_strip_sec(total_sec, empty):
-    """秒数をhh:mm形式にして返す"""
+def format_seconds_to_hhmm(total_sec: int, empty: str) -> str:
+    """秒数をhh:mm形式にして返す
+
+    total_sec: 秒数
+    empty: 0のときに返す文字列
+    return: hh:mm形式の文字列
+    """
     h, m = divmod(total_sec // 60, 60)
     if h + m == 0:
         return empty
@@ -200,8 +209,12 @@ def print_strip_sec(total_sec, empty):
     return f"{h}:{m}"
 
 
-def print_total_sec(total_sec):
-    """秒数をhh:mm:ss形式にして返す"""
+def format_seconds_to_hhmmss(total_sec: int):
+    """秒数をhh:mm:ss形式にして返す
+
+    total_sec: 秒数
+    return: hh:mm:ss形式の文字列
+    """
     total_sec = int(total_sec)
     s = total_sec % 60
     m = (total_sec // 60) % 60
