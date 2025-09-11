@@ -101,40 +101,6 @@ class FunctionTest(TestCase):
         self.assertEqual(r, models.EmployeeDailyRecord.objects.all()[0])
 
 
-class ViewTest(TestCase):
-
-    def test_url_invalid(self):
-        """urlが404を返すことを確認する"""
-        with self.assertRaises(Resolver404):
-            resolve("/")
-
-    def test_url_resolves_to_home(self):
-        """/sao/homeを解決できることを確認する"""
-        found = resolve("/sao/")
-        self.assertEqual(found.func, views.home)
-
-    # def test_print_window(self):
-    #     a_day = datetime.date(2020, 3, 9)
-    #     user = create_user()
-    #     emp = create_employee(user,include_overtime_pay=True)
-
-    #     tr = create_timerecord(employee=emp, date=a_day, stamp=[datetime.time(hour=10), datetime.time(hour=20)])
-
-    #     request = HttpRequest()
-    #     request.user = user
-    #     request.GET['employee'] = emp.id
-    #     request.GET['year'] = datetime.date.today().year
-    #     request.GET['month'] = datetime.date.today().month
-    #     response = views.printing(request)
-    #     self.assertEqual(response.status_code, 200)
-
-    # def test_password(self):
-    #     request = HttpRequest()
-    #     request.user = create_user()
-    #     response = views.password(request)
-    #     self.assertEqual(response.status_code, 200)
-
-
 class AddEmployeeViewTest(TestCase):
 
     def setUp(self):
@@ -308,7 +274,7 @@ class HomeTest(TestCase):
             self.employee, datetime.date(1901, 1, 1), get_working_hours_by_category("A")
         )
 
-        r = self.client.post("/sao/", {"yearmonth": "2021-08"})
+        r = self.client.post("/", {"yearmonth": "2021-08"})
 
         self.assertEqual(r.status_code, 200)
 
@@ -318,7 +284,7 @@ class HomeTest(TestCase):
         )
 
         r = self.client.post(
-            "/sao/", {"employee": self.employee.id, "yearmonth": "2021-08"}
+            "/", {"employee": self.employee.id, "yearmonth": "2021-08"}
         )
         self.assertEqual(r.status_code, 200)
 
@@ -1211,13 +1177,13 @@ class LoginTest(TestCase):
     def test_user_login(self):
         create_user()
         c = create_client(TEST_USER)
-        r = c.get("/sao/")
+        r = c.get("/")
         self.assertEqual(TEST_USER["username"], r.context["user"].username)
 
     def test_admin_login(self):
         create_super_user()
         c = create_client(TEST_ADMIN_USER)
-        r = c.get("/sao/")
+        r = c.get("/")
         username = r.context["user"].username
         self.assertEqual(TEST_ADMIN_USER["username"], username)
 
@@ -1366,7 +1332,7 @@ class WebTimeStampViewTest(TestCase):
         self.client = create_client(TEST_USER)
 
     def test_view(self):
-        response = self.client.post("/sao/webtimestamp/%d/" % self.employee.employee_no)
+        response = self.client.post("/webtimestamp/%d/" % self.employee.employee_no)
         self.assertEqual(response.status_code, 200)
 
     def test_db_entry(self):

@@ -2,23 +2,6 @@ from django import forms
 from django.contrib.auth.models import User
 
 
-class SignupForm(forms.ModelForm):
-    password = forms.CharField(
-        label="パスワード（6文字以上）",
-        widget=forms.PasswordInput(attrs={"class": "form-control"}),
-        min_length=6,
-    )
-
-    class Meta:
-        model = User
-        fields = [
-            "username",
-            "last_name",
-            "first_name",
-            "email",
-        ]
-
-
 class UserForm(forms.ModelForm):
     field_order = [
         "username",
@@ -38,6 +21,7 @@ class UserForm(forms.ModelForm):
             "email": forms.EmailInput(attrs={"class": "form-control"}),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check"}),
         }
+
 
 class SaoChangePasswordForm(forms.Form):
     """
@@ -65,5 +49,5 @@ class SaoChangePasswordForm(forms.Form):
 
         if password != confirm:
             raise forms.ValidationError("パスワードが一致しません")
-        
+
         return cleaned_data

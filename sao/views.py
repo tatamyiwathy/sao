@@ -258,7 +258,6 @@ def home(request):
                 form.cleaned_data["yearmonth"], "%Y-%m"
             ).date()
             return make_view(employee, date_on_view, today)
-        logger.warning("form is invalid %s" % request.POST)
 
     """GET"""
     form = forms.YearMonthForm()
