@@ -47,6 +47,8 @@ from sao.utils import (
     create_employee,
     format_seconds_to_hhmmss,
 )
+from sao.utils import setup_sample_data as utils_setup_sample_data
+
 from sao.period import Period
 from sao.attendance import Attendance
 
@@ -1378,3 +1380,10 @@ def day_switch(request):
 
     logger.info(f"{date} の切り替え作業が完了しました")
     return HttpResponse("day switch done for " + str(date))
+
+
+@login_required
+def setup_sample_data(request):
+    """サンプルデータのセットアップ"""
+    utils_setup_sample_data()
+    return HttpResponse("sample data setup done")

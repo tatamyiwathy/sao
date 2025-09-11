@@ -309,3 +309,98 @@ def tally_attendances(attendances: list[Attendance]) -> dict:
             if not is_legal_holiday(attn.date):
                 attendance_tallied["accumulated_overtime"] += attn.over
     return attendance_tallied
+
+
+def setup_sample_data():
+    """サンプルデータを生成する"""
+
+    sample_stamp = [
+        ("2021/8/1", None, None),
+        ("2021/8/2", "13:00:00", "19:00:00"),  # （月）遅刻 6h勤務
+        ("2021/8/3", "9:40:00", "20:00:00"),  # 1hour overtime work
+        ("2021/8/4", "9:35:00", "19:47:00"),
+        ("2021/8/5", "9:38:00", "20:32:00"),
+        ("2021/8/6", "9:46:00", "20:13:00"),
+        ("2021/8/7", None, None),
+        ("2021/8/8", None, None),
+        ("2021/8/9", None, None),  # 祝日
+        ("2021/8/10", "9:46:00", "20:41:00"),
+        ("2021/8/11", "9:50:00", "21:31:00"),
+        ("2021/8/12", None, None),
+        ("2021/8/13", None, None),
+        ("2021/8/14", None, None),
+        ("2021/8/15", None, None),
+        ("2021/8/16", None, None),
+        ("2021/8/17", None, None),
+        ("2021/8/18", "9:47:00", "19:27:00"),
+        ("2021/8/19", "9:56:00", "19:45:00"),
+        ("2021/8/20", "9:53:00", "19:27:00"),
+        (
+            "2021/8/21",
+            "9:32:00",
+            "12:45:00",
+        ),  # 法定外休出　修正
+        ("2021/8/22", None, None),  # (日)
+        ("2021/8/23", None, None),  # 欠勤
+        ("2021/8/24", "9:55:00", "18:36:00"),  # 早退
+        ("2021/8/25", "9:50:00", "19:28:00"),
+        ("2021/8/26", "9:56:00", "19:54:00"),
+        ("2021/8/27", "9:55:00", "19:53:00"),
+        ("2021/8/28", None, None),
+        ("2021/8/29", None, None),
+        ("2021/8/30", "9:55:00", "19:37:00"),
+        ("2021/8/31", "9:51:00", "22:51:00"),  # over 10:00pm
+    ]
+
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    if User.objects.filter(username="foobar").exists():
+        return
+
+    user = create_user("foobar", "山田", "太郎", "foobar", "foobartaro@example.com")
+    user.permission.enable_stamp_on_web = True
+    user.save()
+
+    employee = create_employee(
+        employee_no=1,
+        name="山田 太郎",
+        employee_type=models.Employee.TYPE_PERMANENT_STAFF,
+        department=models.Employee.DEPT_GENERAL,
+        user=user,
+        join_date=datetime.date(2021, 1, 1),
+        payed_holiday=10.0,
+    )
+
+    working_hours = models.WorkingHour(
+        begin_time=datetime.time(10, 0, 0),
+        end_time=datetime.time(19, 0, 0),
+        category="総務",
+    )
+    working_hours.save()
+
+    t = models.EmployeeHour(
+        employee=employee, date=datetime.date(2021, 1, 1), working_hours=working_hours
+    )
+    t.save()
+
+    for stamp in sample_stamp:
+        date = datetime.datetime.strptime(stamp[0], "%Y/%m/%d").date()
+        clock_in = (
+            datetime.datetime.strptime(stamp[1], "%H:%M:%S").time()
+            if stamp[1]
+            else None
+        )
+        clock_out = (
+            datetime.datetime.strptime(stamp[2], "%H:%M:%S").time()
+            if stamp[2]
+            else None
+        )
+        if clock_in:
+            clock_in = datetime.datetime.combine(date, clock_in)
+        if clock_out:
+            clock_out = datetime.datetime.combine(date, clock_out)
+
+        record = core.generate_daily_record([clock_in, clock_out], employee, date)
+        if record:
+            core.generate_attendance_record(record)

@@ -35,12 +35,12 @@ from sao.views import (
     day_switch_time_view,
     day_switch_time_edit,
     day_switch,
+    setup_sample_data,
 )
 
 app_name = "sao"
 urlpatterns = [
     path("", home, name="home"),
-
     # 雇用者に割り当てる勤務時間
     path(
         "employee_hour/<id>/delete",
@@ -52,21 +52,26 @@ urlpatterns = [
         employee_hour_view,
         name="employee_hour_view",
     ),
-
     path(
         "modify_record/<int:record_id>/<int:year>/<int:month>/",
         modify_record,
         name="modify_record",
     ),
     path("attendance_summary/", attendance_summary, name="attendance_summary"),
-
     # 雇用者管理
     path("employee/", employee_list, name="employee_list"),
     path("employee/add", add_employee, name="add_employee"),
     path("employee/<int:employee_no>/edit", edit_employee, name="edit_employee"),
-    path("employee/<int:employee_no>/leave", leave_from_company, name="leave_from_company"),
-    path("employee/<int:employee_no>/cancel_leave", cancel_leave_from_company, name="cancel_leave_from_company"),
-
+    path(
+        "employee/<int:employee_no>/leave",
+        leave_from_company,
+        name="leave_from_company",
+    ),
+    path(
+        "employee/<int:employee_no>/cancel_leave",
+        cancel_leave_from_company,
+        name="cancel_leave_from_company",
+    ),
     path("employee_record/", employee_record, name="employee_record"),
     path(
         "staff_detail/<employee>/<int:year>/<int:month>/",
@@ -82,9 +87,7 @@ urlpatterns = [
     ),
     path("holiday_settings/", holiday_settings, name="holiday_settings"),
     path("holiday/<int:id>/delete", delete_holiday, name="delete_holiday"),
-    path(
-        "progress/<int:pk>/", progress, name="progress"
-    ),  # 進捗が表示されていくペー
+    path("progress/<int:pk>/", progress, name="progress"),  # 進捗が表示されていくペー
     path("update_annual_leave", update_annual_leave, name="update_annual_leave"),
     path(
         "download_csv/<int:employee_no>/<int:year>/<int:month>",
@@ -117,8 +120,17 @@ urlpatterns = [
     path("working_hours/", working_hours_view, name="working_hours_view"),
     path("working_hours/add", add_working_hours, name="add_working_hours"),
     path("working_hours/<int:id>/delete/", del_working_hours, name="del_working_hours"),
-    path("working_hours/<int:id>/update/", update_working_hours, name="edit_working_hours"),
+    path(
+        "working_hours/<int:id>/update/",
+        update_working_hours,
+        name="edit_working_hours",
+    ),
     path("day_switch_time_view/", day_switch_time_view, name="day_switch_time_view"),
-    path("day_switch_time_edit/<int:id>/", day_switch_time_edit, name="day_switch_time_edit"),
+    path(
+        "day_switch_time_edit/<int:id>/",
+        day_switch_time_edit,
+        name="day_switch_time_edit",
+    ),
     path("day_switch", day_switch, name="day_switch"),
+    path("setup_sample_data", setup_sample_data, name="setup_sample_data"),
 ]
