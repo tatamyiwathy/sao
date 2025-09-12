@@ -17,7 +17,6 @@ from common.utils_for_test import (
 )
 from sao import calendar, forms, models, utils, views
 from sao.core import (
-    get_working_hours_by_category,
     calc_actual_working_time,
     adjust_working_hours,
     calc_tardiness,
@@ -32,6 +31,7 @@ from sao.tests.utils import (
     create_timerecord,
     create_time_stamp_data,
     create_attendance_record,
+    get_working_hour_by_category,
 )
 
 
@@ -271,7 +271,7 @@ class HomeTest(TestCase):
 
     def test_get_home(self):
         set_office_hours_to_employee(
-            self.employee, datetime.date(1901, 1, 1), get_working_hours_by_category("A")
+            self.employee, datetime.date(1901, 1, 1), get_working_hour_by_category("A")
         )
 
         r = self.client.post("/", {"yearmonth": "2021-08"})
@@ -280,7 +280,7 @@ class HomeTest(TestCase):
 
     def test_post(self):
         set_office_hours_to_employee(
-            self.employee, datetime.date(1901, 1, 1), get_working_hours_by_category("A")
+            self.employee, datetime.date(1901, 1, 1), get_working_hour_by_category("A")
         )
 
         r = self.client.post(
@@ -298,7 +298,7 @@ class StaffDetailTest(TestCase):
         self.assertTrue(c)
 
         create_working_hours()
-        w = get_working_hours_by_category("A")
+        w = get_working_hour_by_category("A")
         set_office_hours_to_employee(e, datetime.date(1901, 1, 1), w)
 
         url = reverse("sao:staff_detail", args=[e.employee_no, 2017, 1])
@@ -311,7 +311,7 @@ class EmployeeListTest(TestCase):
         self.user = create_user()
         self.employee = create_employee(self.user, include_overtime_pay=True)
         create_working_hours()
-        w = get_working_hours_by_category("A")
+        w = get_working_hour_by_category("A")
         set_office_hours_to_employee(self.employee, datetime.date(1901, 1, 1), w)
         self.client = create_client(TEST_USER)
 
@@ -473,7 +473,7 @@ class OverviewTest(TestCase):
 
     def test_get(self):
         a_day = datetime.date(2020, 3, 9)
-        w = get_working_hours_by_category("A")
+        w = get_working_hour_by_category("A")
         set_office_hours_to_employee(self.employee, a_day, w)
         stamp = [
             datetime.datetime.combine(a_day, datetime.time(hour=10)),
@@ -920,7 +920,7 @@ class FixedOverworkTest(TestCase):
 
     def test_overtime(self):
         set_office_hours_to_employee(
-            self.emp, datetime.date(1900, 1, 1), get_working_hours_by_category("A")
+            self.emp, datetime.date(1900, 1, 1), get_working_hour_by_category("A")
         )
         """残業あり"""
         st = datetime.datetime.combine(self.today, datetime.time(hour=10))
@@ -940,7 +940,7 @@ class FixedOverworkTest(TestCase):
 
     def test_over_8h(self):
         set_office_hours_to_employee(
-            self.emp, datetime.date(1900, 1, 1), get_working_hours_by_category("A")
+            self.emp, datetime.date(1900, 1, 1), get_working_hour_by_category("A")
         )
         """超過時間"""
         st = datetime.datetime.combine(self.today, datetime.time(hour=10))
@@ -960,7 +960,7 @@ class FixedOverworkTest(TestCase):
 
     def test_no_over_8h(self):
         set_office_hours_to_employee(
-            self.emp, datetime.date(1900, 1, 1), get_working_hours_by_category("A")
+            self.emp, datetime.date(1900, 1, 1), get_working_hour_by_category("A")
         )
         st = datetime.datetime.combine(self.today, datetime.time(hour=10))
         ct = datetime.datetime.combine(self.today, datetime.time(hour=19))
@@ -983,7 +983,7 @@ class FixedOverworkTest(TestCase):
             return datetime.timedelta(seconds=sec)
 
         set_office_hours_to_employee(
-            self.emp, datetime.date(1900, 1, 1), get_working_hours_by_category("A")
+            self.emp, datetime.date(1900, 1, 1), get_working_hour_by_category("A")
         )
         """深夜を超えていない"""
         st = datetime.datetime.combine(self.today, datetime.time(hour=10))
@@ -1028,7 +1028,7 @@ class NoIncludeOverPayTest(TestCase):
 
     def test_overtime(self):
         set_office_hours_to_employee(
-            self.emp, datetime.date(1900, 1, 1), get_working_hours_by_category("A")
+            self.emp, datetime.date(1900, 1, 1), get_working_hour_by_category("A")
         )
         """時間外の打刻でも残業は発生しない"""
         st = datetime.datetime.combine(self.today, datetime.time(hour=10))
@@ -1060,7 +1060,7 @@ class IncludeOverPayedTest(TestCase):
 
     def test_overtime(self):
         set_office_hours_to_employee(
-            self.emp, datetime.date(1900, 1, 1), get_working_hours_by_category("A")
+            self.emp, datetime.date(1900, 1, 1), get_working_hour_by_category("A")
         )
         """時間外の打刻でも残業は発生しない"""
         st = datetime.datetime.combine(self.today, datetime.time(hour=10))
@@ -1080,7 +1080,7 @@ class IncludeOverPayedTest(TestCase):
 
     def test_over_8h(self):
         set_office_hours_to_employee(
-            self.emp, datetime.date(1900, 1, 1), get_working_hours_by_category("A")
+            self.emp, datetime.date(1900, 1, 1), get_working_hour_by_category("A")
         )
         """８時間超過の計算"""
         st = datetime.datetime.combine(self.today, datetime.time(hour=10))
@@ -1100,7 +1100,7 @@ class IncludeOverPayedTest(TestCase):
 
     def test_night_time(self):
         set_office_hours_to_employee(
-            self.emp, datetime.date(1900, 1, 1), get_working_hours_by_category("A")
+            self.emp, datetime.date(1900, 1, 1), get_working_hour_by_category("A")
         )
         """深夜をオーバー:22:01"""
         st = datetime.datetime.combine(self.today, datetime.time(hour=10))
@@ -1199,7 +1199,7 @@ class Over6HourTest(TestCase):
     def test_adjust_endtime(self):
         """10-19勤務なら勤務時間が6時間超なので1時間休息する"""
         set_office_hours_to_employee(
-            self.employee, datetime.date(1901, 1, 1), get_working_hours_by_category("A")
+            self.employee, datetime.date(1901, 1, 1), get_working_hour_by_category("A")
         )
         working_hours = (
             datetime.datetime.combine(self.day, datetime.time(10, 0)),
@@ -1224,7 +1224,7 @@ class Over6HourTest(TestCase):
     def test_just_six_hours(self):
         """10-19勤務で16時に早退したら実労働時間は6h 実際は休息1時間を取っているので5hだけどそれは感知しない"""
         set_office_hours_to_employee(
-            self.employee, datetime.date(1901, 1, 1), get_working_hours_by_category("A")
+            self.employee, datetime.date(1901, 1, 1), get_working_hour_by_category("A")
         )
         working_hours = (
             datetime.datetime.combine(self.day, datetime.time(10, 0)),
@@ -1267,7 +1267,7 @@ class Over6HourTest(TestCase):
     def test_calc_actual_working_hours(self):
         """10-19の後半休（あり）で18時終業したら労働時間は7h"""
         set_office_hours_to_employee(
-            self.employee, datetime.date(1901, 1, 1), get_working_hours_by_category("A")
+            self.employee, datetime.date(1901, 1, 1), get_working_hour_by_category("A")
         )
 
         # 打刻データ生成

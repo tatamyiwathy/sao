@@ -740,17 +740,13 @@ def get_employee_hour(employee: Employee, date: datetime.date) -> WorkingHour:
     raise NoAssignedWorkingHourError(f"no specified working hour for {employee.name}")
 
 
-def get_working_hours_by_category(category: str) -> WorkingHour:
-    """☑引数に渡されたカテゴリー名の勤務時間を取得する"""
-    return WorkingHour.objects.get(category=category)
-
-
-def get_working_hours_tobe_assign(employee: Employee) -> EmployeeHour:
+def get_working_hour_tobe_assign(employee: Employee) -> EmployeeHour:
     """☑
     適用予定の勤務時間を取得する(すでに適用されているかもしれないがこの関数では考慮しない)
-    引数:     employee
-            date    この日付の「既定の勤務時間」を検索
-    戻り値     WorkingHourオブジェクト
+
+    :param employee: 対象の社員
+    :param date: この日付の「既定の勤務時間」を検索
+    :return: WorkingHourオブジェクト
     """
     employee_hours = EmployeeHour.objects.filter(employee=employee).order_by("-date")
     if employee_hours:

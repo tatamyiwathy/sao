@@ -11,6 +11,7 @@ from common.utils_for_test import (
 from sao.tests.utils import (
     create_working_hours,
     set_office_hours_to_employee,
+    get_working_hour_by_category,
 )
 
 
@@ -71,7 +72,7 @@ class DaySwitchViewTests(TestCase):
         self.e = create_employee(self.u, include_overtime_pay=True)
         create_working_hours()
         set_office_hours_to_employee(
-            self.e, datetime.date(1901, 1, 1), core.get_working_hours_by_category("A")
+            self.e, datetime.date(1901, 1, 1), get_working_hour_by_category("A")
         )
 
         self.date = datetime.date.today()

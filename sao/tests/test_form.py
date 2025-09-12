@@ -12,8 +12,11 @@ from sao.forms import (
 from sao.models import Employee, Holiday
 from sao.working_status import WorkingStatus
 from common.utils_for_test import create_employee, create_user
-from sao.tests.utils import create_working_hours, set_office_hours_to_employee
-from sao.core import get_working_hours_by_category
+from sao.tests.utils import (
+    create_working_hours,
+    set_office_hours_to_employee,
+    get_working_hour_by_category,
+)
 
 
 class ModifyRecordFormTest(TestCase):
@@ -114,7 +117,7 @@ class WorkingHourAssignFormTest(TestCase):
         user = create_user()
         employee = create_employee(user, include_overtime_pay=True)
         create_working_hours()
-        w = get_working_hours_by_category("A")
+        w = get_working_hour_by_category("A")
         set_office_hours_to_employee(employee, datetime.date.today(), w)
 
         today = datetime.date(2022, 1, 1)

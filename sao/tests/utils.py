@@ -1,7 +1,13 @@
 import datetime
 
-from sao.models import Employee, WorkingHour, EmployeeHour,EmployeeDailyRecord, DailyAttendanceRecord
-from sao.calendar import is_holiday,is_legal_holiday
+from sao.models import (
+    Employee,
+    WorkingHour,
+    EmployeeHour,
+    EmployeeDailyRecord,
+    DailyAttendanceRecord,
+)
+from sao.calendar import is_holiday, is_legal_holiday
 from sao.core import generate_attendance_record, get_day_switch_time
 from sao.period import Period
 from sao.working_status import WorkingStatus, determine_working_status
@@ -42,9 +48,7 @@ def set_office_hours_to_employee(
     有効になる日付を指定して設定する
 
     """
-    t = EmployeeHour(
-        employee=employee, date=date_from, working_hours=working_hours
-    )
+    t = EmployeeHour(employee=employee, date=date_from, working_hours=working_hours)
     t.save()
     return t
 
@@ -61,8 +65,12 @@ def create_timerecord(**kwargs) -> EmployeeDailyRecord:
 
     clock_in = kwargs["stamp"][0] if "stamp" in kwargs else None
     clock_out = kwargs["stamp"][1] if "stamp" in kwargs else None
-    working_hours_start = kwargs["working_hours"][0] if "working_hours" in kwargs else None
-    working_hours_end = kwargs["working_hours"][1] if "working_hours" in kwargs else None
+    working_hours_start = (
+        kwargs["working_hours"][0] if "working_hours" in kwargs else None
+    )
+    working_hours_end = (
+        kwargs["working_hours"][1] if "working_hours" in kwargs else None
+    )
     status = kwargs["status"] if "status" in kwargs else None
 
     timerecord = EmployeeDailyRecord(
@@ -73,16 +81,17 @@ def create_timerecord(**kwargs) -> EmployeeDailyRecord:
         working_hours_start=working_hours_start,
         working_hours_end=working_hours_end,
         status=status,
-
     )
     timerecord.save()
     return timerecord
+
 
 def create_attendance_record(time_record: EmployeeDailyRecord) -> DailyAttendanceRecord:
     if time_record is None:
         raise ValueError("time_record is None")
     attn = generate_attendance_record(time_record)
     return attn
+
 
 def create_time_stamp_data(employee: Employee):
     """テスト用のタイムシートデータを生成する"""
@@ -144,11 +153,12 @@ def create_time_stamp_data(employee: Employee):
         working_hours_end = datetime.datetime.combine(date, datetime.time(19, 0, 0))
 
         record = create_timerecord(
-                employee=employee,
-                date=date,
-                stamp=[clock_in, clock_out],
-                working_hours=[working_hours_start, working_hours_end])
-        
+            employee=employee,
+            date=date,
+            stamp=[clock_in, clock_out],
+            working_hours=[working_hours_start, working_hours_end],
+        )
+
         attendance = create_attendance_record(record)
 
 
@@ -288,3 +298,10 @@ TOTAL_ACTUAL_WORKING_TIME = sum(
 )
 
 
+def get_working_hour_by_category(category: str) -> WorkingHour:
+    """☑引数に渡されたカテゴリー名の勤務時間を取得する
+
+    :param category: カテゴリー名
+    :return: WorkingHourオブジェクト
+    """
+    return WorkingHour.objects.get(category=category)

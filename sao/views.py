@@ -22,7 +22,7 @@ from sao.calendar import (
 )
 from sao.core import (
     get_employee_hour,
-    get_working_hours_tobe_assign,
+    get_working_hour_tobe_assign,
     NoAssignedWorkingHourError,
     get_day_switch_time,
     normalize_to_business_day,
@@ -231,7 +231,7 @@ def home(request):
     except NoAssignedWorkingHourError:
         # 合流前で勤務時間が取得できない
         try:
-            office_hours = get_working_hours_tobe_assign(employee).working_hours
+            office_hours = get_working_hour_tobe_assign(employee).working_hours
         except ValueError:
             attendaces = tally_attendances([])
             rounded = core.round_result(attendaces)
@@ -448,7 +448,7 @@ def employee_list(request):
         employee_type = get_employee_type_display(e.employee_type)
         department = get_department_display(e.department)
         try:
-            recently = get_working_hours_tobe_assign(e)  # 直近から適用される勤務時間
+            recently = get_working_hour_tobe_assign(e)  # 直近から適用される勤務時間
             try:
                 oh = get_employee_hour(e, datetime.date.today())
                 working_hour = str(oh)

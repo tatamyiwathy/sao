@@ -16,6 +16,7 @@ from sao.tests.utils import (
     set_office_hours_to_employee,
     create_time_stamp_data,
     TOTAL_ACTUAL_WORKING_TIME,
+    get_working_hour_by_category,
 )
 from sao.utils import tally_over_work_time, tally_attendances
 from sao.core import (
@@ -42,8 +43,7 @@ from sao.core import (
     is_need_break_time,
     collect_timerecord_by_month,
     get_employee_hour,
-    get_working_hours_by_category,
-    get_working_hours_tobe_assign,
+    get_working_hour_tobe_assign,
     calc_actual_working_time,
     get_day_switch_time,
     normalize_to_business_day,
@@ -109,7 +109,7 @@ class AccumulateWeeklyWorkingHoursTest(TestCase):
     def test_accumulate_weekly_working_hours(self) -> None:
         create_time_stamp_data(self.employee)
         set_office_hours_to_employee(
-            self.employee, date(1900, 1, 1), get_working_hours_by_category("A")
+            self.employee, date(1900, 1, 1), get_working_hour_by_category("A")
         )
         records = collect_timerecord_by_month(self.employee, date(2021, 8, 1))
         results = accumulate_weekly_working_hours(records)
@@ -122,7 +122,7 @@ class AccumulateWeeklyWorkingHoursTest(TestCase):
         EmployeeDailyRecord.objects.all().delete()
         """勤怠記録がない場合の週間勤務時間集計のテスト"""
         set_office_hours_to_employee(
-            self.employee, date(1900, 1, 1), get_working_hours_by_category("A")
+            self.employee, date(1900, 1, 1), get_working_hour_by_category("A")
         )
         records = collect_timerecord_by_month(self.employee, date(2021, 8, 1))
         results = accumulate_weekly_working_hours(records)
@@ -305,7 +305,7 @@ class TestCalcOvertime(TestCase):
         self.employee = create_employee(create_user(), include_overtime_pay=True)
         create_working_hours()
         set_office_hours_to_employee(
-            self.employee, date(1901, 1, 1), get_working_hours_by_category("A")
+            self.employee, date(1901, 1, 1), get_working_hour_by_category("A")
         )
         create_time_stamp_data(self.employee)
 
@@ -351,7 +351,7 @@ class TestCalcOver8h(TestCase):
         self.employee = create_employee(create_user(), include_overtime_pay=True)
         create_working_hours()
         set_office_hours_to_employee(
-            self.employee, date(1901, 1, 1), get_working_hours_by_category("A")
+            self.employee, date(1901, 1, 1), get_working_hour_by_category("A")
         )
         create_time_stamp_data(self.employee)
 
@@ -370,7 +370,7 @@ class TestCalcMidnightWork(TestCase):
         self.employee = create_employee(create_user(), include_overtime_pay=True)
         create_working_hours()
         set_office_hours_to_employee(
-            self.employee, date(1901, 1, 1), get_working_hours_by_category("A")
+            self.employee, date(1901, 1, 1), get_working_hour_by_category("A")
         )
         create_time_stamp_data(self.employee)
 
@@ -385,7 +385,7 @@ class TestCalcLegalHoliday(TestCase):
         self.employee = create_employee(create_user(), include_overtime_pay=True)
         create_working_hours()
         set_office_hours_to_employee(
-            self.employee, date(1901, 1, 1), get_working_hours_by_category("A")
+            self.employee, date(1901, 1, 1), get_working_hour_by_category("A")
         )
         create_time_stamp_data(self.employee)
 
@@ -405,7 +405,7 @@ class TestCalcHoliday(TestCase):
         self.employee = create_employee(create_user(), include_overtime_pay=True)
         create_working_hours()
         set_office_hours_to_employee(
-            self.employee, date(1901, 1, 1), get_working_hours_by_category("A")
+            self.employee, date(1901, 1, 1), get_working_hour_by_category("A")
         )
         create_time_stamp_data(self.employee)
 
@@ -533,7 +533,7 @@ class TestCollectTimeRecordByMonth(TestCase):
         create_time_stamp_data(emp)  # 打刻データ生成
         create_working_hours()
         set_office_hours_to_employee(
-            emp, date(1901, 1, 1), get_working_hours_by_category("A")
+            emp, date(1901, 1, 1), get_working_hour_by_category("A")
         )
 
         records = collect_timerecord_by_month(emp, date(2021, 8, 1))
@@ -546,7 +546,7 @@ class TestGetOfficeHours(TestCase):
         create_time_stamp_data(emp)
         create_working_hours()
         set_office_hours_to_employee(
-            emp, date(1901, 1, 1), get_working_hours_by_category("A")
+            emp, date(1901, 1, 1), get_working_hour_by_category("A")
         )
 
         office_hours = get_employee_hour(emp, date(2021, 8, 1))
@@ -557,7 +557,7 @@ class TestGetOfficeHours(TestCase):
 class TestGetWorkingHoursByCategory(TestCase):
     def test_get_working_hours_by_category(self):
         create_working_hours()
-        working_hours = get_working_hours_by_category("A")
+        working_hours = get_working_hour_by_category("A")
         self.assertEqual(working_hours.begin_time, Const.OCLOCK_1000)
         self.assertEqual(working_hours.end_time, Const.OCLOCK_1900)
 
@@ -568,10 +568,10 @@ class TestGetWorkingHoursToBeAssign(TestCase):
         create_time_stamp_data(emp)
         create_working_hours()
         set_office_hours_to_employee(
-            emp, date(1901, 1, 1), get_working_hours_by_category("A")
+            emp, date(1901, 1, 1), get_working_hour_by_category("A")
         )
 
-        working_hours = get_working_hours_tobe_assign(emp).working_hours
+        working_hours = get_working_hour_tobe_assign(emp).working_hours
         self.assertEqual(working_hours.begin_time, Const.OCLOCK_1000)
         self.assertEqual(working_hours.end_time, Const.OCLOCK_1900)
 
