@@ -43,6 +43,7 @@ def assign_working_hour(
 ) -> EmployeeHour:
     """
     スタッフに勤務時間を設定する
+
     :param employee: Employee
     :param date_from: 適用開始日
     :param working_hours: WorkingHour
@@ -89,8 +90,7 @@ def create_timerecord(**kwargs) -> EmployeeDailyRecord:
 def create_attendance_record(time_record: EmployeeDailyRecord) -> DailyAttendanceRecord:
     if time_record is None:
         raise ValueError("time_record is None")
-    attn = generate_attendance_record(time_record)
-    return attn
+    return generate_attendance_record(time_record)
 
 
 def create_time_stamp_data(employee: Employee):
@@ -166,8 +166,7 @@ def create_time_stamp_data(employee: Employee):
             working_hours=[working_hours_start, working_hours_end],
             status=status,
         )
-
-        attendance = create_attendance_record(record)
+        attn = create_attendance_record(record)
 
 
 def to_timedelta(time: datetime.datetime) -> datetime.timedelta:

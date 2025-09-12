@@ -548,34 +548,36 @@ def count_days(results: list, year_month: datetime.date) -> list:
     return days
 
 
-def accumulate_weekly_working_hours(records: list[Attendance]) -> list[tuple]:
+def accumulate_weekly_working_hours(attendances: list[Attendance]) -> list[tuple]:
     """週ごとの労働時間を累計する
 
     戻り    (n週, 週の始まり, 労働時間, 丸めた労働時間) * 週の数
     """
 
-    if records is None:
+    if attendances is None:
         return []
-    if len(records) == 0:
+    if len(attendances) == 0:
         return []
 
     result: list[tuple] = []
-    # work_time = Const.TD_ZERO
-    # week = -1
+    work_time = Const.TD_ZERO
+    week = -1
 
-    # # とりあえず週の頭を設定する。入社したばかりの人は週の初めの日曜日のデータが存在しないので。
-    # week_begin = records[0].date
-    # for r in records:
+    # とりあえず週の頭を設定する。入社したばかりの人は週の初めの日曜日のデータが存在しないので。
+    # week_begin = attendances[0].date
+    # for a in attendances:
     #     # 週の始まりは日曜日から
-    #     if r.date.weekday() == 6:
-    #         week_begin = r.date
+    #     if a.time_record.date.weekday() == 6:
+    #         week_begin = a.time_record.date
 
     #     # 所定の始業、終業、勤務時間を取得する
-    #     working_hours = adjust_working_hours(r)
+    #     working_hours = adjust_working_hours(a)
 
     #     # 実労働時間
     #     steppingout = tally_steppingout(r)
-    #     work_time += calc_actual_working_time(r, working_hours.start, working_hours.end, steppingout)
+    #     work_time += calc_actual_working_time(
+    #         r, working_hours.start, working_hours.end, steppingout
+    #     )
 
     #     # 土曜日は集計
     #     if r.date.weekday() == 5:
@@ -671,22 +673,6 @@ def get_monthy_time_record(
     return timerecords
 
 
-# def get_monthly_attendance(employee: Employee, date: datetime.date) -> list[Attendance]:
-#     """月次の勤怠データを取得する"""
-#     monthly_attendance = []
-#     for d in sao.calendar.enumlate_days(date):
-#         dayly_attendances = DailyAttendanceRecord.objects.filter(time_record__employee=employee, time_record__date=d)
-#         if dayly_attendances.exists():
-#             if dayly_attendances.count() > 1:
-#                 raise ValueError(f"日次勤怠データが複数存在しています {employee.name} {d}")
-#             monthly_attendance.append(dayly_attendances.first())
-#         else:
-#             # まだ勤怠データが存在しない日があるので生成する
-#             attm = Attendance(date=d, employee=employee)
-#             monthly_attendance.append(attm)
-#     return monthly_attendance
-
-
 def get_monthly_attendance(employee: Employee, date: datetime.date) -> list[Attendance]:
     """月次の勤怠データを取得する"""
     start = get_first_day(date)
@@ -713,8 +699,6 @@ def get_attendance_in_period(
         time_record__date__gte=start,
         time_record__date__lte=end,
     ).order_by("time_record__date"):
-
-        print(daily_record.time_record)
 
         attn_date = datetime.datetime.combine(
             daily_record.time_record.date, datetime.time(0, 0, 0)

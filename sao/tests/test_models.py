@@ -3,6 +3,7 @@ import datetime
 from django.contrib.auth.models import User
 from sao.models import Employee, EmployeeDailyRecord, DailyAttendanceRecord
 
+
 class DailyAttendanceRecordModelTest(unittest.TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="testuser", password="testpass")
@@ -22,9 +23,7 @@ class DailyAttendanceRecordModelTest(unittest.TestCase):
         )
 
     def test_create_minimal_daily_attendance_record(self):
-        record = DailyAttendanceRecord.objects.create(
-            time_record=self.time_record
-        )
+        record = DailyAttendanceRecord.objects.create(time_record=self.time_record)
         self.assertIsNotNone(record.pk)
         self.assertEqual(record.time_record, self.time_record)
         self.assertEqual(record.actual_work, datetime.timedelta(0))
@@ -36,7 +35,7 @@ class DailyAttendanceRecordModelTest(unittest.TestCase):
         self.assertEqual(record.night, datetime.timedelta(0))
         self.assertEqual(record.legal_holiday, datetime.timedelta(0))
         self.assertEqual(record.holiday, datetime.timedelta(0))
-        self.assertEqual(record.remark, "")
+        self.assertEqual(record.remark, None)
         self.assertIsNone(record.status)
         record.delete()
 
@@ -71,7 +70,7 @@ class DailyAttendanceRecordModelTest(unittest.TestCase):
         self.assertEqual(record.remark, "Test remark")
         self.assertEqual(record.status, 1)
         record.delete()
-        
+
     def tearDown(self):
         self.time_record.delete()
         self.employee.delete()

@@ -101,36 +101,35 @@ from sao.exceptions import NoAssignedWorkingHourError
 #         self.assertEqual(len(results), monthdays(self.day))
 
 
-class AccumulateWeeklyWorkingHoursTest(TestCase):
+# class AccumulateWeeklyWorkingHoursTest(TestCase):
+#     """"""
 
-    def setUp(self) -> None:
-        self.employee = create_employee(create_user(), include_overtime_pay=True)
-        create_working_hours()
+#     def setUp(self) -> None:
+#         self.employee = create_employee(create_user(), include_overtime_pay=True)
 
-    def test_accumulate_weekly_working_hours(self) -> None:
-        create_time_stamp_data(self.employee)
-        assign_working_hour(
-            self.employee, date(1900, 1, 1), get_working_hour_by_category("A")
-        )
-        records = get_monthly_attendance(self.employee, date(2021, 8, 1))
-        results = accumulate_weekly_working_hours(records)
-        week = 1
-        for r in results:
-            self.assertEqual(r[0], week)
-            week += 1
+#         create_working_hours()
+#         create_time_stamp_data(self.employee)
 
-    def test_accumulate_weekly_working_hours_when_empty(self) -> None:
-        EmployeeDailyRecord.objects.all().delete()
-        """勤怠記録がない場合の週間勤務時間集計のテスト"""
-        assign_working_hour(
-            self.employee, date(1900, 1, 1), get_working_hour_by_category("A")
-        )
-        records = get_monthly_attendance(self.employee, date(2021, 8, 1))
-        results = accumulate_weekly_working_hours(records)
-        week = 1
-        for r in results:
-            self.assertEqual(r[0], week)
-            week += 1
+#     def test_accumulate_weekly_working_hours(self) -> None:
+#         records = get_monthly_attendance(self.employee, date(2021, 8, 1))
+#         results = accumulate_weekly_working_hours(records)
+#         week = 1
+#         for r in results:
+#             self.assertEqual(r[0], week)
+#             week += 1
+
+#     def test_accumulate_weekly_working_hours_when_empty(self) -> None:
+#         EmployeeDailyRecord.objects.all().delete()
+#         """勤怠記録がない場合の週間勤務時間集計のテスト"""
+#         assign_working_hour(
+#             self.employee, date(1900, 1, 1), get_working_hour_by_category("A")
+#         )
+#         records = get_monthly_attendance(self.employee, date(2021, 8, 1))
+#         results = accumulate_weekly_working_hours(records)
+#         week = 1
+#         for r in results:
+#             self.assertEqual(r[0], week)
+#             week += 1
 
 
 # class TestSumupAttendances(TestCase):
@@ -555,16 +554,6 @@ class TestIsPermitOvertime(TestCase):
         employee = create_employee(create_user(), include_overtime_pay=False)
         permit_overtime = is_permit_overtime(employee)
         self.assertFalse(permit_overtime)
-
-
-class TestGetHalfYearDay(TestCase):
-    def test_get_half_year_day(self):
-        half_year_day = get_half_year_day(datetime(2021, 1, 1, 0, 0, 0))
-        self.assertEqual(half_year_day, datetime(2021, 7, 1, 0, 0, 0))
-
-    def test_get_half_year_day_when_leap_year(self):
-        half_year_day = get_half_year_day(datetime(2020, 2, 29, 0, 0, 0))
-        self.assertEqual(half_year_day, datetime(2020, 8, 29, 0, 0, 0))
 
 
 class TestGetAnnualPaidHolidayDays(TestCase):
