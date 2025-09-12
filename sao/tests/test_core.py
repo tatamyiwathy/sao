@@ -51,6 +51,7 @@ from sao.core import (
     generate_daily_record,
     get_attendance_in_period,
     finalize_daily_record,
+    get_monthly_attendance,
 )
 from sao.const import Const
 from sao.calendar import monthdays, is_holiday
@@ -111,7 +112,7 @@ class AccumulateWeeklyWorkingHoursTest(TestCase):
         assign_working_hour(
             self.employee, date(1900, 1, 1), get_working_hour_by_category("A")
         )
-        records = get_monthy_time_record(self.employee, date(2021, 8, 1))
+        records = get_monthly_attendance(self.employee, date(2021, 8, 1))
         results = accumulate_weekly_working_hours(records)
         week = 1
         for r in results:
@@ -124,7 +125,7 @@ class AccumulateWeeklyWorkingHoursTest(TestCase):
         assign_working_hour(
             self.employee, date(1900, 1, 1), get_working_hour_by_category("A")
         )
-        records = get_monthy_time_record(self.employee, date(2021, 8, 1))
+        records = get_monthly_attendance(self.employee, date(2021, 8, 1))
         results = accumulate_weekly_working_hours(records)
         week = 1
         for r in results:
@@ -982,11 +983,13 @@ class TestGenerateDailyRecord(TestCase):
             employee=self.employee, date=self.day
         ).first()
         self.assertIsNotNone(record)
-        self.assertEqual(record.clock_in, stamps[0])
-        self.assertEqual(record.clock_out, stamps[1])
-        self.assertEqual(record.working_hours_start, self.period.start)
-        self.assertEqual(record.working_hours_end, self.period.end)
-        self.assertEqual(record.status, WorkingStatus.C_KINMU)
+        if record is not None:
+            self.assertIsNotNone(record.clock_in)
+            self.assertEqual(record.clock_in, stamps[0])
+            self.assertEqual(record.clock_out, stamps[1])
+            self.assertEqual(record.working_hours_start, self.period.start)
+            self.assertEqual(record.working_hours_end, self.period.end)
+            self.assertEqual(record.status, WorkingStatus.C_KINMU)
 
     @patch(
         "sao.working_status.determine_working_status",
@@ -1018,11 +1021,12 @@ class TestGenerateDailyRecord(TestCase):
             employee=self.employee, date=self.day
         ).first()
         self.assertIsNotNone(record)
-        self.assertEqual(record.clock_in, None)
-        self.assertEqual(record.clock_out, None)
-        self.assertEqual(record.working_hours_start, self.period.start)
-        self.assertEqual(record.working_hours_end, self.period.end)
-        self.assertEqual(record.status, WorkingStatus.C_KEKKIN)
+        if record is not None:
+            self.assertEqual(record.clock_in, None)
+            self.assertEqual(record.clock_out, None)
+            self.assertEqual(record.working_hours_start, self.period.start)
+            self.assertEqual(record.working_hours_end, self.period.end)
+            self.assertEqual(record.status, WorkingStatus.C_KEKKIN)
 
     @patch(
         "sao.core.determine_working_status",
@@ -1056,11 +1060,12 @@ class TestGenerateDailyRecord(TestCase):
             employee=self.employee, date=self.day
         ).first()
         self.assertIsNotNone(record)
-        self.assertEqual(record.working_hours_start, None)
-        self.assertEqual(record.working_hours_end, None)
-        self.assertEqual(record.clock_in, stamps[0])
-        self.assertEqual(record.clock_out, stamps[1])
-        self.assertEqual(record.status, WorkingStatus.C_HOUTEIGAI_KYUJITU)
+        if record is not None:
+            self.assertEqual(record.working_hours_start, None)
+            self.assertEqual(record.working_hours_end, None)
+            self.assertEqual(record.clock_in, stamps[0])
+            self.assertEqual(record.clock_out, stamps[1])
+            self.assertEqual(record.status, WorkingStatus.C_HOUTEIGAI_KYUJITU)
 
     @patch(
         "sao.core.determine_working_status", return_value=WorkingStatus.C_HOUTEI_KYUJITU
@@ -1093,11 +1098,12 @@ class TestGenerateDailyRecord(TestCase):
             employee=self.employee, date=self.day
         ).first()
         self.assertIsNotNone(record)
-        self.assertEqual(record.working_hours_start, None)
-        self.assertEqual(record.working_hours_end, None)
-        self.assertEqual(record.clock_in, stamps[0])
-        self.assertEqual(record.clock_out, stamps[1])
-        self.assertEqual(record.status, WorkingStatus.C_HOUTEI_KYUJITU)
+        if record is not None:
+            self.assertEqual(record.working_hours_start, None)
+            self.assertEqual(record.working_hours_end, None)
+            self.assertEqual(record.clock_in, stamps[0])
+            self.assertEqual(record.clock_out, stamps[1])
+            self.assertEqual(record.status, WorkingStatus.C_HOUTEI_KYUJITU)
 
     @patch("sao.core.is_holiday", return_value=True)
     @patch("sao.core.get_employee_hour")
@@ -1112,11 +1118,12 @@ class TestGenerateDailyRecord(TestCase):
             employee=self.employee, date=self.day
         ).first()
         self.assertIsNotNone(record)
-        self.assertIsNone(record.clock_in)
-        self.assertIsNone(record.clock_out)
-        self.assertEqual(record.working_hours_start, None)
-        self.assertEqual(record.working_hours_end, None)
-        self.assertEqual(record.status, WorkingStatus.C_KYUJITU)
+        if record is not None:
+            self.assertIsNone(record.clock_in)
+            self.assertIsNone(record.clock_out)
+            self.assertEqual(record.working_hours_start, None)
+            self.assertEqual(record.working_hours_end, None)
+            self.assertEqual(record.status, WorkingStatus.C_KYUJITU)
 
 
 class TestFinalizeDailyRecord(TestCase):
