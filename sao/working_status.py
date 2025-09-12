@@ -63,6 +63,7 @@ class WorkingStatus:
     # 休日出勤ステータス
     HOLIDAY_WORK = [
         C_HOUTEI_KYUJITU,
+        C_HOUTEIGAI_KYUJITU,
         C_HOUTEI_KYUJITU_GOZENKYUU,
         C_HOUTEI_KYUJITU_GOGOKYU_NASHI,
         C_HOUTEI_KYUJITU_GOGOKYU_ARI,
