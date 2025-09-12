@@ -528,20 +528,20 @@ class TestCalcLegalHoliday(TestCase):
 
 
 class TestCalcHoliday(TestCase):
+    """休日勤務時間を計算するテスト"""
+
     def setUp(self) -> None:
         self.employee = create_employee(create_user(), include_overtime_pay=True)
-        create_working_hours()
-        set_office_hours_to_employee(
-            self.employee, date(1901, 1, 1), get_working_hour_by_category("A")
-        )
-        create_time_stamp_data(self.employee)
 
     def test_calc_holiday(self):
-        time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 9))
-        self.assertTrue(is_holiday(time_record.date))
-        actual_working_hours = timedelta(hours=8)
-        holiday = calc_holiday(time_record, actual_working_hours)
-        self.assertEqual(holiday, timedelta(hours=8))
+        d = date(2021, 8, 7)  # 土曜日
+        holiday = calc_holiday(d, Const.TD_8H)
+        self.assertEqual(holiday, Const.TD_8H)
+
+    def test_calc_workday(self):
+        d = date(2021, 8, 2)  # 月曜日
+        holiday = calc_holiday(d, Const.TD_8H)
+        self.assertEqual(holiday, Const.TD_ZERO)
 
 
 class TestIsPermitOvertime(TestCase):

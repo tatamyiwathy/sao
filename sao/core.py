@@ -432,12 +432,11 @@ def calc_legal_holiday(
 
 
 def calc_holiday(
-    timerecord: EmployeeDailyRecord, actual_work: datetime.timedelta
+    date: datetime.date, actual_work: datetime.timedelta
 ) -> datetime.timedelta:
     """休出(法定外)ならそのまま返す"""
-    if is_holiday(timerecord.date):
-        if not is_legal_holiday(timerecord.date):
-            return actual_work
+    if is_holiday(date) and not is_legal_holiday(date):
+        return actual_work
     return Const.TD_ZERO
 
 
@@ -916,7 +915,7 @@ def generate_attendance_record(record: EmployeeDailyRecord) -> DailyAttendanceRe
         attendance.over_8h = Const.TD_ZERO
         attendance.night = Const.TD_ZERO
     attendance.legal_holiday = calc_legal_holiday(record.date, actual_working_time)
-    attendance.holiday = calc_holiday(record, actual_working_time)
+    attendance.holiday = calc_holiday(record.date, actual_working_time)
     attendance.stepping_out = stepping_out
     attendance.status = record.status
     try:
