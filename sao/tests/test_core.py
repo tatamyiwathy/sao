@@ -704,6 +704,10 @@ class TestGetWorkingHoursByCategory(TestCase):
         self.assertEqual(working_hours.begin_time, Const.OCLOCK_1000)
         self.assertEqual(working_hours.end_time, Const.OCLOCK_1900)
 
+    def test_get_category_not_found(self):
+        with self.assertRaises(WorkingHour.DoesNotExist):
+            get_working_hour_by_category("Z")
+
 
 class TestGetWorkingHoursToBeAssign(TestCase):
     def test_get_working_hours_tobe_assign(self):
