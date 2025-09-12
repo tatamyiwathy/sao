@@ -405,16 +405,21 @@ def calc_over_8h(
     return d if d.days >= 0 else Const.TD_ZERO
 
 
-def calc_midnight_work(timerecord: EmployeeDailyRecord) -> datetime.timedelta:
+def calc_midnight_work(t: datetime.datetime | None) -> datetime.timedelta:
     """
-    深夜超過時間 深夜=22:00~
+    深夜超過時間
+    - 深夜=22:00~
+    - もし打刻がない場合は0を返す
+
+    :param t: datetime
+    :return: 深夜超過時間
     """
-    clock_out = timerecord.get_clock_out()
-    if clock_out is None:
-        raise ValueError("clock_outがNone")
-    night = datetime.datetime.combine(timerecord.date, Const.NIGHT_WORK_START)
-    d = clock_out - night
-    return d if d.days >= 0 else Const.TD_ZERO
+    if t is None:
+        return Const.TD_ZERO
+
+    night = datetime.datetime.combine(t.date(), Const.NIGHT_WORK_START)
+    duration = t - night
+    return duration if duration.days >= 0 else Const.TD_ZERO
 
 
 def calc_legal_holiday(
@@ -906,7 +911,7 @@ def generate_attendance_record(record: EmployeeDailyRecord) -> DailyAttendanceRe
     attendance.over = calc_overtime(record, actual_working_time, assumed_working_time)
     if attendance.over is not None and attendance.over.total_seconds() > 0:
         attendance.over_8h = calc_over_8h(record, actual_working_time)
-        attendance.night = calc_midnight_work(record)
+        attendance.night = calc_midnight_work(record.get_clock_out())
     else:
         attendance.over_8h = Const.TD_ZERO
         attendance.night = Const.TD_ZERO

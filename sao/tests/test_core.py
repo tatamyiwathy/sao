@@ -492,18 +492,22 @@ class TestCalcOver8h(TestCase):
 
 
 class TestCalcMidnightWork(TestCase):
+    """深夜勤務(割り増し)時間を計算するテスト
+    - 割り増しは深夜時刻を超過したら法定休日、法定外休日問わず発生する
+    """
+
     def setUp(self) -> None:
         self.employee = create_employee(create_user(), include_overtime_pay=True)
-        create_working_hours()
-        set_office_hours_to_employee(
-            self.employee, date(1901, 1, 1), get_working_hour_by_category("A")
-        )
-        create_time_stamp_data(self.employee)
 
-    def test_calc_midnight_work(self):
-        time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 31))
-        midnight_work = calc_midnight_work(time_record)
-        self.assertEqual(midnight_work, timedelta(minutes=51))
+    def test_calc_midnight_work_before_midnight(self):
+        """22時前に退勤した場合、深夜勤務時間は0とする"""
+        midnight_work = calc_midnight_work(datetime(2021, 8, 3, 21, 51, 0))
+        self.assertEqual(midnight_work, timedelta(minutes=0))
+
+    def test_calc_midnight_work_at_midnight(self):
+        """22時超過した場合、深夜勤務時間を計算する"""
+        midnight_work = calc_midnight_work(datetime(2021, 8, 3, 22, 15, 0))
+        self.assertEqual(midnight_work, timedelta(minutes=15))
 
 
 class TestCalcLegalHoliday(TestCase):
