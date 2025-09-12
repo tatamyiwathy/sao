@@ -13,7 +13,7 @@ from sao.models import (
 )
 from sao.tests.utils import (
     create_working_hours,
-    set_office_hours_to_employee,
+    assign_working_hour,
     create_time_stamp_data,
     TOTAL_ACTUAL_WORKING_TIME,
     get_working_hour_by_category,
@@ -43,7 +43,7 @@ from sao.core import (
     is_need_break_time,
     get_monthy_time_record,
     get_employee_hour,
-    get_working_hour_tobe_assign,
+    get_working_hour_pre_assign,
     calc_actual_working_time,
     get_day_switch_time,
     normalize_to_business_day,
@@ -108,7 +108,7 @@ class AccumulateWeeklyWorkingHoursTest(TestCase):
 
     def test_accumulate_weekly_working_hours(self) -> None:
         create_time_stamp_data(self.employee)
-        set_office_hours_to_employee(
+        assign_working_hour(
             self.employee, date(1900, 1, 1), get_working_hour_by_category("A")
         )
         records = get_monthy_time_record(self.employee, date(2021, 8, 1))
@@ -121,7 +121,7 @@ class AccumulateWeeklyWorkingHoursTest(TestCase):
     def test_accumulate_weekly_working_hours_when_empty(self) -> None:
         EmployeeDailyRecord.objects.all().delete()
         """勤怠記録がない場合の週間勤務時間集計のテスト"""
-        set_office_hours_to_employee(
+        assign_working_hour(
             self.employee, date(1900, 1, 1), get_working_hour_by_category("A")
         )
         records = get_monthy_time_record(self.employee, date(2021, 8, 1))
@@ -683,7 +683,7 @@ class TestGetEmplyeeHour(TestCase):
         create_working_hours()
 
     def test_get_employee_hour(self):
-        set_office_hours_to_employee(
+        assign_working_hour(
             self.employee, date(1901, 1, 1), get_working_hour_by_category("A")
         )
 
@@ -710,15 +710,15 @@ class TestGetWorkingHoursByCategory(TestCase):
 
 
 class TestGetWorkingHoursToBeAssign(TestCase):
-    def test_get_working_hours_tobe_assign(self):
-        emp = create_employee(create_user(), include_overtime_pay=True)
-        create_time_stamp_data(emp)
-        create_working_hours()
-        set_office_hours_to_employee(
-            emp, date(1901, 1, 1), get_working_hour_by_category("A")
-        )
+    def setUp(self) -> None:
+        self.employee = create_employee(create_user(), include_overtime_pay=True)
 
-        working_hours = get_working_hour_tobe_assign(emp).working_hours
+    def test_get_working_hours_pre_assign(self):
+        create_working_hours()
+        assign_working_hour(
+            self.employee, date(1901, 1, 1), get_working_hour_by_category("A")
+        )
+        working_hours = get_working_hour_pre_assign(self.employee).working_hours
         self.assertEqual(working_hours.begin_time, Const.OCLOCK_1000)
         self.assertEqual(working_hours.end_time, Const.OCLOCK_1900)
 

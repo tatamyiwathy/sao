@@ -764,9 +764,9 @@ def get_employee_hour(employee: Employee, date: datetime.date) -> WorkingHour:
     raise NoAssignedWorkingHourError(f"no specified working hour for {employee.name}")
 
 
-def get_working_hour_tobe_assign(employee: Employee) -> EmployeeHour:
+def get_working_hour_pre_assign(employee: Employee) -> EmployeeHour:
     """☑
-    適用予定の勤務時間を取得する(すでに適用されているかもしれないがこの関数では考慮しない)
+    事前割り当ての勤務時間を取得する(すでに適用されているかもしれないがこの関数では考慮しない)
 
     :param employee: 対象の社員
     :param date: この日付の「既定の勤務時間」を検索

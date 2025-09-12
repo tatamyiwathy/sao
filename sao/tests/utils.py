@@ -36,17 +36,17 @@ def create_working_hours():
     ).save()
 
 
-def set_office_hours_to_employee(
+def assign_working_hour(
     employee: Employee,
     date_from: datetime.date,
     working_hours: WorkingHour,
 ) -> EmployeeHour:
     """
     スタッフに勤務時間を設定する
-
-    WorkingHoursから設定したい時間帯を選択して
-    有効になる日付を指定して設定する
-
+    :param employee: Employee
+    :param date_from: 適用開始日
+    :param working_hours: WorkingHour
+    :return: EmployeeHour
     """
     t = EmployeeHour(employee=employee, date=date_from, working_hours=working_hours)
     t.save()

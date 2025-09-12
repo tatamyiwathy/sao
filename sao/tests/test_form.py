@@ -14,7 +14,7 @@ from sao.working_status import WorkingStatus
 from common.utils_for_test import create_employee, create_user
 from sao.tests.utils import (
     create_working_hours,
-    set_office_hours_to_employee,
+    assign_working_hour,
     get_working_hour_by_category,
 )
 
@@ -118,7 +118,7 @@ class WorkingHourAssignFormTest(TestCase):
         employee = create_employee(user, include_overtime_pay=True)
         create_working_hours()
         w = get_working_hour_by_category("A")
-        set_office_hours_to_employee(employee, datetime.date.today(), w)
+        assign_working_hour(employee, datetime.date.today(), w)
 
         today = datetime.date(2022, 1, 1)
         form = WorkingHourAssignForm({"date": today, "working_hours": w.pk})
