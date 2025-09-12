@@ -981,7 +981,7 @@ def download_csv(request, employee_no, year, month):
     filename = make_filename(employee, year, month)
     response = HttpResponse(content_type="text/csv; charset=Shift-JIS")
     response["Content-Disposition"] = 'attachment; filename="' + filename + '.csv"'
-    records = core.collect_timerecord_by_month(employee, csv_date)
+    records = core.get_monthy_time_record(employee, csv_date)
     try:
         calculated = attendance.tally_monthly_attendance(csv_date.month, records)
     except NoAssignedWorkingHourError:

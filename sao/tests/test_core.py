@@ -41,7 +41,7 @@ from sao.core import (
     get_annual_paied_holiday_days,
     get_recent_day_of_annual_leave_update,
     is_need_break_time,
-    collect_timerecord_by_month,
+    get_monthy_time_record,
     get_employee_hour,
     get_working_hour_tobe_assign,
     calc_actual_working_time,
@@ -111,7 +111,7 @@ class AccumulateWeeklyWorkingHoursTest(TestCase):
         set_office_hours_to_employee(
             self.employee, date(1900, 1, 1), get_working_hour_by_category("A")
         )
-        records = collect_timerecord_by_month(self.employee, date(2021, 8, 1))
+        records = get_monthy_time_record(self.employee, date(2021, 8, 1))
         results = accumulate_weekly_working_hours(records)
         week = 1
         for r in results:
@@ -124,7 +124,7 @@ class AccumulateWeeklyWorkingHoursTest(TestCase):
         set_office_hours_to_employee(
             self.employee, date(1900, 1, 1), get_working_hour_by_category("A")
         )
-        records = collect_timerecord_by_month(self.employee, date(2021, 8, 1))
+        records = get_monthy_time_record(self.employee, date(2021, 8, 1))
         results = accumulate_weekly_working_hours(records)
         week = 1
         for r in results:
@@ -628,17 +628,26 @@ class TestGetRecentDayOfAnnualLeaveUpdate(TestCase):
 
 
 class TestIsNeedBreakTime(TestCase):
+    """休息時間が必要かどうかを判定するテスト"""
+
     def test_need_break_time(self):
         # 6時間超労働で休息が必要
-        work_period = timedelta(hours=8)
+        work = timedelta(hours=8)
         status = WorkingStatus.C_KINMU
-        need_break_time = is_need_break_time(work_period, status)
+        need_break_time = is_need_break_time(work, status)
         self.assertTrue(need_break_time)
 
-    def test_no_need_break_time(self):
-        # 6時間超労働で休息が必要
+    def test_no_need_break_time_just_6_hours(self):
+        # 勤務時間が6時間ちょうどの場合、休息は不要
         work_period = timedelta(hours=6)
         status = WorkingStatus.C_KINMU
+        need_break_time = is_need_break_time(work_period, status)
+        self.assertFalse(need_break_time)
+
+    def test_no_need_break_time_afternoon_off(self):
+        # 午後休で休息は不要
+        work_period = timedelta(hours=5)
+        status = WorkingStatus.C_YUUKYUU_GOGOKYUU_NASHI
         need_break_time = is_need_break_time(work_period, status)
         self.assertFalse(need_break_time)
 
@@ -650,17 +659,22 @@ class TestIsNeedBreakTime(TestCase):
         self.assertTrue(need_break_time)
 
 
-class TestCollectTimeRecordByMonth(TestCase):
-    def test_collect_timerecord_by_month(self):
-        emp = create_employee(create_user(), include_overtime_pay=True)
-        create_time_stamp_data(emp)  # 打刻データ生成
-        create_working_hours()
-        set_office_hours_to_employee(
-            emp, date(1901, 1, 1), get_working_hour_by_category("A")
-        )
+class TestGetMonthlyTimeRecord(TestCase):
+    def setUp(self) -> None:
+        self.employee = create_employee(create_user(), include_overtime_pay=True)
 
-        records = collect_timerecord_by_month(emp, date(2021, 8, 1))
+    """月の勤怠記録を収集するテスト"""
+
+    def test_get_monthy_time_record(self):
+        create_time_stamp_data(self.employee)  # 打刻データ生成
+
+        records = get_monthy_time_record(self.employee, date(2021, 8, 1))
         self.assertEqual(len(records), monthdays(date(2021, 8, 1)))
+
+    def test_get_empty_monthy_time_record(self):
+        """勤怠記録がない場合、空の勤怠記録を生成すること"""
+        records = get_monthy_time_record(self.employee, date(2021, 9, 1))
+        self.assertTrue(all(r.status == WorkingStatus.C_NONE for r in records))
 
 
 class TestGetOfficeHours(TestCase):

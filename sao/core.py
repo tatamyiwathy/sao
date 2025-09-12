@@ -628,27 +628,29 @@ def get_recent_day_of_annual_leave_update(
 
 def is_need_break_time(time: datetime.timedelta, code: int) -> bool:
     """
-    休息が必要か
+    休息が必要か(休息分勤務時間から引くか)
 
-    6時間を*超えて*勤務したら1時間休息
-    休日勤務でも６時間を超えたら休息が必要
+    - 6時間を*超えて*勤務したら休息が必要
+    - 休日勤務でも６時間を超えたら休息が必要
+    - 6時間ピッタリの場合は休息は不要
+    - 午後休(休息あり)の場合は6時間以下でも休息が必要（半休扱い）
 
-    6時間ピッタリの場合は休息は不要
     """
-    if code in WorkingStatus.HOLIDAY:
-        return False
-
     if time > Const.TD_6H:
+        # 6時間を超えているので休息が必要
         return True
 
     if code in WorkingStatus.AFTERNOON_OFF_WITH_REST:
+        # 午後休(休息あり)の場合は6時間以下でも休息が必要
         return True
 
-    # それ以外の条件では休息は不要？
+    # それ以外の条件では休息は不要
     return False
 
 
-def collect_timerecord_by_month(employee: Employee, date: datetime.date) -> list:
+def get_monthy_time_record(
+    employee: Employee, date: datetime.date
+) -> list[EmployeeDailyRecord]:
     """月で打刻を集めてlistにして返す
     もし打刻がない日はC_NONEのレコードを返す
     """
@@ -657,25 +659,15 @@ def collect_timerecord_by_month(employee: Employee, date: datetime.date) -> list
 
     timerecords = []
     for day in days:
-        records = EmployeeDailyRecord.objects.filter(employee=employee).filter(date=day)
-        if records.count() > 0:
-            for record in records:
-                timerecords.append(record)
-        else:
-            working_hours = get_employee_hour(employee, day)
-            timerecords.append(
-                EmployeeDailyRecord(
-                    employee=employee,
-                    date=day,
-                    working_hours_start=datetime.datetime.combine(
-                        day, working_hours.begin_time
-                    ),
-                    working_hours_end=datetime.datetime.combine(
-                        day, working_hours.end_time
-                    ),
-                    status=WorkingStatus.C_NONE,
-                )
+        try:
+            record = EmployeeDailyRecord.objects.get(employee=employee, date=day)
+        except EmployeeDailyRecord.DoesNotExist:
+            record = EmployeeDailyRecord(
+                employee=employee,
+                date=day,
+                status=WorkingStatus.C_NONE,
             )
+        timerecords.append(record)
     return timerecords
 
 
