@@ -946,7 +946,7 @@ def update_annual_leave(request):
         )
 
         d = core.get_recent_day_of_annual_leave_update(
-            datetime.date.today(), employee.join_date
+            datetime.date.today().year, employee.join_date
         )
 
         records = (

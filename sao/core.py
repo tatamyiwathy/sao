@@ -593,9 +593,10 @@ def is_permit_overtime(employee: Employee) -> bool:
     return employee.include_overtime_pay or employee.is_manager()
 
 
-def get_half_year_day(date: datetime.datetime) -> datetime.datetime:
+def get_half_year_day(date: datetime.date) -> datetime.date:
     """半年前の日付を取得する"""
-    return date + relativedelta(months=6)
+    dt = datetime.datetime.combine(date, datetime.time(0, 0, 0))
+    return (dt + relativedelta(months=6)).date()
 
 
 def get_annual_paied_holiday_days(date: datetime.date, join: datetime.date) -> float:
@@ -617,12 +618,12 @@ def get_annual_paied_holiday_days(date: datetime.date, join: datetime.date) -> f
 def get_recent_day_of_annual_leave_update(
     year: int, join: datetime.date
 ) -> datetime.date:
-    """指定した都市の年次有給休暇の更新日を取得する
-    更新日は入社日の半年後になる
-    それ以降は半年後の日付が更新日になる
+    """年次有給休暇の更新日を取得する
+    - 更新日は入社日の半年後になる
+      それ以降は半年後の日付が更新日になる
     """
 
-    return get_half_year_day(datetime.datetime(year, join.month, join.day)).date()
+    return get_half_year_day(datetime.datetime(year, join.month, join.day))
 
 
 def is_need_break_time(time: datetime.timedelta, code: int) -> bool:

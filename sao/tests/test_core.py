@@ -599,28 +599,32 @@ class TestGetAnnualPaidHolidayDays(TestCase):
 
 
 class TestGetRecentDayOfAnnualLeaveUpdate(TestCase):
+    """年次有給休暇付与日の直近日を取得するテスト"""
+
     def test_get_recent_day_of_annual_leave_update(self):
-        join_date = date(2021, 1, 1)
-        recent_day_of_annual_leave_update = get_recent_day_of_annual_leave_update(
-            2021, join_date
-        )
-        after_half_year = get_half_year_day(join_date)
-        self.assertEqual(recent_day_of_annual_leave_update, after_half_year)
+        """更新日は最初の年は入社日の半年後"""
+        join_date = datetime(2021, 1, 1, 0, 0, 0)
+        update_day = get_recent_day_of_annual_leave_update(2021, join_date)
+        self.assertEqual(update_day, date(2021, 7, 1))
 
     def test_alter_year(self):
+        """2年目以降は1年目の更新日の1年後"""
         join_date = date(2021, 1, 1)
-        recent_day_of_annual_leave_update = get_recent_day_of_annual_leave_update(
-            2022, join_date
-        )
-        self.assertEqual(recent_day_of_annual_leave_update, date(2022, 7, 1))
+        update_day = get_recent_day_of_annual_leave_update(2022, join_date)
+        self.assertEqual(update_day, date(2022, 7, 1))
 
     def test_get_recent_day_of_annual_leave_update_when_leap_year(self):
+        """うるう年の入社日の場合、半年後の日付を正しく取得できること"""
         join_date = date(2020, 2, 29)
-        recent_day_of_annual_leave_update = get_recent_day_of_annual_leave_update(
-            2020, join_date
-        )
-        after_half_year = get_half_year_day(join_date)
-        self.assertEqual(recent_day_of_annual_leave_update, after_half_year)
+        update_day = get_recent_day_of_annual_leave_update(2020, join_date)
+        self.assertEqual(update_day, date(2020, 8, 29))
+
+    def test_get_annual_leave_update_day_included_leap_day(self):
+        """うるう日をまたぐ半年後の日付を正しく取得できること"""
+        join_date = date(2024, 1, 1)
+        update_day = get_recent_day_of_annual_leave_update(2024, join_date)
+        # 閏日があろうと半年後は7月1日
+        self.assertEqual(update_day, date(2024, 7, 1))
 
 
 class TestIsNeedBreakTime(TestCase):
