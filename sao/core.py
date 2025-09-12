@@ -564,26 +564,26 @@ def accumulate_weekly_working_hours(attendances: list[Attendance]) -> list[tuple
     week = -1
 
     # とりあえず週の頭を設定する。入社したばかりの人は週の初めの日曜日のデータが存在しないので。
-    # week_begin = attendances[0].date
-    # for a in attendances:
-    #     # 週の始まりは日曜日から
-    #     if a.time_record.date.weekday() == 6:
-    #         week_begin = a.time_record.date
+    week_begin = attendances[0].date
+    for a in attendances:
+        # 週の始まりは日曜日から
+        if a.date.weekday() == 6:
+            week_begin = a.date
 
-    #     # 所定の始業、終業、勤務時間を取得する
-    #     working_hours = adjust_working_hours(a)
+        # 所定の始業、終業、勤務時間を取得する
+        working_hours = a.time_record.get_scheduled_time()
 
-    #     # 実労働時間
-    #     steppingout = tally_steppingout(r)
-    #     work_time += calc_actual_working_time(
-    #         r, working_hours.start, working_hours.end, steppingout
-    #     )
+        # 実労働時間
+        steppingout = tally_steppingout(r)
+        work_time += calc_actual_working_time(
+            r, working_hours.start, working_hours.end, steppingout
+        )
 
-    #     # 土曜日は集計
-    #     if r.date.weekday() == 5:
-    #         week += 1
-    #         result.append((week + 1, week_begin, work_time, round_down(work_time)))
-    #         work_time = Const.TD_ZERO
+        # 土曜日は集計
+        if a.date.weekday() == 5:
+            week += 1
+            result.append((week + 1, week_begin, work_time, floor_to_30min(work_time)))
+            work_time = Const.TD_ZERO
 
     return result
 
