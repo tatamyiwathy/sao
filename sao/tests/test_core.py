@@ -58,7 +58,7 @@ from sao.working_status import WorkingStatus
 from django.test import TestCase
 from unittest.mock import patch, MagicMock
 from sao.period import Period
-
+from sao.exceptions import NoAssignedWorkingHourError
 
 # class TallyMonthAttendancesTest(TestCase):
 #     """月の勤怠を集計するテスト"""
@@ -677,18 +677,24 @@ class TestGetMonthlyTimeRecord(TestCase):
         self.assertTrue(all(r.status == WorkingStatus.C_NONE for r in records))
 
 
-class TestGetOfficeHours(TestCase):
-    def test_get_office_hours(self):
-        emp = create_employee(create_user(), include_overtime_pay=True)
-        create_time_stamp_data(emp)
+class TestGetEmplyeeHour(TestCase):
+    def setUp(self) -> None:
+        self.employee = create_employee(create_user(), include_overtime_pay=True)
         create_working_hours()
+
+    def test_get_employee_hour(self):
         set_office_hours_to_employee(
-            emp, date(1901, 1, 1), get_working_hour_by_category("A")
+            self.employee, date(1901, 1, 1), get_working_hour_by_category("A")
         )
 
-        office_hours = get_employee_hour(emp, date(2021, 8, 1))
+        office_hours = get_employee_hour(self.employee, date(2021, 8, 1))
         self.assertEqual(office_hours.begin_time, Const.OCLOCK_1000)
         self.assertEqual(office_hours.end_time, Const.OCLOCK_1900)
+
+    def test_get_employee_hour_when_not_set(self):
+        # 勤務時間が設定されていない場合、例外を送出すること
+        with self.assertRaises(NoAssignedWorkingHourError):
+            get_employee_hour(self.employee, date(2021, 8, 1))
 
 
 class TestGetWorkingHoursByCategory(TestCase):
