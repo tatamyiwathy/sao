@@ -547,14 +547,6 @@ class TestCalcHoliday(TestCase):
         self.assertEqual(holiday, timedelta(hours=8))
 
 
-# class TestCountDays(TestCase):
-#     def test_count_days(self):
-#         start_date = date(2021, 1, 1)
-#         end_date = date(2021, 1, 31)
-#         days = count_days(start_date, end_date)
-#         self.assertEqual(days, 31)
-
-
 class TestIsPermitOvertime(TestCase):
     def test_is_permit_overtime(self):
         employee = create_employee(create_user(), include_overtime_pay=True)
