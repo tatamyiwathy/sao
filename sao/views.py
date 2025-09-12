@@ -20,10 +20,13 @@ from sao.calendar import (
     get_last_sunday,
     get_next_sunday,
 )
+from sao.exceptions import (
+    NoAssignedWorkingHourError,
+    AnomalyTimeRecordError,
+)
 from sao.core import (
     get_employee_hour,
     get_working_hour_tobe_assign,
-    NoAssignedWorkingHourError,
     get_day_switch_time,
     normalize_to_business_day,
     get_monthly_attendance,
@@ -186,7 +189,7 @@ def home(request):
         warn_class, warn_title = attention_overtime(summed_up["out_of_time"])
 
         # 計算結果をまるめる
-        rounded = core.round_result(summed_up)
+        rounded = core.round_attendance_summary(summed_up)
 
         daycount = core.count_days(attendances, view_date)
 
@@ -234,7 +237,7 @@ def home(request):
             office_hours = get_working_hour_tobe_assign(employee).working_hours
         except ValueError:
             attendaces = tally_attendances([])
-            rounded = core.round_result(attendaces)
+            rounded = core.round_attendance_summary(attendaces)
             return render(
                 request,
                 "sao/attendance_detail.html",
@@ -295,7 +298,7 @@ def staff_detail(request, employee, year, month):
     total_overtime = tally_over_work_time(from_date.month, attendances)
 
     summed_up = tally_attendances(attendances)
-    rounded_result = core.round_result(summed_up)
+    rounded_result = core.round_attendance_summary(summed_up)
 
     daycount = core.count_days(attendances, from_date)
 
@@ -570,7 +573,7 @@ def employee_record(request):
                 printable_summed_up = summed_up
 
                 # まるめ
-                rounded = core.round_result(summed_up)
+                rounded = core.round_attendance_summary(summed_up)
                 printable_rounded = rounded
 
                 week_work_time = core.accumulate_weekly_working_hours(records)
@@ -620,7 +623,7 @@ def employee_record(request):
         summed_up = tally_attendances(attendances)
         printable_summed_up = summed_up
 
-        rounded = core.round_result(summed_up)
+        rounded = core.round_attendance_summary(summed_up)
         printable_rounded = rounded
 
         week_work_time = core.accumulate_weekly_working_hours(attendances)
@@ -983,7 +986,7 @@ def download_csv(request, employee_no, year, month):
         calculated = attendance.tally_monthly_attendance(csv_date.month, records)
     except NoAssignedWorkingHourError:
         sumup = attendance.sumup_attendances([])
-        rounded = core.round_result(sumup)
+        rounded = core.round_attendance_summary(sumup)
         messages.warning(
             request, f"・{employee}の打刻データが存在しないためCVSの出力ができません"
         )
@@ -1008,7 +1011,7 @@ def download_csv(request, employee_no, year, month):
     # warn_class, warn_title = utils.warning_to_out_of_time(summed_up["out_of_time"])
 
     # 計算結果をまるめる
-    rounded = core.round_result(summed_up)
+    rounded = core.round_attendance_summary(summed_up)
 
     ## HttpResponseオブジェクトはファイルっぽいオブジェクトなので、csv.writerにそのまま渡せます。
     writer = csv.writer(response)

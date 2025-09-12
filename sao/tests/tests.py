@@ -33,6 +33,7 @@ from sao.tests.utils import (
     create_attendance_record,
     get_working_hour_by_category,
 )
+from sao.period import Period
 
 
 class FunctionTest(TestCase):
@@ -90,12 +91,16 @@ class FunctionTest(TestCase):
             datetime.datetime.combine(a_day, datetime.time(hour=10)),
             datetime.datetime.combine(a_day, datetime.time(hour=20)),
         ]
-        working_hours = (
+        work_period = Period(
             datetime.datetime.combine(a_day, datetime.time(10, 0)),
             datetime.datetime.combine(a_day, datetime.time(19, 0)),
         )
         r = create_timerecord(
-            employee=e, date=a_day, stamp=stamp, working_hours=working_hours
+            employee=e,
+            date=a_day,
+            stamp=stamp,
+            working_hours=work_period.get_pair(),
+            status=WorkingStatus.C_KINMU,
         )
         self.assertTrue(r.is_valid())
         self.assertEqual(r, models.EmployeeDailyRecord.objects.all()[0])
@@ -925,15 +930,16 @@ class FixedOverworkTest(TestCase):
         """残業あり"""
         st = datetime.datetime.combine(self.today, datetime.time(hour=10))
         ct = datetime.datetime.combine(self.today, datetime.time(hour=21))
-        working_hours = (
+        work_period = Period(
             datetime.datetime.combine(self.today, datetime.time(10, 0)),
             datetime.datetime.combine(self.today, datetime.time(19, 0)),
         )
         r = create_timerecord(
             stamp=[st, ct],
-            working_hours=working_hours,
+            working_hours=work_period.get_pair(),
             date=self.day,
             employee=self.emp,
+            status=WorkingStatus.C_KINMU,
         )
         attn = create_attendance_record(r)
         self.assertEqual(attn.over, Const.TD_2H)
@@ -945,15 +951,16 @@ class FixedOverworkTest(TestCase):
         """超過時間"""
         st = datetime.datetime.combine(self.today, datetime.time(hour=10))
         ct = datetime.datetime.combine(self.today, datetime.time(hour=23))
-        working_hours = (
+        work_period = Period(
             datetime.datetime.combine(self.today, datetime.time(10, 0)),
             datetime.datetime.combine(self.today, datetime.time(19, 0)),
         )
         r = create_timerecord(
             stamp=[st, ct],
-            working_hours=working_hours,
+            working_hours=work_period.get_pair(),
             date=self.today,
             employee=self.emp,
+            status=WorkingStatus.C_KINMU,
         )
         attn = create_attendance_record(r)
         self.assertEqual(attn.over_8h, Const.TD_4H)
@@ -964,15 +971,16 @@ class FixedOverworkTest(TestCase):
         )
         st = datetime.datetime.combine(self.today, datetime.time(hour=10))
         ct = datetime.datetime.combine(self.today, datetime.time(hour=19))
-        working_hours = (
+        work_period = Period(
             datetime.datetime.combine(self.today, datetime.time(10, 0)),
             datetime.datetime.combine(self.today, datetime.time(19, 0)),
         )
         r = create_timerecord(
             stamp=[st, ct],
-            working_hours=working_hours,
+            working_hours=work_period.get_pair(),
             date=self.today,
             employee=self.emp,
+            status=WorkingStatus.C_KINMU,
         )
         attn = create_attendance_record(r)
         self.assertEqual(attn.over_8h, Const.TD_ZERO)
@@ -988,30 +996,32 @@ class FixedOverworkTest(TestCase):
         """深夜を超えていない"""
         st = datetime.datetime.combine(self.today, datetime.time(hour=10))
         ct = datetime.datetime.combine(self.today, datetime.time(hour=19))
-        working_hours = (
+        work_period = Period(
             datetime.datetime.combine(self.today, datetime.time(10, 0)),
             datetime.datetime.combine(self.today, datetime.time(19, 0)),
         )
         r = create_timerecord(
             stamp=[st, ct],
-            working_hours=working_hours,
+            working_hours=work_period.get_pair(),
             date=self.today,
             employee=self.emp,
+            status=WorkingStatus.C_KINMU,
         )
         attn = create_attendance_record(r)
         self.assertEqual(attn.night, Const.TD_ZERO)
 
         """深夜をオーバー:22:01"""
         ct = datetime.datetime.combine(self.today, datetime.time(hour=22, minute=1))
-        working_hours = (
+        work_period = Period(
             datetime.datetime.combine(self.today, datetime.time(10, 0)),
             datetime.datetime.combine(self.today, datetime.time(19, 0)),
         )
         r = create_timerecord(
             stamp=[st, ct],
-            working_hours=working_hours,
+            working_hours=work_period.get_pair(),
             date=self.today,
             employee=self.emp,
+            status=WorkingStatus.C_KINMU,
         )
         attn = create_attendance_record(r)
         self.assertEqual(attn.night, make_timedelta(60))
@@ -1033,15 +1043,16 @@ class NoIncludeOverPayTest(TestCase):
         """時間外の打刻でも残業は発生しない"""
         st = datetime.datetime.combine(self.today, datetime.time(hour=10))
         ct = datetime.datetime.combine(self.today, datetime.time(hour=21))
-        working_hours = (
+        work_period = Period(
             datetime.datetime.combine(self.today, datetime.time(10, 0)),
             datetime.datetime.combine(self.today, datetime.time(19, 0)),
         )
         r = create_timerecord(
             stamp=[st, ct],
-            working_hours=working_hours,
+            working_hours=work_period.get_pair(),
             date=self.day,
             employee=self.emp,
+            status=WorkingStatus.C_KINMU,
         )
         attn = create_attendance_record(r)
         self.assertEqual(attn.over, Const.TD_ZERO)
@@ -1065,15 +1076,16 @@ class IncludeOverPayedTest(TestCase):
         """時間外の打刻でも残業は発生しない"""
         st = datetime.datetime.combine(self.today, datetime.time(hour=10))
         ct = datetime.datetime.combine(self.today, datetime.time(hour=21))
-        working_hours = (
+        work_period = Period(
             datetime.datetime.combine(self.today, datetime.time(10, 0)),
             datetime.datetime.combine(self.today, datetime.time(19, 0)),
         )
         r = create_timerecord(
             stamp=[st, ct],
-            working_hours=working_hours,
+            working_hours=work_period.get_pair(),
             date=self.day,
             employee=self.emp,
+            status=WorkingStatus.C_KINMU,
         )
         attn = create_attendance_record(r)
         self.assertEqual(attn.over, Const.TD_2H)
@@ -1085,15 +1097,16 @@ class IncludeOverPayedTest(TestCase):
         """８時間超過の計算"""
         st = datetime.datetime.combine(self.today, datetime.time(hour=10))
         ct = datetime.datetime.combine(self.today, datetime.time(hour=23))
-        working_hours = (
+        work_period = Period(
             datetime.datetime.combine(self.today, datetime.time(10, 0)),
             datetime.datetime.combine(self.today, datetime.time(19, 0)),
         )
         r = create_timerecord(
             stamp=[st, ct],
-            working_hours=working_hours,
+            working_hours=work_period.get_pair(),
             date=self.today,
             employee=self.emp,
+            status=WorkingStatus.C_KINMU,
         )
         attn = create_attendance_record(r)
         self.assertEqual(attn.over_8h, Const.TD_4H)
@@ -1105,15 +1118,16 @@ class IncludeOverPayedTest(TestCase):
         """深夜をオーバー:22:01"""
         st = datetime.datetime.combine(self.today, datetime.time(hour=10))
         ct = datetime.datetime.combine(self.today, datetime.time(hour=22, minute=1))
-        working_hours = (
+        work_period = Period(
             datetime.datetime.combine(self.today, datetime.time(10, 0)),
             datetime.datetime.combine(self.today, datetime.time(19, 0)),
         )
         r = create_timerecord(
             stamp=[st, ct],
-            working_hours=working_hours,
+            working_hours=work_period.get_pair(),
             date=self.today,
             employee=self.emp,
+            status=WorkingStatus.C_KINMU,
         )
         attn = create_attendance_record(r)
         self.assertNotEquals(attn.night, Const.TD_ZERO)
@@ -1201,7 +1215,7 @@ class Over6HourTest(TestCase):
         set_office_hours_to_employee(
             self.employee, datetime.date(1901, 1, 1), get_working_hour_by_category("A")
         )
-        working_hours = (
+        work_period = Period(
             datetime.datetime.combine(self.day, datetime.time(10, 0)),
             datetime.datetime.combine(self.day, datetime.time(19, 0)),
         )
@@ -1210,14 +1224,15 @@ class Over6HourTest(TestCase):
                 datetime.datetime.combine(self.day, datetime.time(hour=10)),
                 datetime.datetime.combine(self.day, datetime.time(hour=19)),
             ],
-            working_hours=working_hours,
+            working_hours=work_period.get_pair(),
             employee=self.employee,
             date=self.day,
+            status=WorkingStatus.C_KINMU,
         )
-        working_hours = adjust_working_hours(r)
-        self.assertEqual(working_hours.duration(), Const.TD_9H)
+        work_period = adjust_working_hours(r)
+        self.assertEqual(work_period.duration(), Const.TD_9H)
         actual_work = calc_actual_working_time(
-            r, working_hours.start, working_hours.end, Const.TD_ZERO
+            r, work_period.start, work_period.end, Const.TD_ZERO
         )
         self.assertEqual(actual_work, Const.TD_8H)
 
@@ -1226,7 +1241,7 @@ class Over6HourTest(TestCase):
         set_office_hours_to_employee(
             self.employee, datetime.date(1901, 1, 1), get_working_hour_by_category("A")
         )
-        working_hours = (
+        work_period = Period(
             datetime.datetime.combine(self.day, datetime.time(10, 0)),
             datetime.datetime.combine(self.day, datetime.time(19, 0)),
         )
@@ -1235,14 +1250,15 @@ class Over6HourTest(TestCase):
                 datetime.datetime.combine(self.day, Const.OCLOCK_1000),
                 datetime.datetime.combine(self.day, Const.OCLOCK_1600),
             ],
-            working_hours=working_hours,
+            working_hours=work_period.get_pair(),
             employee=self.employee,
             date=self.day,
+            status=WorkingStatus.C_KINMU,
         )
-        working_hours = adjust_working_hours(r)
-        self.assertEqual(working_hours.end - working_hours.start, Const.TD_9H)
+        work_period = adjust_working_hours(r)
+        self.assertEqual(work_period.duration(), Const.TD_9H)
         actual_work = calc_actual_working_time(
-            r, working_hours.start, working_hours.end, Const.TD_ZERO
+            r, work_period.start, work_period.end, Const.TD_ZERO
         )
         self.assertEqual(actual_work, Const.TD_6H)
 

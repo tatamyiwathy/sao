@@ -97,7 +97,7 @@ def create_time_stamp_data(employee: Employee):
     """テスト用のタイムシートデータを生成する"""
     TEST_STAMP = [
         ("2021/8/1", None, None),
-        ("2021/8/2", "13:00:00", "19:00:00"),  # （月）遅刻 6h勤務
+        ("2021/8/2", "13:00:00", "20:00:00"),  # （月）遅刻 6h勤務
         ("2021/8/3", "9:40:00", "20:00:00"),  # 1hour overtime work
         ("2021/8/4", "9:35:00", "19:47:00"),
         ("2021/8/5", "9:38:00", "20:32:00"),
@@ -145,10 +145,17 @@ def create_time_stamp_data(employee: Employee):
             if stamp[2]
             else None
         )
+        status = WorkingStatus.C_NONE
         if clock_in:
             clock_in = datetime.datetime.combine(date, clock_in)
         if clock_out:
             clock_out = datetime.datetime.combine(date, clock_out)
+
+        has_stamp = clock_in is None and clock_out is None
+        status = determine_working_status(
+            is_holiday(date), is_legal_holiday(date), has_stamp
+        )
+
         working_hours_start = datetime.datetime.combine(date, datetime.time(10, 0, 0))
         working_hours_end = datetime.datetime.combine(date, datetime.time(19, 0, 0))
 
@@ -157,6 +164,7 @@ def create_time_stamp_data(employee: Employee):
             date=date,
             stamp=[clock_in, clock_out],
             working_hours=[working_hours_start, working_hours_end],
+            status=status,
         )
 
         attendance = create_attendance_record(record)

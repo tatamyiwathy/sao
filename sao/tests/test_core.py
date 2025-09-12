@@ -22,9 +22,9 @@ from sao.utils import tally_over_work_time, tally_attendances
 from sao.core import (
     adjust_working_hours,
     calc_assumed_working_time,
-    round_down,
-    round_stamp,
-    round_result,
+    floor_to_30min,
+    round_to_half_hour,
+    round_attendance_summary,
     get_adjusted_start_time,
     get_adjust_end_time,
     calc_tardiness,
@@ -160,19 +160,19 @@ class AccumulateWeeklyWorkingHoursTest(TestCase):
 class TestRoundDown(TestCase):
     def test_round_down(self):
         t = timedelta(seconds=1700)
-        self.assertEqual(round_down(t), timedelta(seconds=0))
+        self.assertEqual(floor_to_30min(t), timedelta(seconds=0))
         t = timedelta(seconds=1900)
-        self.assertEqual(round_down(t), timedelta(minutes=30))
+        self.assertEqual(floor_to_30min(t), timedelta(minutes=30))
 
 
 class TestRoundStamp(TestCase):
     def test_round_stamp(self):
         t = timedelta(seconds=13 * 3600 + 28 * 60)
-        value = round_stamp(t)
+        value = round_to_half_hour(t)
         self.assertEqual(value, timedelta(seconds=13 * 3600))
 
         t = timedelta(seconds=13 * 3600 + 35 * 60)
-        value = round_stamp(t)
+        value = round_to_half_hour(t)
         self.assertEqual(value, timedelta(seconds=14 * 3600))
 
 
@@ -301,68 +301,194 @@ class TestTallySteppingOut(TestCase):
 
 
 class TestCalcOvertime(TestCase):
+    """超過勤務時間を計算するテスト
+    - このテストでは休息時間を考慮しない
+    """
+
     def setUp(self) -> None:
         self.employee = create_employee(create_user(), include_overtime_pay=True)
-        create_working_hours()
-        set_office_hours_to_employee(
-            self.employee, date(1901, 1, 1), get_working_hour_by_category("A")
-        )
-        create_time_stamp_data(self.employee)
 
     def test_calc_overtime(self):
-        time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 3))
-        working_hours = adjust_working_hours(time_record)
-        period = calc_assumed_working_time(
-            time_record, working_hours.start, working_hours.end
+        """所定の勤務時間を超過した場合、超過勤務時間を計算する"""
+        scheduled_start = datetime(2021, 8, 3, 10, 0, 0)
+        scheduled_end = datetime(2021, 8, 3, 19, 0, 0)
+        scheduled_duration = scheduled_end - scheduled_start
+
+        actual_start = datetime(2021, 8, 3, 10, 00, 0)
+        actual_end = datetime(2021, 8, 3, 20, 0, 0)  # 1時間残業
+        actual_duration = actual_end - actual_start
+
+        record = EmployeeDailyRecord(
+            date=date(2021, 8, 3),
+            employee=self.employee,
+            clock_in=actual_start,
+            clock_out=actual_end,
+            working_hours_start=scheduled_start,
+            working_hours_end=scheduled_end,
+            status=WorkingStatus.C_KINMU,
         )
-        working_time = calc_actual_working_time(
-            time_record, working_hours.start, working_hours.end, Const.TD_ZERO
-        )
-        overtime = calc_overtime(time_record, working_time, period)
+
+        overtime = calc_overtime(record, actual_duration, scheduled_duration)
         self.assertEqual(overtime, timedelta(hours=1))
 
-    def test_calc_overtime_on_holiday(self):
-        time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 1))  # 日曜日
-        working_hours = adjust_working_hours(time_record)
-        period = calc_assumed_working_time(
-            time_record, working_hours.start, working_hours.end
+    def test_calc_overtime_if_tardy(self):
+        """遅刻して残業したとしても所定の勤務時間を満たしていなければ超過にならない"""
+        scheduled_start = datetime(2021, 8, 2, 10, 0, 0)
+        scheduled_end = datetime(2021, 8, 2, 19, 0, 0)
+        scheduled_duration = scheduled_end - scheduled_start
+
+        actual_start = datetime(2021, 8, 2, 13, 00, 0)
+        actual_end = datetime(2021, 8, 2, 20, 0, 0)  # 1時間残業
+        actual_duration = actual_end - actual_start
+
+        record = EmployeeDailyRecord(
+            date=date(2021, 8, 2),
+            employee=self.employee,
+            clock_in=actual_start,
+            clock_out=actual_end,
+            working_hours_start=scheduled_start,
+            working_hours_end=scheduled_end,
+            status=WorkingStatus.C_KINMU,
         )
-        working_time = calc_actual_working_time(
-            time_record, working_hours.start, working_hours.end, Const.TD_ZERO
+
+        overtime = calc_overtime(record, actual_duration, scheduled_duration)
+        # 所定勤務時間より１時間オーバーしてるけど実働勤務が７時間なので超過勤務にはならない
+        self.assertEqual(overtime, timedelta(hours=0))
+
+    def test_calc_overtime_when_holiday(self):
+        """休日出勤の場合、実働時間がそのまま超過勤務になる"""
+        scheduled_start = None
+        scheduled_hours_end = None
+        scheduled_duration = timedelta(0)
+
+        actual_start = datetime(2021, 8, 1, 11, 00, 0)
+        actual_end = datetime(2021, 8, 1, 15, 00, 0)
+        actual_duration = actual_end - actual_start
+
+        record = EmployeeDailyRecord(
+            date=date(2021, 8, 1),
+            employee=self.employee,
+            clock_in=actual_start,
+            clock_out=actual_end,
+            working_hours_start=scheduled_start,
+            working_hours_end=scheduled_hours_end,
+            status=WorkingStatus.C_HOUTEI_KYUJITU,
         )
-        overtime = calc_overtime(time_record, working_time, period)
+        overtime = calc_overtime(record, actual_duration, scheduled_duration)
+        """休日出勤なので残業がない"""
         self.assertEqual(overtime, timedelta(hours=0))
 
     def test_when_absent(self):
-        time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 23))
-        working_hours = adjust_working_hours(time_record)
-        period = calc_assumed_working_time(
-            time_record, working_hours.start, working_hours.end
+        """欠勤の場合、超過勤務は発生しない"""
+
+        scheduled_start = datetime(2021, 8, 23, 10, 0, 0)
+        scheduled_hours_end = datetime(2021, 8, 23, 19, 0, 0)
+        scheduled_duration = scheduled_hours_end - scheduled_start
+
+        actual_start = None
+        actual_end = None
+        actual_duration = timedelta(0)
+
+        record = EmployeeDailyRecord(
+            date=date(2021, 8, 23),
+            employee=self.employee,
+            clock_in=actual_start,
+            clock_out=actual_end,
+            working_hours_start=scheduled_start,
+            working_hours_end=scheduled_hours_end,
+            status=WorkingStatus.C_KEKKIN,
         )
-        working_time = calc_actual_working_time(
-            time_record, working_hours.start, working_hours.end, Const.TD_ZERO
-        )
-        overtime = calc_overtime(time_record, working_time, period)
+
+        overtime = calc_overtime(record, actual_duration, scheduled_duration)
         self.assertEqual(overtime, timedelta(hours=0))
 
 
 class TestCalcOver8h(TestCase):
     def setUp(self) -> None:
         self.employee = create_employee(create_user(), include_overtime_pay=True)
-        create_working_hours()
-        set_office_hours_to_employee(
-            self.employee, date(1901, 1, 1), get_working_hour_by_category("A")
-        )
-        create_time_stamp_data(self.employee)
 
     def test_calc_over_8h(self):
-        time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 3))
-        working_hours = adjust_working_hours(time_record)
-        working_time = calc_actual_working_time(
-            time_record, working_hours.start, working_hours.end, Const.TD_ZERO
+
+        actual_start = datetime(2021, 8, 3, 10, 0, 0)
+        actual_end = datetime(2021, 8, 3, 20, 0, 0)  # 1時間残業
+        actual_duration = Const.TD_9H  # 休息１時間を除いた実働時間
+
+        record = EmployeeDailyRecord(
+            date=date(2021, 8, 3),
+            employee=self.employee,
+            clock_in=actual_start,
+            clock_out=actual_end,
+            status=WorkingStatus.C_KINMU,
         )
-        over_8h = calc_over_8h(time_record, working_time)
+
+        over_8h = calc_over_8h(record, actual_duration)
         self.assertEqual(over_8h, timedelta(hours=1))
+
+    def test_calc_over_8h_missed_stamp(self):
+        """打刻がないので0とする"""
+        actual_start = datetime(2021, 8, 3, 10, 0, 0)
+        actual_end = None
+        actual_duration = Const.TD_ZERO  # 打刻がない場合、実働時間は０
+
+        record = EmployeeDailyRecord(
+            date=date(2021, 8, 3),
+            employee=self.employee,
+            clock_in=actual_start,
+            clock_out=actual_end,
+            status=WorkingStatus.C_NONE,
+        )
+
+        over_8h = calc_over_8h(record, actual_duration)
+        self.assertEqual(over_8h, timedelta(hours=0))
+
+    def test_calc_over_8h_when_less_than_8h(self):
+
+        actual_start = datetime(2021, 8, 3, 10, 0, 0)
+        actual_end = datetime(2021, 8, 3, 18, 0, 0)
+        actual_duration = Const.TD_7H  # 休息１時間を除いた実働時間
+
+        record = EmployeeDailyRecord(
+            date=date(2021, 8, 3),
+            employee=self.employee,
+            clock_in=actual_start,
+            clock_out=actual_end,
+            status=WorkingStatus.C_KINMU,
+        )
+
+        over_8h = calc_over_8h(record, actual_duration)
+        self.assertEqual(over_8h, timedelta(hours=0))
+
+    def test_calc_over_8h_when_holiday(self):
+        actual_start = datetime(2021, 8, 1, 10, 0, 0)
+        actual_end = datetime(2021, 8, 1, 18, 0, 0)
+        actual_duration = Const.TD_9H  # 休日出勤なので休息時間を考慮しない
+
+        record = EmployeeDailyRecord(
+            date=date(2021, 8, 1),
+            employee=self.employee,
+            clock_in=actual_start,
+            clock_out=actual_end,
+            status=WorkingStatus.C_HOUTEIGAI_KYUJITU,
+        )
+
+        over_8h = calc_over_8h(record, actual_duration)
+        self.assertEqual(over_8h, timedelta(hours=0))
+
+    def test_calc_over_8h_when_legal_holiday(self):
+        actual_start = datetime(2021, 8, 1, 10, 0, 0)
+        actual_end = datetime(2021, 8, 1, 18, 0, 0)
+        actual_duration = Const.TD_9H  # 休日出勤なので休息時間を考慮しない
+
+        record = EmployeeDailyRecord(
+            date=date(2021, 8, 1),
+            employee=self.employee,
+            clock_in=actual_start,
+            clock_out=actual_end,
+            status=WorkingStatus.C_HOUTEI_KYUJITU,
+        )
+
+        over_8h = calc_over_8h(record, actual_duration)
+        self.assertEqual(over_8h, timedelta(hours=0))
 
 
 class TestCalcMidnightWork(TestCase):
