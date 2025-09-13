@@ -370,6 +370,7 @@ class WebTimeStamp(models.Model):
 class SteppingOut(models.Model):
     """ユーザーが外出した時間を記録する"""
 
+    # Todo: dateフィールドを追加して、日付で管理できるようにする
     employee = models.ForeignKey(
         "Employee", blank=True, null=True, on_delete=models.CASCADE
     )
