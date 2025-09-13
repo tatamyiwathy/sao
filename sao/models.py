@@ -501,6 +501,13 @@ class DailyAttendanceRecord(models.Model):
     time_record = models.OneToOneField(
         EmployeeDailyRecord, on_delete=models.PROTECT, related_name="time_record"
     )
+    employee = models.OneToOneField(
+        Employee,
+        on_delete=models.CASCADE,
+        related_name="employee",
+        null=True,
+        blank=True,
+    )
     # 対象日
     date = models.DateField(null=True, blank=True)
     # 調整後の時間
