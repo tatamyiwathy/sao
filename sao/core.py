@@ -14,6 +14,7 @@ from sao.models import (
     DailyAttendanceRecord,
     WebTimeStamp,
     OvertimePermission,
+    FixedOvertimePayEmployee,
 )
 from sao.const import Const
 from sao.calendar import is_holiday, is_legal_holiday, get_first_day, get_last_day
@@ -999,3 +1000,26 @@ def revoke_overtime(employee: Employee, date: datetime.date) -> None:
     """残業許可を取り消す"""
     OvertimePermission.objects.filter(employee=employee, date=date).delete()
     logger.info(f"残業許可を取り消しました: {employee.name} {date}")
+
+
+def assign_fixed_working_hours(
+    employee: Employee,
+    hours: datetime.timedelta,
+):
+    """固定残業時間を設定する
+    :param employee: 対象の社員
+    :param hours: 固定残業時間
+    """
+    FixedOvertimePayEmployee.objects.update_or_create(employee=employee, hours=hours)
+
+
+def is_assigned_fixed_overtime_pay(
+    employee: Employee, hours: datetime.timedelta
+) -> bool:
+    """固定残業時間が設定されているかどうか"""
+    return FixedOvertimePayEmployee.objects.filter(employee=employee).exists()
+
+
+def remove_fixed_working_hours(employee: Employee, hours: datetime.timedelta) -> None:
+    """固定残業時間の設定を削除する"""
+    FixedOvertimePayEmployee.objects.filter(employee=employee, hours=hours).delete()

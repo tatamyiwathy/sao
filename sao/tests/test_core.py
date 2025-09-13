@@ -11,6 +11,7 @@ from sao.models import (
     DailyAttendanceRecord,
     WebTimeStamp,
     OvertimePermission,
+    FixedOvertimePayEmployee,
 )
 from sao.tests.utils import (
     create_working_hours,
@@ -56,6 +57,9 @@ from sao.core import (
     permit_overtime,
     is_overtime_permitted,
     revoke_overtime,
+    assign_fixed_working_hours,
+    is_assigned_fixed_overtime_pay,
+    remove_fixed_working_hours,
 )
 from sao.const import Const
 from sao.calendar import monthdays, is_holiday
@@ -1326,4 +1330,41 @@ class TestOvertimePermission(TestCase):
             OvertimePermission.objects.filter(
                 employee=self.employee, date=date(2021, 8, 1)
             ).exists()
+        )
+
+
+class TestFixedOvertimePay(TestCase):
+    """固定残業代の確認テスト"""
+
+    def setUp(self) -> None:
+        self.employee = create_employee(create_user(), include_overtime_pay=True)
+
+    def test_assign_employee_fixed_overtime_pay(self):
+        """固定残業代を従業員に割り当てるテスト"""
+        assign_fixed_working_hours(self.employee, Const.FIXED_OVERTIME_HOURS_20)
+        self.assertTrue(
+            FixedOvertimePayEmployee.objects.filter(employee=self.employee).exists()
+        )
+
+    def test_invoke_assign_fixed_overtime_pay_twice(self):
+        """固定残業代を2回割り当てても重複しないこと"""
+        assign_fixed_working_hours(self.employee, Const.FIXED_OVERTIME_HOURS_20)
+        assign_fixed_working_hours(self.employee, Const.FIXED_OVERTIME_HOURS_20)
+        self.assertEqual(
+            FixedOvertimePayEmployee.objects.filter(employee=self.employee).count(), 1
+        )
+
+    def test_is_assigned_fixed_overtime_pay(self):
+        """従業員に固定残業代が割り当てられているかどうかを確認するテスト"""
+        assign_fixed_working_hours(self.employee, Const.FIXED_OVERTIME_HOURS_20)
+        self.assertTrue(
+            is_assigned_fixed_overtime_pay(self.employee, Const.FIXED_OVERTIME_HOURS_20)
+        )
+
+    def test_revoke_fixed_overtime_pay(self):
+        """従業員の固定残業代を取り消すテスト"""
+        assign_fixed_working_hours(self.employee, Const.FIXED_OVERTIME_HOURS_20)
+        remove_fixed_working_hours(self.employee, Const.FIXED_OVERTIME_HOURS_20)
+        self.assertFalse(
+            is_assigned_fixed_overtime_pay(self.employee, Const.FIXED_OVERTIME_HOURS_20)
         )
