@@ -598,3 +598,16 @@ class OvertimePermission(models.Model):
 
     def __str__(self):
         return "%s %s %s" % (self.employee, self.date, self.created_at)
+
+
+class FixedOvertimePayEmployee(models.Model):
+    """固定残業の対象社員"""
+
+    employee = models.ForeignKey("Employee", on_delete=models.CASCADE)
+    # 固定残業時間（時間）
+    hours = models.DurationField(default=datetime.timedelta(0))
+    # 作成日
+    created_at = models.DateTimeField(default=datetime.datetime.now)
+
+    def __str__(self):
+        return "%s %s" % (self.employee, self.hours)
