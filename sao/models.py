@@ -512,7 +512,7 @@ class DailyAttendanceRecord(models.Model):
     date = models.DateField(null=True, blank=True)
     # 調整後の時間
     clock_in = models.DateTimeField(null=True, blank=True)
-    clock_out = models.DateField(null=True, blank=True)
+    clock_out = models.DateTimeField(null=True, blank=True)
     # 所定勤務時間
     working_hours_start = models.DateTimeField(null=True, blank=True)
     working_hours_end = models.DateTimeField(null=True, blank=True)
