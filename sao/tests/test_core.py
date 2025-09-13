@@ -10,6 +10,7 @@ from sao.models import (
     EmployeeDailyRecord,
     DailyAttendanceRecord,
     WebTimeStamp,
+    OvertimePermission,
 )
 from sao.tests.utils import (
     create_working_hours,
@@ -52,6 +53,9 @@ from sao.core import (
     get_attendance_in_period,
     finalize_daily_record,
     get_monthly_attendance,
+    permit_overtime,
+    is_overtime_permitted,
+    revoke_overtime,
 )
 from sao.const import Const
 from sao.calendar import monthdays, is_holiday
@@ -1283,3 +1287,43 @@ class TestFinalizeDailyRecord(TestCase):
                     for call in mock_logger.error.call_args_list
                 )
             )
+
+
+class TestOvertimePermission(TestCase):
+    """時間外労働の許可設定を確認するテスト"""
+
+    def setUp(self) -> None:
+        self.employee = create_employee(create_user(), include_overtime_pay=True)
+
+    @patch("sao.core.is_overtime_permitted", return_value=False)
+    def test_permit_overtime(self, mock_is_overtime_permitted):
+        permit_overtime(self.employee, date(2021, 8, 1))
+        self.assertTrue(
+            OvertimePermission.objects.filter(
+                employee=self.employee, date=date(2021, 8, 1)
+            ).exists()
+        )
+
+    @patch("sao.models.OvertimePermission.objects.create")
+    @patch("sao.core.is_overtime_permitted", return_value=True)
+    def test_permit_overtime_if_not_exists(
+        self, mock_is_overtime_permitted, mock_create
+    ):
+        """既に許可されている場合、再度許可しても重複しないこと"""
+        permit_overtime(self.employee, date(2021, 8, 1))
+        mock_create.assert_not_called()
+
+    def test_oertime_permission_exists(self):
+        """時間外労働が許可されているかどうかを確認するテスト"""
+        OvertimePermission.objects.create(employee=self.employee, date=date(2021, 8, 1))
+        self.assertTrue(is_overtime_permitted(self.employee, date(2021, 8, 1)))
+
+    def test_revoke_overtime(self):
+        """時間外労働の許可を取り消すテスト"""
+        OvertimePermission.objects.create(employee=self.employee, date=date(2021, 8, 1))
+        revoke_overtime(self.employee, date(2021, 8, 1))
+        self.assertFalse(
+            OvertimePermission.objects.filter(
+                employee=self.employee, date=date(2021, 8, 1)
+            ).exists()
+        )

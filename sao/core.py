@@ -982,9 +982,20 @@ def get_daily_webstamps(
 
 def permit_overtime(employee: Employee, date: datetime.date) -> None:
     """残業を許可する"""
+    if is_overtime_permitted(employee, date):
+        # すでに許可されている
+        logger.info(f"すでに残業が許可されています: {employee.name} {date}")
+        return
     OvertimePermission.objects.update_or_create(employee=employee, date=date)
+    logger.info(f"残業を許可しました: {employee.name} {date}")
 
 
 def is_overtime_permitted(employee: Employee, date: datetime.date) -> bool:
     """残業が許可されているかどうか"""
     return OvertimePermission.objects.filter(employee=employee, date=date).exists()
+
+
+def revoke_overtime(employee: Employee, date: datetime.date) -> None:
+    """残業許可を取り消す"""
+    OvertimePermission.objects.filter(employee=employee, date=date).delete()
+    logger.info(f"残業許可を取り消しました: {employee.name} {date}")
