@@ -584,3 +584,13 @@ class DailyAttendanceRecord(models.Model):
 
     def get_over(self) -> datetime.timedelta:
         return self.over
+
+
+class OvertimePermission(models.Model):
+    """時間外労働許可"""
+
+    employee = models.ForeignKey("Employee", on_delete=models.CASCADE)
+    date = models.DateField()
+
+    def __str__(self):
+        return "%s %s %s" % (self.employee, self.date)

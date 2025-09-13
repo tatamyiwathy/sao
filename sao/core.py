@@ -13,6 +13,7 @@ from sao.models import (
     DaySwitchTime,
     DailyAttendanceRecord,
     WebTimeStamp,
+    OvertimePermission,
 )
 from sao.const import Const
 from sao.calendar import is_holiday, is_legal_holiday, get_first_day, get_last_day
@@ -977,3 +978,13 @@ def get_daily_webstamps(
         employee=employee, stamp__gte=day_begin, stamp__lt=day_end
     ).order_by("stamp")
     return [x.stamp for x in stamps if x.stamp is not None]
+
+
+def permit_overtime(employee: Employee, date: datetime.date) -> None:
+    """残業を許可する"""
+    OvertimePermission.objects.update_or_create(employee=employee, date=date)
+
+
+def is_overtime_permitted(employee: Employee, date: datetime.date) -> bool:
+    """残業が許可されているかどうか"""
+    return OvertimePermission.objects.filter(employee=employee, date=date).exists()
