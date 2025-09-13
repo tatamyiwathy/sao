@@ -590,7 +590,11 @@ class OvertimePermission(models.Model):
     """時間外労働許可"""
 
     employee = models.ForeignKey("Employee", on_delete=models.CASCADE)
+    # 許可された日付
     date = models.DateField()
 
+    # 作成日
+    created_at = models.DateTimeField(default=datetime.datetime.now)
+
     def __str__(self):
-        return "%s %s %s" % (self.employee, self.date)
+        return "%s %s %s" % (self.employee, self.date, self.created_at)
