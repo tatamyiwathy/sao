@@ -208,6 +208,7 @@ def get_adjust_end_time(
     if working_hours_end is None or record.get_clock_out() is None:
         return None
     clock_out = record.get_clock_out()
+    print("clock_out ", clock_out)
     if clock_out is None:
         return None
     if (clock_out - working_hours_end).days < 0:
@@ -217,6 +218,7 @@ def get_adjust_end_time(
         # 残業OK
         return clock_out
     # 所定終業時間
+    print("working_hours_end ", working_hours_end)
     return working_hours_end
 
 
@@ -241,22 +243,19 @@ def calc_actual_working_time(
     if record.status in WorkingStatus.NO_ACTUAL_WORK:
         return Const.TD_ZERO
 
-    st = get_adjusted_start_time(record, work_start)
-    if st is None:
+    print("clock_out ", record.get_clock_out())
+    work_start = get_adjusted_start_time(record, work_start)
+    if work_start is None:
         return Const.TD_ZERO
-    # ct = get_adjust_end_time(
-    #     record,
-    #     work_end,
-    #     is_permit_overtime(record.employee) or record.is_overtime_work_permitted,
-    # )
-    ct = get_adjust_end_time(
+    work_end = get_adjust_end_time(
         record,
         work_end,
         is_permit_overtime(record.employee),
     )
-    if ct is None:
+    print("work_end %s", work_end)
+    if work_end is None:
         return Const.TD_ZERO
-    t = ct - st
+    t = work_end - work_start
     if t < Const.TD_ZERO:
         return Const.TD_ZERO
     # 休息が必要なら１時間差し引く
@@ -595,7 +594,14 @@ def is_permit_overtime(employee: Employee) -> bool:
     :param employee: Employee
     :return: True:認められている False:認められていない
     """
-    return employee.is_manager()
+    if employee.is_manager():
+        # 管理職は常に残業が認められている
+        return True
+    if is_assigned_fixed_overtime_pay(employee, Const.FIXED_OVERTIME_HOURS_20):
+        # みなし残業20時間が割り当てられている場合は常に残業が認められている
+        return True
+    # Todo: 個別で許可された残業の判定をする
+    return False
 
 
 def get_half_year_day(date: datetime.date) -> datetime.date:
@@ -1003,7 +1009,7 @@ def revoke_overtime(employee: Employee, date: datetime.date) -> None:
     logger.info(f"残業許可を取り消しました: {employee.name} {date}")
 
 
-def assign_fixed_working_hours(
+def assign_fixed_overtime_pay(
     employee: Employee,
     hours: datetime.timedelta,
 ):
@@ -1011,7 +1017,10 @@ def assign_fixed_working_hours(
     :param employee: 対象の社員
     :param hours: 固定残業時間
     """
-    FixedOvertimePayEmployee.objects.update_or_create(employee=employee, hours=hours)
+    obj, created = FixedOvertimePayEmployee.objects.update_or_create(
+        employee=employee, hours=hours
+    )
+    print(created)
 
 
 def is_assigned_fixed_overtime_pay(

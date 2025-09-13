@@ -8,10 +8,11 @@ from sao.models import (
     DailyAttendanceRecord,
 )
 from sao.calendar import is_holiday, is_legal_holiday
-from sao.core import generate_attendance_record, get_day_switch_time
+from sao.core import generate_attendance_record
 from sao.period import Period
 from sao.working_status import WorkingStatus, determine_working_status
 from sao.attendance import Attendance
+from sao.const import Const
 
 
 def create_working_hours():

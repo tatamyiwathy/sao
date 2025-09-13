@@ -21,10 +21,10 @@ class Period:
         """開始時間も終了時間もNoneでなければTrueを返す"""
         return self.start is not None and self.end is not None
 
-    def duration(self) -> datetime.timedelta | None:
+    def duration(self) -> datetime.timedelta:
         """終了時間 - 開始時間 を返す。どちらかがNoneならNoneを返す"""
         if self.start is None or self.end is None:
-            return None
+            raise ValueError("Both start and end must be set to calculate duration.")
         return self.end - self.start
 
     def range(self, step: datetime.timedelta = datetime.timedelta(days=1)):

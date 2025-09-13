@@ -57,7 +57,7 @@ from sao.core import (
     permit_overtime,
     is_overtime_permitted,
     revoke_overtime,
-    assign_fixed_working_hours,
+    assign_fixed_overtime_pay,
     is_assigned_fixed_overtime_pay,
     remove_fixed_working_hours,
 )
@@ -232,9 +232,12 @@ class TestGetAdjustedClosingTime(TestCase):
 
 
 class TestCalcActualWorkingHours(TestCase):
+
     def test_calc_actual_working_hours(self):
+        """"""
         d = date(2021, 8, 2)
         employee = create_employee(create_user())
+
         time_record = EmployeeDailyRecord(
             date=d,
             employee=employee,
@@ -245,6 +248,7 @@ class TestCalcActualWorkingHours(TestCase):
 
         starting_time = datetime.combine(d, time(10, 0))
         closing_time = datetime.combine(d, time(19, 0))
+
         actual_working_hours = calc_actual_working_time(
             time_record, starting_time, closing_time, timedelta(0)
         )
@@ -295,15 +299,31 @@ class TestTallySteppingOut(TestCase):
             out_time=datetime(2021, 8, 2, 13, 0, 0),
             return_time=datetime(2021, 8, 2, 14, 0, 0),
         ).save()
-        create_time_stamp_data(employee)
-        time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 2))
+        time_record = EmployeeDailyRecord(
+            date=date(2021, 8, 2),
+            employee=employee,
+            status=WorkingStatus.C_KINMU,
+            clock_in=datetime.combine(date(2021, 8, 2), time(9, 0)),
+            clock_out=datetime.combine(date(2021, 8, 2), time(19, 0)),
+            working_hours_start=datetime.combine(date(2021, 8, 2), time(10, 0)),
+            working_hours_end=datetime.combine(date(2021, 8, 2), time(19, 0)),
+        )
         total_stepping_out = tally_steppingout(time_record)
         self.assertEqual(total_stepping_out, Const.TD_1H)
 
     def test_tally_steppingout_when_empty(self):
         employee = create_employee(create_user())
-        create_time_stamp_data(employee)
-        time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 2))
+
+        time_record = EmployeeDailyRecord(
+            date=date(2021, 8, 2),
+            employee=employee,
+            status=WorkingStatus.C_KINMU,
+            clock_in=datetime.combine(date(2021, 8, 2), time(9, 0)),
+            clock_out=None,
+            working_hours_start=datetime.combine(date(2021, 8, 2), time(10, 0)),
+            working_hours_end=datetime.combine(date(2021, 8, 2), time(19, 0)),
+        )
+
         total_stepping_out = tally_steppingout(time_record)
         self.assertEqual(total_stepping_out, Const.TD_ZERO)
 
@@ -316,8 +336,32 @@ class TestCalcOvertime(TestCase):
     def setUp(self) -> None:
         self.employee = create_employee(create_user())
 
+    def test_overtime(self):
+        """残業許可がないときは時間外の打刻でも超過時間は発生しない"""
+        d = date(2021, 8, 3)
+        actual_work = Period(
+            datetime.combine(d, time(hour=10)), datetime.combine(d, time(hour=21))
+        )
+        work_period = Period(
+            datetime.combine(d, time(10, 0)),
+            datetime.combine(d, time(19, 0)),
+        )
+        r = EmployeeDailyRecord(
+            clock_in=actual_work.start,
+            clock_out=actual_work.end,
+            working_hours_start=work_period.start,
+            working_hours_end=work_period.end,
+            date=d,
+            employee=self.employee,
+            status=WorkingStatus.C_KINMU,
+        )
+        over = calc_overtime(r, actual_work.duration(), work_period.duration())
+        self.assertEqual(over, Const.TD_ZERO)
+
     def test_calc_overtime(self):
-        """所定の勤務時間を超過した場合、超過勤務時間を計算する"""
+        """残業許可があるときは残業時間が発生する"""
+        assign_fixed_overtime_pay(self.employee, Const.FIXED_OVERTIME_HOURS_20)
+
         scheduled_start = datetime(2021, 8, 3, 10, 0, 0)
         scheduled_end = datetime(2021, 8, 3, 19, 0, 0)
         scheduled_duration = scheduled_end - scheduled_start
@@ -415,11 +459,12 @@ class TestCalcOver8h(TestCase):
     def setUp(self) -> None:
         self.employee = create_employee(create_user())
 
-    def test_calc_over_8h(self):
-
+    @patch("sao.core.is_permit_overtime", return_value=False)
+    def test_calc_over_8h_if_overtime_not_permitted(self, mock_is_permit_overtime):
+        """残業が許可されていない場合、超過時間が発生しない"""
         actual_start = datetime(2021, 8, 3, 10, 0, 0)
         actual_end = datetime(2021, 8, 3, 20, 0, 0)  # 1時間残業
-        actual_duration = Const.TD_9H  # 休息１時間を除いた実働時間
+        actual_hours = Const.TD_9H  # 休息１時間を除いた実働時間
 
         record = EmployeeDailyRecord(
             date=date(2021, 8, 3),
@@ -429,7 +474,25 @@ class TestCalcOver8h(TestCase):
             status=WorkingStatus.C_KINMU,
         )
 
-        over_8h = calc_over_8h(record, actual_duration)
+        over_8h = calc_over_8h(record, actual_hours)
+        self.assertEqual(over_8h, timedelta(hours=0))
+
+    @patch("sao.core.is_permit_overtime", return_value=True)
+    def test_calc_over_8h_if_overtime_permitted(self, mock_is_permit_overtime):
+        """残業が許可されている場合、超過時間が発生する"""
+        actual_start = datetime(2021, 8, 3, 10, 0, 0)
+        actual_end = datetime(2021, 8, 3, 20, 0, 0)  # 1時間残業
+        actual_hours = Const.TD_9H  # 休息１時間を除いた実働時間
+
+        record = EmployeeDailyRecord(
+            date=date(2021, 8, 3),
+            employee=self.employee,
+            clock_in=actual_start,
+            clock_out=actual_end,
+            status=WorkingStatus.C_KINMU,
+        )
+
+        over_8h = calc_over_8h(record, actual_hours)
         self.assertEqual(over_8h, timedelta(hours=1))
 
     def test_calc_over_8h_missed_stamp(self):
@@ -554,11 +617,14 @@ class TestCalcHoliday(TestCase):
 
 class TestIsPermitOvertime(TestCase):
     def test_is_permit_overtime(self):
+        """固定残業時間が設定されている場合、残業が許可されることを確認する"""
         employee = create_employee(create_user())
+        assign_fixed_overtime_pay(employee, Const.FIXED_OVERTIME_HOURS_20)
         permit_overtime = is_permit_overtime(employee)
         self.assertTrue(permit_overtime)
 
     def test_not_permit_overtime(self):
+        """固定残業時間が設定されていない場合、残業が許可されないことを確認する"""
         employee = create_employee(create_user())
         permit_overtime = is_permit_overtime(employee)
         self.assertFalse(permit_overtime)
@@ -1341,29 +1407,29 @@ class TestFixedOvertimePay(TestCase):
 
     def test_assign_employee_fixed_overtime_pay(self):
         """固定残業代を従業員に割り当てるテスト"""
-        assign_fixed_working_hours(self.employee, Const.FIXED_OVERTIME_HOURS_20)
+        assign_fixed_overtime_pay(self.employee, Const.FIXED_OVERTIME_HOURS_20)
         self.assertTrue(
             FixedOvertimePayEmployee.objects.filter(employee=self.employee).exists()
         )
 
     def test_invoke_assign_fixed_overtime_pay_twice(self):
         """固定残業代を2回割り当てても重複しないこと"""
-        assign_fixed_working_hours(self.employee, Const.FIXED_OVERTIME_HOURS_20)
-        assign_fixed_working_hours(self.employee, Const.FIXED_OVERTIME_HOURS_20)
+        assign_fixed_overtime_pay(self.employee, Const.FIXED_OVERTIME_HOURS_20)
+        assign_fixed_overtime_pay(self.employee, Const.FIXED_OVERTIME_HOURS_20)
         self.assertEqual(
             FixedOvertimePayEmployee.objects.filter(employee=self.employee).count(), 1
         )
 
     def test_is_assigned_fixed_overtime_pay(self):
         """従業員に固定残業代が割り当てられているかどうかを確認するテスト"""
-        assign_fixed_working_hours(self.employee, Const.FIXED_OVERTIME_HOURS_20)
+        assign_fixed_overtime_pay(self.employee, Const.FIXED_OVERTIME_HOURS_20)
         self.assertTrue(
             is_assigned_fixed_overtime_pay(self.employee, Const.FIXED_OVERTIME_HOURS_20)
         )
 
     def test_revoke_fixed_overtime_pay(self):
         """従業員の固定残業代を取り消すテスト"""
-        assign_fixed_working_hours(self.employee, Const.FIXED_OVERTIME_HOURS_20)
+        assign_fixed_overtime_pay(self.employee, Const.FIXED_OVERTIME_HOURS_20)
         remove_fixed_working_hours(self.employee, Const.FIXED_OVERTIME_HOURS_20)
         self.assertFalse(
             is_assigned_fixed_overtime_pay(self.employee, Const.FIXED_OVERTIME_HOURS_20)

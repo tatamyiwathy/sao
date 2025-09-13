@@ -4,10 +4,7 @@ from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from sao import models, utils, core
-from common.utils_for_test import (
-    create_employee,
-    create_user,
-)
+from common.utils_for_test import create_employee, create_user, create_client, TEST_USER
 from sao.tests.utils import (
     create_working_hours,
     assign_working_hour,
@@ -100,3 +97,36 @@ class DaySwitchViewTests(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"day switch done", response.content)
+
+
+class AddEmployeeViewTest(TestCase):
+
+    def setUp(self):
+        self.user = create_user()
+        self.employee = create_employee(self.user, include_overtime_pay=True)
+        self.client = create_client(TEST_USER)
+        self.params = {
+            "employee_no": 52,
+            "name": "もろこし 輪太郎",
+            "join_date": datetime.date.today(),
+            "leave_date": datetime.date(2199, 12, 31),
+            "type": 0,
+            "department": 0,
+            "manager": False,
+            "accountname": "morokoshi",
+            "password": "password123",
+            "email": "morokoshi@example.com",
+        }
+        create_working_hours()
+
+    def test_create_staff_successfully(self):
+        response = self.client.post(reverse("sao:add_employee"), self.params)
+        self.assertRedirects(response, reverse("sao:employee_list"))
+
+    def test_add_manager_staff(self):
+        self.params["manager"] = True
+        response = self.client.post(reverse("sao:add_employee"), self.params)
+        self.assertRedirects(response, reverse("sao:employee_list"))
+        self.assertTrue(
+            models.Employee.objects.get(employee_no=52).is_manager
+        )  # is_manager=True
