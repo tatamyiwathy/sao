@@ -49,7 +49,7 @@ class Employee(models.Model):
     # 所属
     department = models.IntegerField(default=0, choices=DEPARTMENT_CHOICES)
     # 含み残業があるか
-    include_overtime_pay = models.BooleanField(default=True)
+    # include_overtime_pay = models.BooleanField(default=True)
 
     def is_valid(self) -> bool:
         if self.employee_no is None:
@@ -68,8 +68,6 @@ class Employee(models.Model):
             return False
         if self.department is None:
             return False
-        if self.include_overtime_pay is None:
-            return False
         return True
 
     def __str__(self) -> str:
@@ -82,13 +80,6 @@ class Employee(models.Model):
         except ObjectDoesNotExist:
             manager = None
         return True if manager is not None else False
-
-    def is_included_overtime_pay(self) -> bool:
-        if self.employee_type != Employee.TYPE_PERMANENT_STAFF:
-            return False
-        if not self.include_overtime_pay:
-            return False
-        return True
 
     def get_user_identify(self) -> str:
         return "%s(%d)" % (self.user, self.employee_no)
@@ -164,8 +155,6 @@ class EmployeeDailyRecord(models.Model):
 
     # 勤務状況
     status = models.IntegerField(null=True, blank=True, choices=WorkingStatus.choices)
-    # 残業が許可されている
-    is_overtime_work_permitted = models.BooleanField(default=False)
 
     # 届
     remark = models.CharField(max_length=128, null=True, blank=True)
@@ -411,7 +400,6 @@ class EmployeeAdmin(admin.ModelAdmin):
         "user",
         "employee_type",
         "department",
-        "include_overtime_pay",
     )
 
 
@@ -430,7 +418,6 @@ class TimeRecordAdmin(admin.ModelAdmin):
         "clock_in",
         "clock_out",
         "status",
-        "is_overtime_work_permitted",
     )
 
 

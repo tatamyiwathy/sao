@@ -3,12 +3,12 @@ import datetime
 from django import forms
 from django.core.exceptions import ObjectDoesNotExist
 from sao.models import (
-    Employee, 
-    EmployeeHour, 
-    Holiday, 
-    EmployeeDailyRecord, 
-    WorkingHour, 
-    DaySwitchTime
+    Employee,
+    EmployeeHour,
+    Holiday,
+    EmployeeDailyRecord,
+    WorkingHour,
+    DaySwitchTime,
 )
 from sao.working_status import WorkingStatus
 
@@ -24,9 +24,9 @@ class WorkingHourAssignForm(forms.ModelForm):
         )
         widgets = {
             "working_hours": forms.Select(attrs={"class": "form-select"}),
-            "date": forms.DateInput(attrs={
-                "type": "date", 
-                "class": "form-control datepicker-future"}),
+            "date": forms.DateInput(
+                attrs={"type": "date", "class": "form-control datepicker-future"}
+            ),
         }
         labels = {"working_hours": "勤務時間", "date": "適用開始日"}
 
@@ -34,7 +34,10 @@ class WorkingHourAssignForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         # ここで初期値を設定する
-        self.fields["working_hours"].queryset = WorkingHour.objects.filter(is_active=True)
+        self.fields["working_hours"].queryset = WorkingHour.objects.filter(
+            is_active=True
+        )
+
 
 class StaffYearMonthForm(forms.Form):
     """
@@ -98,23 +101,18 @@ class ModifyRecordForm(forms.ModelForm):
         fields = [
             "clock_in",
             "clock_out",
-            "is_overtime_work_permitted",
             "status",
         ]
 
         widgets = {
             "clock_in": forms.DateTimeInput(attrs={"class": "form-control"}),
             "clock_out": forms.DateTimeInput(attrs={"class": "form-control"}),
-            "is_overtime_work_permitted": forms.CheckboxInput(
-                attrs={"class": "form-check"}
-            ),
             "status": forms.Select(attrs={"class": "form-select"}),
         }
 
         labels = {
             "clock_in": "出勤",
             "clock_out": "退勤",
-            "is_overtime_work_permitted": "残業",
             "status": "ステータス",
         }
 
@@ -153,7 +151,6 @@ class EditEmployeeForm(forms.ModelForm):
             "join_date",
             "employee_type",
             "department",
-            "include_overtime_pay",
         ]
 
         labels = {
@@ -162,7 +159,6 @@ class EditEmployeeForm(forms.ModelForm):
             "join_date": "入社日",
             "employee_type": "雇用種別",
             "department": "所属",
-            "include_overtime_pay": "固定残業制",
         }
         widgets = {
             "employee_no": forms.NumberInput(attrs={"class": "form-control"}),
@@ -170,9 +166,6 @@ class EditEmployeeForm(forms.ModelForm):
             "join_date": forms.DateInput(attrs={"class": "datepicker form-control"}),
             "employee_type": forms.Select(attrs={"class": "form-control"}),
             "department": forms.Select(attrs={"class": "form-control"}),
-            "include_overtime_pay": forms.CheckboxInput(
-                attrs={"class": "form-check-input"}
-            ),
         }
 
     def clean(self):
@@ -231,7 +224,7 @@ class AddEmployeeForm(forms.Form):
         widget=forms.TextInput(attrs={"class": "form-control"}),
         required=True,
     )
-    
+
     email = forms.EmailField(
         label="メールアドレス",
         widget=forms.EmailInput(attrs={"class": "form-control"}),
@@ -262,9 +255,9 @@ class LeaveFromCompanyForm(forms.Form):
 
     leave_date = forms.DateField(
         label="退社日",
-        widget=forms.TextInput(attrs={
-            "type": "date", 
-            "class": "datepicker-future form-control"}),
+        widget=forms.TextInput(
+            attrs={"type": "date", "class": "datepicker-future form-control"}
+        ),
         initial=datetime.date.today(),
     )
 
@@ -312,10 +305,7 @@ class RegisterHolidayForm(forms.ModelForm):
         model = Holiday
         fields = ["date"]
         widgets = {
-            "date": forms.DateInput(attrs={
-                "type": "date",
-                "class": "form-control"
-            })
+            "date": forms.DateInput(attrs={"type": "date", "class": "form-control"})
         }
         labels = {"date": "日付"}
 
@@ -356,39 +346,45 @@ class AddSteppingOutForm(forms.Form):
 class WorkingHourForm(forms.ModelForm):
     class Meta:
         model = WorkingHour
-        fields = ['category', 'begin_time', 'end_time', 'is_active']
+        fields = ["category", "begin_time", "end_time", "is_active"]
         widgets = {
-            'begin_time': forms.TimeInput(attrs={
-                'type': 'time',
-                'min': '07:00',
-                'max': '22:00',
-                'step': '1800'  # 30分刻み
-            }),
-            'end_time': forms.TimeInput(attrs={
-                'type': 'time',
-                'min': '07:00', 
-                'max': '22:00',
-                'step': '1800'  # 30分刻み
-            }),
+            "begin_time": forms.TimeInput(
+                attrs={
+                    "type": "time",
+                    "min": "07:00",
+                    "max": "22:00",
+                    "step": "1800",  # 30分刻み
+                }
+            ),
+            "end_time": forms.TimeInput(
+                attrs={
+                    "type": "time",
+                    "min": "07:00",
+                    "max": "22:00",
+                    "step": "1800",  # 30分刻み
+                }
+            ),
         }
 
     def clean(self):
         cleaned_data = super().clean()
-        begin_time = cleaned_data.get('begin_time')
-        end_time = cleaned_data.get('end_time')
+        begin_time = cleaned_data.get("begin_time")
+        end_time = cleaned_data.get("end_time")
 
         if begin_time and end_time and begin_time >= end_time:
-            raise forms.ValidationError('出社時間は退社時間より前である必要があります。')
+            raise forms.ValidationError(
+                "出社時間は退社時間より前である必要があります。"
+            )
 
         return cleaned_data
+
 
 class DaySwitchTimeForm(forms.ModelForm):
     class Meta:
         model = DaySwitchTime
-        fields = ['switch_time']
+        fields = ["switch_time"]
         widgets = {
-            'switch_time': forms.TimeInput(attrs={
-                'type': 'time',
-                'class': 'form-control'
-            })
+            "switch_time": forms.TimeInput(
+                attrs={"type": "time", "class": "form-control"}
+            )
         }

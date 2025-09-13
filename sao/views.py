@@ -137,9 +137,7 @@ def home(request):
                     % (attn.date.month, attn.date.day),
                 )
 
-            if employee.include_overtime_pay and is_need_overwork_notification(
-                attn, today
-            ):
+            if is_need_overwork_notification(attn, today):
                 messages.warning(
                     request,
                     "%d/%d 残業が25時間を越えました。速やかに管理者へ届け出を行ってください。"
@@ -147,7 +145,7 @@ def home(request):
                 )
 
         if (
-            employee.include_overtime_pay
+            is_need_overwork_notification(attn, today)
             and (attendances[-1].total_over <= datetime.timedelta(hours=25))
             and (attendances[-1].total_over > datetime.timedelta(hours=23))
         ):
@@ -468,7 +466,6 @@ def employee_list(request):
             "basic_info": e,
             "working_hour": working_hour,
             "manager": manager,
-            "include_overtime_pay": e.include_overtime_pay,
             "employee_no": e.employee_no,
             "is_active": e.user.is_active,
             "status": employee_status,

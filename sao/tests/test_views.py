@@ -19,7 +19,7 @@ class TimeClockViewTests(TestCase):
     def setUp(self):
         self.client = Client()
         self.u = create_user()
-        self.e = create_employee(self.u, include_overtime_pay=True)
+        self.e = create_employee(self.u)
         self.client.force_login(self.u)
 
     def test_time_clock_get_renders_stamps(self):
@@ -69,7 +69,7 @@ class DaySwitchViewTests(TestCase):
     def setUp(self):
         self.client = Client()
         self.u = create_user()
-        self.e = create_employee(self.u, include_overtime_pay=True)
+        self.e = create_employee(self.u)
         create_working_hours()
         assign_working_hour(
             self.e, datetime.date(1901, 1, 1), get_working_hour_by_category("A")

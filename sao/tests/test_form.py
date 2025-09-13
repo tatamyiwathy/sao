@@ -83,7 +83,7 @@ class AddEmproyeeFormTest(TestCase):
         self.assertFormError(form, None, "姓と名の間に空白を入れてください")
 
     def test_duplicate_employee_no(self):
-        create_employee(create_user(), include_overtime_pay=True)
+        create_employee(create_user())
 
         employee = Employee.objects.get(employee_no=51)
         self.assertTrue(employee.employee_no == 51)
@@ -115,7 +115,7 @@ class WorkingHourAssignFormTest(TestCase):
 
     def test_valid(self):
         user = create_user()
-        employee = create_employee(user, include_overtime_pay=True)
+        employee = create_employee(user)
         create_working_hours()
         w = get_working_hour_by_category("A")
         assign_working_hour(employee, datetime.date.today(), w)
@@ -133,7 +133,7 @@ class StaffYearMonthFormTest(TestCase):
         self.assertFalse(form.is_valid())
 
     def test_form_is_valid(self):
-        employee = create_employee(create_user(), include_overtime_pay=True)
+        employee = create_employee(create_user())
         form = StaffYearMonthForm({"employee": employee.pk, "yearmonth": "2017-02"})
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["yearmonth"], "2017-02")

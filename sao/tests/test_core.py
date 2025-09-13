@@ -74,7 +74,7 @@ from sao.exceptions import NoAssignedWorkingHourError
 
 #     def setUp(self):
 #         self.day = date(2021, 8, 6)
-#         self.emp = create_employee(create_user(), include_overtime_pay=True)
+#         self.emp = create_employee(create_user())
 #         self.today = date(year=2020, month=1, day=23)
 #         create_working_hours()
 #         create_time_stamp_data(self.emp)  # 月の勤怠データを生成
@@ -113,7 +113,7 @@ from sao.exceptions import NoAssignedWorkingHourError
 #     """"""
 
 #     def setUp(self) -> None:
-#         self.employee = create_employee(create_user(), include_overtime_pay=True)
+#         self.employee = create_employee(create_user())
 
 #         create_working_hours()
 #         create_time_stamp_data(self.employee)
@@ -142,7 +142,7 @@ from sao.exceptions import NoAssignedWorkingHourError
 
 # class TestSumupAttendances(TestCase):
 #     def test_sumup_attendances(self):
-#         employee = create_employee(create_user(), include_overtime_pay=True)
+#         employee = create_employee(create_user())
 #         create_time_stamp_data(employee)
 #         create_working_hours()
 #         set_office_hours_to_employee(
@@ -186,7 +186,7 @@ class TestRoundStamp(TestCase):
 
 # class TestRoundResult(TestCase):
 #     def test_round_result(self):
-#         employee = create_employee(create_user(), include_overtime_pay=True)
+#         employee = create_employee(create_user()
 #         create_time_stamp_data(employee)
 #         create_working_hours()
 #         set_office_hours_to_employee(
@@ -217,7 +217,7 @@ class TestGetAdjustedStartingTime(TestCase):
 class TestGetAdjustedClosingTime(TestCase):
     def test_get_adjusted_closing_time(self):
         d = date(2021, 8, 2)
-        employee = create_employee(create_user(), include_overtime_pay=True)
+        employee = create_employee(create_user())
         time_record = EmployeeDailyRecord(
             date=d,
             employee=employee,
@@ -234,7 +234,7 @@ class TestGetAdjustedClosingTime(TestCase):
 class TestCalcActualWorkingHours(TestCase):
     def test_calc_actual_working_hours(self):
         d = date(2021, 8, 2)
-        employee = create_employee(create_user(), include_overtime_pay=True)
+        employee = create_employee(create_user())
         time_record = EmployeeDailyRecord(
             date=d,
             employee=employee,
@@ -254,7 +254,7 @@ class TestCalcActualWorkingHours(TestCase):
 class TestCalcTardiness(TestCase):
     def test_calc_tardy(self):
         d = date(2021, 8, 2)
-        employee = create_employee(create_user(), include_overtime_pay=True)
+        employee = create_employee(create_user())
         time_record = EmployeeDailyRecord(
             date=d,
             employee=employee,
@@ -271,7 +271,7 @@ class TestCalcTardiness(TestCase):
 class TestCalcLeaveEarly(TestCase):
     def test_calc_sotai(self):
         d = date(2021, 8, 2)
-        employee = create_employee(create_user(), include_overtime_pay=True)
+        employee = create_employee(create_user())
         time_record = EmployeeDailyRecord(
             date=d,
             employee=employee,
@@ -289,7 +289,7 @@ class TestTallySteppingOut(TestCase):
     """外出時間を集計するテスト"""
 
     def test_tally_steppingout(self):
-        employee = create_employee(create_user(), include_overtime_pay=True)
+        employee = create_employee(create_user())
         SteppingOut(
             employee=employee,
             out_time=datetime(2021, 8, 2, 13, 0, 0),
@@ -301,7 +301,7 @@ class TestTallySteppingOut(TestCase):
         self.assertEqual(total_stepping_out, Const.TD_1H)
 
     def test_tally_steppingout_when_empty(self):
-        employee = create_employee(create_user(), include_overtime_pay=True)
+        employee = create_employee(create_user())
         create_time_stamp_data(employee)
         time_record = EmployeeDailyRecord.objects.get(date=date(2021, 8, 2))
         total_stepping_out = tally_steppingout(time_record)
@@ -314,7 +314,7 @@ class TestCalcOvertime(TestCase):
     """
 
     def setUp(self) -> None:
-        self.employee = create_employee(create_user(), include_overtime_pay=True)
+        self.employee = create_employee(create_user())
 
     def test_calc_overtime(self):
         """所定の勤務時間を超過した場合、超過勤務時間を計算する"""
@@ -413,7 +413,7 @@ class TestCalcOvertime(TestCase):
 
 class TestCalcOver8h(TestCase):
     def setUp(self) -> None:
-        self.employee = create_employee(create_user(), include_overtime_pay=True)
+        self.employee = create_employee(create_user())
 
     def test_calc_over_8h(self):
 
@@ -505,7 +505,7 @@ class TestCalcMidnightWork(TestCase):
     """
 
     def setUp(self) -> None:
-        self.employee = create_employee(create_user(), include_overtime_pay=True)
+        self.employee = create_employee(create_user())
 
     def test_calc_midnight_work_before_midnight(self):
         """22時前に退勤した場合、深夜勤務時間は0とする"""
@@ -522,7 +522,7 @@ class TestCalcLegalHoliday(TestCase):
     """法定休日勤務時間を計算するテスト"""
 
     def setUp(self) -> None:
-        self.employee = create_employee(create_user(), include_overtime_pay=True)
+        self.employee = create_employee(create_user())
 
     def test_calc_legal_holiday(self):
         d = date(2021, 8, 1)  # 日曜日
@@ -539,7 +539,7 @@ class TestCalcHoliday(TestCase):
     """休日勤務時間を計算するテスト"""
 
     def setUp(self) -> None:
-        self.employee = create_employee(create_user(), include_overtime_pay=True)
+        self.employee = create_employee(create_user())
 
     def test_calc_holiday(self):
         d = date(2021, 8, 7)  # 土曜日
@@ -554,12 +554,12 @@ class TestCalcHoliday(TestCase):
 
 class TestIsPermitOvertime(TestCase):
     def test_is_permit_overtime(self):
-        employee = create_employee(create_user(), include_overtime_pay=True)
+        employee = create_employee(create_user())
         permit_overtime = is_permit_overtime(employee)
         self.assertTrue(permit_overtime)
 
     def test_not_permit_overtime(self):
-        employee = create_employee(create_user(), include_overtime_pay=False)
+        employee = create_employee(create_user())
         permit_overtime = is_permit_overtime(employee)
         self.assertFalse(permit_overtime)
 
@@ -659,7 +659,7 @@ class TestIsNeedBreakTime(TestCase):
 
 class TestGetMonthlyTimeRecord(TestCase):
     def setUp(self) -> None:
-        self.employee = create_employee(create_user(), include_overtime_pay=True)
+        self.employee = create_employee(create_user())
 
     """月の勤怠記録を収集するテスト"""
 
@@ -677,7 +677,7 @@ class TestGetMonthlyTimeRecord(TestCase):
 
 class TestGetEmplyeeHour(TestCase):
     def setUp(self) -> None:
-        self.employee = create_employee(create_user(), include_overtime_pay=True)
+        self.employee = create_employee(create_user())
         create_working_hours()
 
     def test_get_employee_hour(self):
@@ -709,7 +709,7 @@ class TestGetWorkingHoursByCategory(TestCase):
 
 class TestGetWorkingHoursToBeAssign(TestCase):
     def setUp(self) -> None:
-        self.employee = create_employee(create_user(), include_overtime_pay=True)
+        self.employee = create_employee(create_user())
 
     def test_get_working_hours_pre_assign(self):
         create_working_hours()
@@ -941,7 +941,7 @@ class TestGetClockInOut(TestCase):
 
 class TestGenerateDailyRecord(TestCase):
     def setUp(self):
-        self.employee = create_employee(create_user(), include_overtime_pay=True)
+        self.employee = create_employee(create_user())
         self.day = date(2023, 8, 2)
         self.working_hour = WorkingHour(begin_time=time(10, 0), end_time=time(19, 0))
         self.period = Period(
@@ -1125,7 +1125,7 @@ class TestGenerateDailyRecord(TestCase):
 
 class TestFinalizeDailyRecord(TestCase):
     def setUp(self):
-        self.employee = create_employee(create_user(), include_overtime_pay=True)
+        self.employee = create_employee(create_user())
         self.day = date(2023, 8, 2)
 
     @patch("sao.core.EmployeeDailyRecord")
@@ -1297,7 +1297,7 @@ class TestOvertimePermission(TestCase):
     """時間外労働の許可設定を確認するテスト"""
 
     def setUp(self) -> None:
-        self.employee = create_employee(create_user(), include_overtime_pay=True)
+        self.employee = create_employee(create_user())
 
     @patch("sao.core.is_overtime_permitted", return_value=False)
     def test_permit_overtime(self, mock_is_overtime_permitted):
@@ -1337,7 +1337,7 @@ class TestFixedOvertimePay(TestCase):
     """固定残業代の確認テスト"""
 
     def setUp(self) -> None:
-        self.employee = create_employee(create_user(), include_overtime_pay=True)
+        self.employee = create_employee(create_user())
 
     def test_assign_employee_fixed_overtime_pay(self):
         """固定残業代を従業員に割り当てるテスト"""

@@ -130,7 +130,6 @@ def create_employee(**kwargs) -> models.Employee:
     - join_date (デフォルト: 今日)
     - leave_date (デフォルト: 2099-12-31)
     - payed_holiday (デフォルト: 0.0)
-    - include_overtime_pay (デフォルト: False)
     """
     if "employee_no" not in kwargs.keys():
         raise ValueError("employee_no is required")
@@ -151,11 +150,6 @@ def create_employee(**kwargs) -> models.Employee:
         if "leave_date" in kwargs.keys()
         else datetime.date(2099, 12, 31)
     )
-    include_overtime_pay = (
-        kwargs["include_overtime_pay"]
-        if "include_overtime_pay" in kwargs.keys()
-        else False
-    )
     employee = models.Employee(
         employee_no=kwargs["employee_no"],
         name=kwargs["name"],
@@ -164,7 +158,6 @@ def create_employee(**kwargs) -> models.Employee:
         payed_holiday=payed_holiday,
         employee_type=kwargs["employee_type"],
         department=kwargs["department"],
-        include_overtime_pay=include_overtime_pay,
         user=kwargs["user"],
     )
     employee.save()

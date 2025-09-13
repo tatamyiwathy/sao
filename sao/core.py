@@ -244,10 +244,15 @@ def calc_actual_working_time(
     st = get_adjusted_start_time(record, work_start)
     if st is None:
         return Const.TD_ZERO
+    # ct = get_adjust_end_time(
+    #     record,
+    #     work_end,
+    #     is_permit_overtime(record.employee) or record.is_overtime_work_permitted,
+    # )
     ct = get_adjust_end_time(
         record,
         work_end,
-        is_permit_overtime(record.employee) or record.is_overtime_work_permitted,
+        is_permit_overtime(record.employee),
     )
     if ct is None:
         return Const.TD_ZERO
@@ -368,10 +373,7 @@ def calc_overtime(
         return Const.TD_ZERO
     if record.status in WorkingStatus.NO_ACTUAL_WORK:
         return Const.TD_ZERO
-    if (
-        not is_permit_overtime(record.employee)
-        and not record.is_overtime_work_permitted
-    ):
+    if not is_permit_overtime(record.employee):
         return Const.TD_ZERO
     if actual_work <= scheduled_work:
         return Const.TD_ZERO
@@ -398,10 +400,7 @@ def calc_over_8h(
         return Const.TD_ZERO
     if record.status in WorkingStatus.NO_ACTUAL_WORK:
         return Const.TD_ZERO
-    if (
-        not is_permit_overtime(record.employee)
-        and not record.is_overtime_work_permitted
-    ):
+    if not is_permit_overtime(record.employee):
         return Const.TD_ZERO
     d = actual_work - Const.TD_8H
     return d if d.days >= 0 else Const.TD_ZERO
@@ -591,10 +590,12 @@ def accumulate_weekly_working_hours(attendances: list[Attendance]) -> list[tuple
 
 
 def is_permit_overtime(employee: Employee) -> bool:
+    """employeeは残業が認められているか
+
+    :param employee: Employee
+    :return: True:認められている False:認められていない
     """
-    employeeは残業が認められているか
-    """
-    return employee.include_overtime_pay or employee.is_manager()
+    return employee.is_manager()
 
 
 def get_half_year_day(date: datetime.date) -> datetime.date:
@@ -866,7 +867,7 @@ def generate_attendance_record(record: EmployeeDailyRecord) -> DailyAttendanceRe
     end_work = get_adjust_end_time(
         record,
         record.working_hours_end,
-        is_permit_overtime(record.employee) or record.is_overtime_work_permitted,
+        is_permit_overtime(record.employee),
     )
 
     # 調整された出勤時間、退勤時間

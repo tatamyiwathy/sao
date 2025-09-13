@@ -40,12 +40,11 @@ def create_user() -> User:
 
 def create_employee(user, **kwargs) -> sao_models.Employee:
 
-    include_overtime_pay = (
-        kwargs["include_overtime_pay"]
-        if "include_overtime_pay" in kwargs.keys()
-        else False
+    employee_no = (
+        kwargs["employee_no"]
+        if "employee_no" in kwargs.keys()
+        else TEST_USER["employee_no"]
     )
-    employee_no = kwargs["employee_no"] if "employee_no" in kwargs.keys() else TEST_USER["employee_no"]
     return sao_utils.create_employee(
         employee_no=employee_no,
         name=user.last_name + user.first_name,
@@ -53,7 +52,6 @@ def create_employee(user, **kwargs) -> sao_models.Employee:
         employee_type=sao_models.Employee.TYPE_PERMANENT_STAFF,
         department=sao_models.Employee.DEPT_DEVELOPMENT,
         user=user,
-        include_overtime_pay=include_overtime_pay,
     )
 
 
