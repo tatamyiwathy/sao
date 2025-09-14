@@ -9,6 +9,7 @@ from django.dispatch import receiver
 from sao.calendar import is_holiday
 from sao.working_status import WorkingStatus
 from sao.period import Period
+from sao.exceptions import AnomalyAttendanceRecordError
 
 
 class Employee(models.Model):
@@ -501,12 +502,10 @@ class DailyAttendanceRecord(models.Model):
     time_record = models.OneToOneField(
         EmployeeDailyRecord, on_delete=models.PROTECT, related_name="time_record"
     )
-    employee = models.OneToOneField(
+    employee = models.ForeignKey(
         Employee,
         on_delete=models.CASCADE,
         related_name="employee",
-        null=True,
-        blank=True,
     )
     # 対象日
     date = models.DateField(null=True, blank=True)

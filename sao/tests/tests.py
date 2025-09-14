@@ -17,7 +17,7 @@ from common.utils_for_test import (
 )
 from sao import calendar, forms, models, utils, views
 from sao.core import (
-    calc_actual_working_time,
+    calc_actual_working_hours,
     adjust_working_hours,
     calc_tardiness,
     NoAssignedWorkingHourError,
@@ -1151,53 +1151,23 @@ class Over6HourTest(TestCase):
     # 6時間超勤務の時は休息1時間が差し引かれる
     def test_adjust_endtime(self):
         """10-19勤務なら勤務時間が6時間超なので1時間休息する"""
-        assign_working_hour(
-            self.employee, datetime.date(1901, 1, 1), get_working_hour_by_category("A")
-        )
-        work_period = Period(
+        stamp = Period(
             datetime.datetime.combine(self.day, datetime.time(10, 0)),
             datetime.datetime.combine(self.day, datetime.time(19, 0)),
         )
-        r = create_timerecord(
-            stamp=[
-                datetime.datetime.combine(self.day, datetime.time(hour=10)),
-                datetime.datetime.combine(self.day, datetime.time(hour=19)),
-            ],
-            working_hours=work_period.get_pair(),
-            employee=self.employee,
-            date=self.day,
-            status=WorkingStatus.C_KINMU,
-        )
-        work_period = adjust_working_hours(r)
-        self.assertEqual(work_period.duration(), Const.TD_9H)
-        actual_work = calc_actual_working_time(
-            r, work_period.start, work_period.end, Const.TD_ZERO
+        actual_work = calc_actual_working_hours(
+            stamp, WorkingStatus.C_KINMU, Const.TD_ZERO
         )
         self.assertEqual(actual_work, Const.TD_8H)
 
     def test_just_six_hours(self):
         """10-19勤務で16時に早退したら実労働時間は6h 実際は休息1時間を取っているので5hだけどそれは感知しない"""
-        assign_working_hour(
-            self.employee, datetime.date(1901, 1, 1), get_working_hour_by_category("A")
-        )
-        work_period = Period(
+        stamp = Period(
             datetime.datetime.combine(self.day, datetime.time(10, 0)),
-            datetime.datetime.combine(self.day, datetime.time(19, 0)),
+            datetime.datetime.combine(self.day, datetime.time(16, 0)),
         )
-        r = create_timerecord(
-            stamp=[
-                datetime.datetime.combine(self.day, Const.OCLOCK_1000),
-                datetime.datetime.combine(self.day, Const.OCLOCK_1600),
-            ],
-            working_hours=work_period.get_pair(),
-            employee=self.employee,
-            date=self.day,
-            status=WorkingStatus.C_KINMU,
-        )
-        work_period = adjust_working_hours(r)
-        self.assertEqual(work_period.duration(), Const.TD_9H)
-        actual_work = calc_actual_working_time(
-            r, work_period.start, work_period.end, Const.TD_ZERO
+        actual_work = calc_actual_working_hours(
+            stamp, WorkingStatus.C_KINMU, Const.TD_ZERO
         )
         self.assertEqual(actual_work, Const.TD_6H)
 
@@ -1221,33 +1191,26 @@ class Over6HourTest(TestCase):
 
     def test_calc_actual_working_hours(self):
         """10-19の後半休（あり）で18時終業したら労働時間は7h"""
-        assign_working_hour(
-            self.employee, datetime.date(1901, 1, 1), get_working_hour_by_category("A")
-        )
 
         # 打刻データ生成
-        t = datetime.date(year=2020, month=1, day=21)
-        working_hours = (
+        work_hours = Period(
             datetime.datetime.combine(self.day, datetime.time(10, 0)),
             datetime.datetime.combine(self.day, datetime.time(19, 0)),
         )
-        r = create_timerecord(
-            employee=self.employee,
-            date=t,
-            stamp=[
-                datetime.datetime.combine(t, Const.OCLOCK_1000),
-                datetime.datetime.combine(t, Const.OCLOCK_1800),
-            ],
-            status=WorkingStatus.C_YUUKYUU_GOGOKYUU_ARI,
-            working_hours=working_hours,
+        working_hour = adjust_working_hours(
+            work_hours, WorkingStatus.C_YUUKYUU_GOGOKYUU_ARI
         )
-        working_hour = adjust_working_hours(r)
-        self.assertEqual(working_hour.end - working_hour.start, Const.TD_5H)
-        self.assertEqual(working_hour.end.time(), Const.OCLOCK_1500)
+        self.assertEqual(working_hour.duration(), Const.TD_5H)
+        if working_hour.end:
+            self.assertEqual(working_hour.end.time(), Const.OCLOCK_1500)
 
         # 実働時間
-        result = calc_actual_working_time(
-            r, working_hour.start, working_hour.end, Const.TD_ZERO
+        stamp = Period(
+            datetime.datetime.combine(self.day, datetime.time(10, 0)),
+            datetime.datetime.combine(self.day, datetime.time(18, 0)),
+        )
+        result = calc_actual_working_hours(
+            stamp, WorkingStatus.C_YUUKYUU_GOGOKYUU_ARI, Const.TD_ZERO
         )
         self.assertEqual(result, Const.TD_7H)
 
@@ -1255,27 +1218,24 @@ class Over6HourTest(TestCase):
         """10-19の後半休（休息あり）4時間勤務"""
         # 打刻データ生成
         t = datetime.date(2020, 1, 21)
-        working_hours = (
+        working_hours = Period(
             datetime.datetime.combine(t, datetime.time(10, 0)),
             datetime.datetime.combine(t, datetime.time(19, 0)),
         )
-        r = create_timerecord(
-            employee=self.employee,
-            date=t,
-            stamp=[
-                datetime.datetime.combine(t, Const.OCLOCK_1000),
-                datetime.datetime.combine(t, Const.OCLOCK_1500),
-            ],
-            status=WorkingStatus.C_YUUKYUU_GOGOKYUU_ARI,
-            working_hours=working_hours,
+        working_hour = adjust_working_hours(
+            working_hours, WorkingStatus.C_YUUKYUU_GOGOKYUU_ARI
         )
-        working_hour = adjust_working_hours(r)
-        self.assertEqual(working_hour.end - working_hour.start, Const.TD_5H)
-        self.assertEqual(working_hour.end.time(), Const.OCLOCK_1500)
+        self.assertEqual(working_hour.duration(), Const.TD_5H)
+        if working_hour.end:
+            self.assertEqual(working_hour.end.time(), Const.OCLOCK_1500)
 
         # 実働時間
-        result = calc_actual_working_time(
-            r, working_hour.start, working_hour.end, Const.TD_ZERO
+        stamp = Period(
+            datetime.datetime.combine(t, datetime.time(10, 0)),
+            datetime.datetime.combine(t, datetime.time(15, 0)),
+        )
+        result = calc_actual_working_hours(
+            stamp, WorkingStatus.C_YUUKYUU_GOGOKYUU_ARI, Const.TD_ZERO
         )
         self.assertEqual(result, Const.TD_4H)
 
