@@ -1229,7 +1229,7 @@ def add_steppingout(request, record, year, month):
                         employee=employee, out_time=out_time, return_time=return_time
                     ).save()
                     return redirect(
-                        "sao:modify_record", record=record.id, year=year, month=month
+                        "sao:modify_record", record=record.pk, year=year, month=month
                     )
                     # form = forms.AddSteppingOutForm()
                     # steppingouts = models.SteppingOut.objects.filter(employee=employee, out_time__gte=day_start, return_time__lt=day_end)
@@ -1251,7 +1251,7 @@ def add_steppingout(request, record, year, month):
         request,
         "sao/add_steppingout.html",
         {
-            "record": record.id,
+            "record": record.pk,
             "year": year,
             "month": month,
             "employee": employee,
@@ -1279,19 +1279,23 @@ def modify_steppingout(request, steppingout, record, year, month):
             )
             steppingout.save()
             return redirect(
-                "sao:add_steppingout", record=record.id, year=year, month=month
+                "sao:add_steppingout", record=record.pk, year=year, month=month
             )
     else:
+        if steppingout.out_time:
+            out_time = steppingout.out_time
+        if steppingout.return_time:
+            return_time = steppingout.return_time
         initial = {
-            "out_time": steppingout.out_time.time,
-            "return_time": steppingout.return_time.time,
+            "out_time": out_time.time(),
+            "return_time": return_time.time(),
         }
         form = forms.AddSteppingOutForm(initial=initial)
     return render(
         request,
         "sao/modify_steppingout.html",
         {
-            "steppingout": steppingout.id,
+            "steppingout": steppingout.pk,
             "record": record,
             "year": year,
             "month": month,
