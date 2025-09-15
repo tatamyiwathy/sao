@@ -85,11 +85,10 @@ class YearMonthForm(forms.Form):
         widget=forms.DateInput(
             attrs={
                 "type": "month",
-                "class": "form-control MonthPicker",
-                "onBlur": "submit()",
+                "class": "form-control",
             },
-            format="%Y-%m",
         ),
+        input_formats=["%Y-%m"],
     )
 
 

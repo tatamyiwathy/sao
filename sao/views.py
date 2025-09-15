@@ -51,14 +51,45 @@ from sao.utils import (
     format_seconds_to_hhmmss,
 )
 from sao.utils import setup_sample_data as utils_setup_sample_data
-
 from sao.period import Period
 from sao.attendance import Attendance
+from sao._views.utils import get_employee_by_user
 
 logger = logging.getLogger("sao")  # views専用のロガー
 
 
 @login_required
+# def home(request):
+
+#     today = core.get_today()
+#     display_year = core.get_today().year
+#     display_month = core.get_today().month
+#     form = forms.YearMonthForm(request.GET or None)
+#     if request.method == "GET":
+#         if request.GET.get("yearmonth"):
+#             yearmonth = request.GET.get("yearmonth")
+#             display_year = int(yearmonth.split("-")[0])
+#             display_month = int(yearmonth.split("-")[1])
+#             print("yearmonth: %s" % yearmonth)
+#     employee = get_employee_by_user(request.user)
+#     attendaces = tally_attendances([])
+#     rounded = core.round_result(attendaces)
+#     return render(
+#         request,
+#         "sao/attendance_detail.html",
+#         {
+#             "employee": employee,
+#             "year": display_year,
+#             "month": display_month,
+#             "today": today,
+#             "total_result": attendaces,
+#             "rounded_result": rounded,
+#             "mypage": True,
+#             "form": form,
+#         },
+#     )
+
+
 def home(request):
     """
     ■マイページ
