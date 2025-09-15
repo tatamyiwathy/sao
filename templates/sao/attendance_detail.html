@@ -43,12 +43,12 @@
                                 </td>
                             </tr>
                             <tr>
-                                <th>in</th>
-                                <td>{{ fromTime }}</td>
+                                <th>入</th>
+                                <td>{{ today_stamp.0 }}</td>
                             </tr>
                             <tr>
-                                <th>out</th>
-                                <td>{{ toTime }}</td>
+                                <th>出</th>
+                                <td>{{ today_stamp.1 }}</td>
                             </tr>
                         </table>
                         <div class="d-grid">
@@ -68,7 +68,7 @@
         </div>
         <div class="col-auto">
             {% if form %}
-            <form class="form-inline" method="post" action="{% url 'sao:home' %}">
+            <form class="form-inline" method="get" action="{% url 'sao:home' %}">
                 {% csrf_token %}
                 <div class="row g-2">
                     <div class="col">

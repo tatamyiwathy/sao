@@ -8,10 +8,16 @@ from sao.period import Period
 
 logger = logging.getLogger("sao")
 
+
 class Attendance:
     """勤怠データを保持するクラス"""
 
-    def __init__(self, date: datetime.datetime, employee: Employee, record: DailyAttendanceRecord | None = None):
+    def __init__(
+        self,
+        date: datetime.datetime,
+        employee: Employee,
+        record: DailyAttendanceRecord | None = None,
+    ):
         self.date = date  # 日付
         self.employee = employee  # 従業員
         self.daily_attendance_record = record if record else None  # 元データ
@@ -22,19 +28,21 @@ class Attendance:
         self.early_leave = record.early_leave if record else Const.TD_ZERO  # 早退
         self.stepping_out = record.stepping_out if record else Const.TD_ZERO  # 外出
         self.over = record.over if record else Const.TD_ZERO  # 時間外
-        self.total_over = Const.TD_ZERO
-        self.over_8h = record.over_8h if record else Const.TD_ZERO  # 割増=8時間を超えた分
+        self.total_overtime = Const.TD_ZERO
+        self.over_8h = (
+            record.over_8h if record else Const.TD_ZERO
+        )  # 割増=8時間を超えた分
         self.night = record.night if record else Const.TD_ZERO  # 深夜=10時以降
-        self.legal_holiday = record.legal_holiday if record else Const.TD_ZERO  # 法定休日
+        self.legal_holiday = (
+            record.legal_holiday if record else Const.TD_ZERO
+        )  # 法定休日
         self.holiday = record.holiday if record else Const.TD_ZERO  # 法定外休日
         self.status = record.status if record else WorkingStatus.C_NONE
-        self.total_over = Const.TD_ZERO
+        self.total_overtime = Const.TD_ZERO
         self.remark = ""  # 届け
         self.flag = ""
         self.is_absent = False
         self.warnings = {}
-
-
 
     def get_stamp(self) -> Period:
         return Period(self.clock_in, self.clock_out)
@@ -52,4 +60,3 @@ class Attendance:
         s += str(self.actual_work) + " "
         s += str(self.late) + " "
         return s
-

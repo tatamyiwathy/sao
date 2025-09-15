@@ -84,14 +84,14 @@ def warning_midnight(time: datetime.time, attn: attendance.Attendance) -> str:
 def warning_overtime(attn: attendance.Attendance) -> str:
     if attn.actual_work == Const.TD_ZERO:
         return ""
-    return utils.get_overtime_warning(attn.total_over)[0]
+    return utils.get_overtime_warning(attn.total_overtime)[0]
 
 
 @register.filter
 def tooltip_overtime(attn: attendance.Attendance) -> str:
     if attn.actual_work == Const.TD_ZERO:
         return ""
-    return utils.get_overtime_warning(attn.total_over)[1]
+    return utils.get_overtime_warning(attn.total_overtime)[1]
 
 
 @register.filter

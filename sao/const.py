@@ -34,3 +34,6 @@ class Const:
     FIXED_OVERTIME_HOURS_20 = datetime.timedelta(hours=20)  # 20時間/月
     STARTING_DATE = 6  # 起算日は日曜日
     LEGAL_HOLIDAY = 6  # 法定休日は日曜日
+
+    OVERTIME_WORK_WARNING = datetime.timedelta(hours=25)
+    OVERTIME_WORK_PRE_WARNING = datetime.timedelta(hours=23)

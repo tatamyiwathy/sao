@@ -330,7 +330,9 @@ def calc_midnight_work(t: datetime.datetime) -> datetime.timedelta:
     return duration if duration.days >= 0 else Const.TD_ZERO
 
 
-def count_days(results: list, year_month: datetime.date) -> list:
+def summarize_attendance_days(
+    results: list[Attendance], year_month: datetime.date
+) -> list[int]:
     """
     日数算出
           戻り値は配列
@@ -572,14 +574,14 @@ def get_monthy_time_record(
 
 def get_monthly_attendance(employee: Employee, date: datetime.date) -> list[Attendance]:
     """月次の勤怠データを取得する"""
-    start = get_first_day(date)
-    end = get_last_day(date)
-    return get_attendance_in_period(employee, start, end)
+    period = Period(
+        datetime.datetime.combine(get_first_day(date), datetime.time(0, 0)),
+        datetime.datetime.combine(get_last_day(date), datetime.time(0, 0)),
+    )
+    return get_attendance_in_period(employee, period)
 
 
-def get_attendance_in_period(
-    employee: Employee, start: datetime.date, end: datetime.date
-) -> list[Attendance]:
+def get_attendance_in_period(employee: Employee, period: Period) -> list[Attendance]:
     """指定された期間の勤怠データを取得する
     引数:
         employee    対象の社員
@@ -588,13 +590,13 @@ def get_attendance_in_period(
     戻り値:
         勤怠データのリスト
     """
-    if start is None or end is None:
+    if period.start is None or period.end is None:
         raise ValueError("start or end is None")
     attendances = []
     for daily_record in DailyAttendanceRecord.objects.filter(
         time_record__employee=employee,
-        time_record__date__gte=start,
-        time_record__date__lte=end,
+        time_record__date__gte=period.start.date(),
+        time_record__date__lte=period.end.date(),
     ).order_by("time_record__date"):
 
         attn_date = datetime.datetime.combine(
