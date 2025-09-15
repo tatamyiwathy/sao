@@ -372,10 +372,9 @@ def setup_sample_data():
     )
     working_hours.save()
 
-    t = models.EmployeeHour(
+    models.EmployeeHour.objects.create(
         employee=employee, date=datetime.date(2021, 1, 1), working_hours=working_hours
     )
-    t.save()
 
     for stamp in sample_stamp:
         date = datetime.datetime.strptime(stamp[0], "%Y/%m/%d").date()
