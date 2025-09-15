@@ -16,3 +16,13 @@ class AnomalyTimeRecordError(Exception):
 
     def __str__(self):
         return self.arg
+
+
+class AnomalyAttendanceRecordError(Exception):
+    """不正な勤怠データがある場合の例外"""
+
+    def __init__(self, arg=""):
+        self.arg = arg
+
+    def __str__(self):
+        return self.arg

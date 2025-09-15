@@ -351,6 +351,8 @@ def employee_hour_view(request, employee_no):
             ).exists():
                 form.save()
                 logger.info("%sが%sを追加した" % (request.user, employee_hour))
+                messages.success(request, f"{employee_hour}を追加しました")
+                return redirect("sao:employee_list")
             else:
                 messages.error(request, "すでに設定されています")
     else:
@@ -359,7 +361,7 @@ def employee_hour_view(request, employee_no):
         )
     employee_hours = (
         models.EmployeeHour.objects.filter(employee=employee)
-        .filter(date__gte=datetime.date.today())
+        # .filter(date__gte=datetime.date.today())
         .order_by("-date")
     )
 

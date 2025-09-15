@@ -9,6 +9,7 @@ from django.dispatch import receiver
 from sao.calendar import is_holiday
 from sao.working_status import WorkingStatus
 from sao.period import Period
+from sao.exceptions import AnomalyAttendanceRecordError
 
 
 class Employee(models.Model):
@@ -321,7 +322,9 @@ class Notification(models.Model):
 class Permission(models.Model):
     """権限"""
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="permission"
+    )
 
     # WEB打刻 - WEBでの打刻の許可
     enable_stamp_on_web = models.BooleanField(default=False)
@@ -501,10 +504,19 @@ class DailyAttendanceRecord(models.Model):
     time_record = models.OneToOneField(
         EmployeeDailyRecord, on_delete=models.PROTECT, related_name="time_record"
     )
-
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.CASCADE,
+        related_name="employee",
+    )
+    # 対象日
+    date = models.DateField(null=True, blank=True)
     # 調整後の時間
     clock_in = models.DateTimeField(null=True, blank=True)
-    clock_out = models.DateField(null=True, blank=True)
+    clock_out = models.DateTimeField(null=True, blank=True)
+    # 所定勤務時間
+    working_hours_start = models.DateTimeField(null=True, blank=True)
+    working_hours_end = models.DateTimeField(null=True, blank=True)
     # 実労働時間
     actual_work = models.DurationField(default=datetime.timedelta(0))
     # 遅刻
@@ -526,42 +538,9 @@ class DailyAttendanceRecord(models.Model):
     # 届け
     remark = models.CharField(max_length=128, null=True, blank=True)
     # 勤務状況
-    status = models.IntegerField(null=True, blank=True, choices=WorkingStatus.choices)
-
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-
-    # ↓ super().__init__() がやってくれる
-    # self.time_record = kwargs["time_record"] if "time_record" in kwargs else None
-    # self.clock_in = kwargs["clock_in"] if "clock_in" in kwargs else None
-    # self.clock_out = kwargs["clock_out"] if "clock_out" in kwargs else None
-    # self.actual_work = (
-    #     kwargs["actual_work"] if "actual_work" in kwargs else datetime.timedelta(0)
-    # )
-    # self.late = kwargs["late"] if "late" in kwargs else datetime.timedelta(0)
-    # self.early_leave = (
-    #     kwargs["early_leave"] if "early_leave" in kwargs else datetime.timedelta(0)
-    # )
-    # self.stepping_out = (
-    #     kwargs["stepping_out"]
-    #     if "stepping_out" in kwargs
-    #     else datetime.timedelta(0)
-    # )
-    # self.over = kwargs["over"] if "over" in kwargs else datetime.timedelta(0)
-    # self.over_8h = (
-    #     kwargs["over_8h"] if "over_8h" in kwargs else datetime.timedelta(0)
-    # )
-    # self.night = kwargs["night"] if "night" in kwargs else datetime.timedelta(0)
-    # self.legal_holiday = (
-    #     kwargs["legal_holiday"]
-    #     if "legal_holiday" in kwargs
-    #     else datetime.timedelta(0)
-    # )
-    # self.holiday = (
-    #     kwargs["holiday"] if "holiday" in kwargs else datetime.timedelta(0)
-    # )
-    # self.remark = kwargs["remark"] if "remark" in kwargs else ""
-    # self.status = kwargs["status"] if "status" in kwargs else None
+    status = models.IntegerField(
+        default=WorkingStatus.C_NONE, choices=WorkingStatus.choices
+    )
 
     def __str__(self):
         if self.time_record is None:

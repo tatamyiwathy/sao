@@ -25,12 +25,16 @@ from dateutil.relativedelta import relativedelta
 from sao.exceptions import (
     NoAssignedWorkingHourError,
     AnomalyTimeRecordError,
+    AnomalyAttendanceRecordError,
 )
 
 logger = logging.getLogger("sao")
 
 
-def get_adjusted_work_period(status: int, working_hour: Period) -> Period:
+def adjust_working_hours(
+    work_hours: Period,
+    status: int,
+) -> Period:
     """午前休、午後休に応じて所定の勤務時間を調整する
 
     :param status: WorkingStatus
@@ -38,81 +42,24 @@ def get_adjusted_work_period(status: int, working_hour: Period) -> Period:
     :return: 調整後の勤務時間
     """
 
-    if working_hour.is_empty():
-        raise ValueError("勤務時間の設定がありません")
+    duration = work_hours.duration()
 
-    start = working_hour.start
-    end = working_hour.end
-    duration = end - start
-
-    if duration > Const.TD_6H:
+    if is_need_break_time(duration, status):
+        # 休息時間分を引く
         duration -= Const.TD_1H
 
+    adjusted_start = work_hours.start
+    adjusted_end = work_hours.end
     if status in WorkingStatus.MORNING_OFF:
         # 午前休なので開始時間を 所定労働時間の半分と休息１時間分ずらす
-        start = start + duration / 2 + Const.TD_1H
+        adjusted_start = work_hours.start + duration / 2 + Const.TD_1H
     if status in WorkingStatus.AFTERNOON_OFF_WITH_REST:
-        end = end - duration / 2
+        adjusted_end = work_hours.end - duration / 2
     elif status in WorkingStatus.AFTERNOON_OFF_NO_REST:
         # 休息なしなので休息１時間分ずらす
-        end = end - duration / 2 - Const.TD_1H
-    else:
-        pass
+        adjusted_end = work_hours.end - duration / 2 - Const.TD_1H
 
-    return Period(start, end)
-
-
-def adjust_working_hours(record: EmployeeDailyRecord) -> Period:
-    """勤務の開始、終了時間を調整する
-
-    - 勤務の開始時刻と終了時刻をPeriodで返す
-    - 通常は所定の開始/終了時間を返す
-    - 休日出勤はそのまま返す
-    - 午前休/午後休の場合はそれぞれ調整して返す
-    - 所定の勤務時間が６時間を超えるなら終了時間を休息時間分前倒しする
-    - 打刻レコードに勤務時間の設定がないとAnomalyTimeRecordError例外が発生する
-    - 打刻レコードに勤務状態の設定がないとAnomalyTimeRecordError例外が発生する
-
-    :param record: EmployeeDailyRecord
-    :return: tuple(開始時間, 終了時間)
-    """
-
-    if is_holiday(record.date):
-        # 休日出勤はそのまま返す
-        return record.get_clock_in_out()
-
-    working_hours = record.get_scheduled_time()
-    if working_hours.is_empty():
-        raise AnomalyTimeRecordError(
-            f"異常な打刻データです（勤務時間なし） {record.employee.name} {record.date}"
-        )
-    if record.status is None:
-        raise AnomalyTimeRecordError(
-            f"異常な打刻データです（勤務状態なし） {record.employee.name} {record.date}"
-        )
-    return get_adjusted_work_period(record.status, record.get_scheduled_time())
-
-
-def calc_assumed_working_time(
-    record: EmployeeDailyRecord,
-    begin_work: datetime.datetime | None,
-    end_work: datetime.datetime | None,
-) -> datetime.timedelta:
-    """想定されている実労働時間を計算する
-
-    - 労働時間が６時間を超えるなら休息時間分が１時間引かれる
-    - 休日の場合は休息時間は引かれない
-    - 打刻がない場合は０を返す
-    - 勤務状態がない場合は０を返す
-    """
-    if begin_work is None or end_work is None:
-        return Const.TD_ZERO
-    period = end_work - begin_work
-    if record.status is None:
-        return Const.TD_ZERO
-    if is_need_break_time(period, record.status):
-        period -= Const.TD_1H
-    return period
+    return Period(adjusted_start, adjusted_end)
 
 
 def floor_to_30min(t: datetime.timedelta) -> datetime.timedelta:
@@ -165,52 +112,46 @@ def round_attendance_summary(result: dict) -> dict:
     return rounded
 
 
-def get_adjusted_start_time(
-    record: EmployeeDailyRecord, working_hours_start: datetime.datetime | None
-) -> datetime.datetime | None:
+def adjust_work_start_time(
+    clock_in: datetime.datetime, working_hours_start: datetime.datetime
+) -> datetime.datetime:
     """
-    業務を開始した時間を取得する
+    始業時間を調整する
 
-    遅刻してなければ所定の開始時間を返す
-    そうでないなら遅刻した時間を返す
-
+    - 遅刻してなければ所定の開始時間を返す
+    - 遅刻してるなら打刻時間を返す
     - 打刻記録に出社の打刻がない場合はNoneを返す
 
-
-    :param record: EmployeeDailyRecord
+    :param clock_in: 出社の打刻時間
     :param working_hours_start: 所定の勤務開始時間
     :return: 調整された勤務開始時間
     """
-    clock_in = record.get_clock_in()
-    if working_hours_start is None or clock_in is None:
-        return None
+
     if (clock_in - working_hours_start).days < 0:
         return working_hours_start
     # 遅刻している
     return clock_in
 
 
-def get_adjust_end_time(
-    record: EmployeeDailyRecord,
-    working_hours_end: datetime.datetime | None,
+def adjust_work_end_time(
+    clock_out: datetime.datetime,
+    working_hours_end: datetime.datetime,
     overtime_permittion: bool,
 ) -> datetime.datetime | None:
     """
-    業務を終了した時間を取得する
+    終業時間を調整する
+    - 残業許可なら打刻が退勤時刻になる
+    - 早退している場合は打刻が退勤時刻になる
+    - それ以外は所定の勤務終了時間になる
+    - ※打刻がない場合はNoneを返す
+    - ※所定の勤務終了時間がない場合はNoneを返す
 
-    - 打刻>所定勤務時間のとき残業許可なら打刻が退勤時刻になる
-
-    :param record: EmployeeDailyRecord
+    :param clock_out: 出社の打刻時間
     :param working_hours_end: 所定の勤務終了時間
     :param overtime_permittion: 残業許可があるかどうか
     :return: 調整された勤務終了時間
     """
-    if working_hours_end is None or record.get_clock_out() is None:
-        return None
-    clock_out = record.get_clock_out()
-    print("clock_out ", clock_out)
-    if clock_out is None:
-        return None
+
     if (clock_out - working_hours_end).days < 0:
         # 早退
         return clock_out
@@ -218,100 +159,88 @@ def get_adjust_end_time(
         # 残業OK
         return clock_out
     # 所定終業時間
-    print("working_hours_end ", working_hours_end)
     return working_hours_end
 
 
-def calc_actual_working_time(
-    record: EmployeeDailyRecord,
-    work_start: datetime.datetime | None,
-    work_end: datetime.datetime | None,
-    steppingout: datetime.timedelta,
+def calc_actual_working_hours(
+    actual_working_hours: Period, status: int, steppingout: datetime.timedelta
 ) -> datetime.timedelta:
     """
-    実際の労働時間を計算する
-    ・休息時間は含まれていない
-    ・遅刻の場合は出社打刻が調整される
-    ・早退の場合は退社打刻が調整される
+    実際の労働時間の長さを計算する
+    - 6時間を超える勤務なら休息時間分1時間を差し引く
+    - 休息あり半休の場合は6時間以下でも休息時間分1時間を差し引く
     """
-    if record.status is None:
-        return Const.TD_ZERO
-    if record.get_clock_in() is None:
-        return Const.TD_ZERO
-    if record.get_clock_out() is None:
-        return Const.TD_ZERO
-    if record.status in WorkingStatus.NO_ACTUAL_WORK:
-        return Const.TD_ZERO
 
-    print("clock_out ", record.get_clock_out())
-    work_start = get_adjusted_start_time(record, work_start)
-    if work_start is None:
-        return Const.TD_ZERO
-    work_end = get_adjust_end_time(
-        record,
-        work_end,
-        is_permit_overtime(record.employee),
-    )
-    print("work_end %s", work_end)
-    if work_end is None:
-        return Const.TD_ZERO
-    t = work_end - work_start
-    if t < Const.TD_ZERO:
-        return Const.TD_ZERO
-    # 休息が必要なら１時間差し引く
-    if is_need_break_time(t, record.status):
-        t -= Const.TD_1H
+    duration = actual_working_hours.duration()
+    if duration > Const.TD_6H:
+        # 6時間を超えているので休息時間分を引く
+        duration -= Const.TD_1H
+    elif is_need_break_time(duration, status):
+        duration -= Const.TD_1H
+    return duration - steppingout
 
-    # 外出を差し引く
-    return t - steppingout
+
+def calc_assumed_working_time(status: int, work_period: Period) -> datetime.timedelta:
+    """想定されている実労働時間を計算する
+
+    - 労働時間が６時間を超えるなら休息時間分が１時間引かれる
+    - 打刻がない場合は０を返す
+    - 勤務状態がない場合は０を返す
+
+    :param status: 勤務状態
+    :param work_period: 所定の勤務時間
+    :return: 想定されている実労働時間
+    """
+    if work_period.is_unset():
+        return Const.TD_ZERO
+    if status is None:
+        return Const.TD_ZERO
+    duration = work_period.duration()
+    if is_need_break_time(duration, status):
+        duration -= Const.TD_1H
+    return duration
+
+
+def is_holidaywork(status: int) -> bool:
+    """休日出勤かどうか"""
+    if status is WorkingStatus.C_NONE:
+        return False
+    if status not in WorkingStatus.HOLIDAY_WORK:
+        return False
+    return True
 
 
 def calc_tardiness(
-    record: EmployeeDailyRecord, start_time: datetime.datetime
+    clock_in: datetime.datetime, work_start_time: datetime.datetime
 ) -> datetime.timedelta:
-    """遅刻時間の計算"""
-    if record.get_clock_in() is None:
-        return Const.TD_ZERO
-    if record.is_holidaywork():
-        return Const.TD_ZERO
-    if record.status in WorkingStatus.NO_ACTUAL_WORK:
-        return Const.TD_ZERO
-    clock_in = record.get_clock_in()
+    """遅刻時間の計算
 
-    d = clock_in - start_time
+    :param clock_in: 出社の打刻時間
+    :param work_start_time: 所定の勤務開始時間
+    :return: 遅刻時間
+    """
+    d = clock_in - work_start_time
     return d if d.days >= 0 else Const.TD_ZERO
 
 
 def calc_leave_early(
-    record: EmployeeDailyRecord, close_time: datetime.datetime
+    clock_out: datetime.datetime, work_hours_end: datetime.datetime
 ) -> datetime.timedelta:
     """
     早退時間の計算
     もし退勤の打刻がない場合は早退もないこととする
     （その場合は不整合が発生するはず）
     """
-    clock_out = record.get_clock_out()
-    if clock_out is None:
-        # 退勤の打刻がない
-        return Const.TD_ZERO
-    if record.is_holidaywork():
-        # 休日なので早退も発生しない
-        return Const.TD_ZERO
-    if close_time < clock_out:
+    if work_hours_end < clock_out:
         # 早退ではない
         return Const.TD_ZERO
-    if record.status in WorkingStatus.NO_ACTUAL_WORK:
-        # 欠勤してる
-        return Const.TD_ZERO
-    return close_time - clock_out
-
-
-"""
-    外出
-"""
+    return work_hours_end - clock_out
 
 
 def calc_stepping_out(employee: Employee, stamp: Period) -> datetime.timedelta:
+    """
+    外出時間を集計する
+    """
     if stamp.is_unset():
         return Const.TD_ZERO
     total_steppingout = Const.TD_ZERO
@@ -347,97 +276,58 @@ def tally_steppingout(timerecord: EmployeeDailyRecord) -> datetime.timedelta:
 
 
 def calc_overtime(
-    record: EmployeeDailyRecord,
     actual_work: datetime.timedelta,
-    scheduled_work: datetime.timedelta,
+    work_hours: datetime.timedelta,
+    is_overtime_permitted: bool,
 ) -> datetime.timedelta:
     """時間外勤務の時間を計算する
+        休出は勤務時間超過がないのでここでは考慮しない
 
-    ・所定勤務時間を超えた時間を返す
+    - 所定勤務時間を超えた時間を返す
     - もし実勤務時間が所定勤務時間を超過していない場合は0を返す
-    ・休日出勤なら0を返す
-    ・statusが勤務なしなら0を返す
-    ・打刻がない場合は0を返す
-    ・残業が認められていない場合は0を返す
+    - 残業が認められていない場合は0を返す
 
 
-    :param record: EmployeeDailyRecord
     :param actual_work: 実労働時間
-    :param working_duration: 所定の勤務時間
+    :param work_hours: 所定の勤務時間
+    :param is_overtime_permitted: 残業が認められているか
     :return: 時間外勤務時間
     """
-    if record.get_clock_out() is None:
+    if not is_overtime_permitted:
         return Const.TD_ZERO
-    if record.is_holidaywork():
+    if actual_work <= work_hours:
         return Const.TD_ZERO
-    if record.status in WorkingStatus.NO_ACTUAL_WORK:
-        return Const.TD_ZERO
-    if not is_permit_overtime(record.employee):
-        return Const.TD_ZERO
-    if actual_work <= scheduled_work:
-        return Const.TD_ZERO
-    return actual_work - scheduled_work
+    return actual_work - work_hours
 
 
 def calc_over_8h(
-    record: EmployeeDailyRecord, actual_work: datetime.timedelta
+    actual_work: datetime.timedelta, is_overtime_permitted: bool
 ) -> datetime.timedelta:
     """
     勤務時間が8時間を超過した時間を計算する
     - calc_overtimeと似ているが、こちらは8時間を超えた時間を返す
-    - 休日出勤は0を返す
-    - statusが勤務なしなら0を返す
-    - 打刻がない場合は0を返す
     - 残業が認められていない場合は0を返す
     :param record: EmployeeDailyRecord
     :param actual_work: 実労働時間
     :return: 8時間を超えた時間
     """
-    if record.get_clock_out() is None:
-        return Const.TD_ZERO
-    if record.is_holidaywork():
-        return Const.TD_ZERO
-    if record.status in WorkingStatus.NO_ACTUAL_WORK:
-        return Const.TD_ZERO
-    if not is_permit_overtime(record.employee):
+    if not is_overtime_permitted:
         return Const.TD_ZERO
     d = actual_work - Const.TD_8H
     return d if d.days >= 0 else Const.TD_ZERO
 
 
-def calc_midnight_work(t: datetime.datetime | None) -> datetime.timedelta:
+def calc_midnight_work(t: datetime.datetime) -> datetime.timedelta:
     """
     深夜超過時間
     - 深夜=22:00~
-    - もし打刻がない場合は0を返す
 
     :param t: datetime
     :return: 深夜超過時間
     """
-    if t is None:
-        return Const.TD_ZERO
-
     night = datetime.datetime.combine(t.date(), Const.NIGHT_WORK_START)
     duration = t - night
     return duration if duration.days >= 0 else Const.TD_ZERO
-
-
-def calc_legal_holiday(
-    date: datetime.date, actual_work: datetime.timedelta
-) -> datetime.timedelta:
-    """休出(法定)ならそのまま返す"""
-    if is_legal_holiday(date):
-        return actual_work
-    return Const.TD_ZERO
-
-
-def calc_holiday(
-    date: datetime.date, actual_work: datetime.timedelta
-) -> datetime.timedelta:
-    """休出(法定外)ならそのまま返す"""
-    if is_holiday(date) and not is_legal_holiday(date):
-        return actual_work
-    return Const.TD_ZERO
 
 
 def count_days(results: list, year_month: datetime.date) -> list:
@@ -575,7 +465,7 @@ def accumulate_weekly_working_hours(attendances: list[Attendance]) -> list[tuple
 
         # 実労働時間
         steppingout = tally_steppingout(r)
-        work_time += calc_actual_working_time(
+        work_time += calc_actual_working_hours(
             r, working_hours.start, working_hours.end, steppingout
         )
 
@@ -650,11 +540,9 @@ def is_need_break_time(time: datetime.timedelta, code: int) -> bool:
     if time > Const.TD_6H:
         # 6時間を超えているので休息が必要
         return True
-
     if code in WorkingStatus.AFTERNOON_OFF_WITH_REST:
         # 午後休(休息あり)の場合は6時間以下でも休息が必要
         return True
-
     # それ以外の条件では休息は不要
     return False
 
@@ -863,51 +751,123 @@ def generate_daily_record(
     )
 
 
-def generate_attendance_record(record: EmployeeDailyRecord) -> DailyAttendanceRecord:
-    """DailyAttendanceRecordを生成する"""
+def adjust_stamp(
+    stamp: Period, work_hours: Period, date: datetime.date, overtime_permission: bool
+) -> Period:
+    """打刻を調整する
+    - 出社打刻が所定の勤務開始時間より前なら所定の勤務開始時間に調整する
+    - 退社打刻が所定の勤務終了時間より後なら
+      - 残業許可があるなら打刻のまま
+      - 残業許可がないなら所定の勤務終了時間に調整する
+    """
+    if stamp.start is None or stamp.end is None:
+        raise ValueError("stamp is not set")
+    if work_hours.start is None or work_hours.end is None:
+        raise ValueError("work_hours is not set")
+    w_start = adjust_work_start_time(stamp.start, work_hours.start)
+    w_end = adjust_work_end_time(stamp.end, work_hours.end, overtime_permission)
+    return Period(w_start, w_end)
 
-    attendance = DailyAttendanceRecord(time_record=record)
 
-    # 所定の始業、終業、勤務時間を取得する
-    begin_work = get_adjusted_start_time(record, record.working_hours_start)
-    end_work = get_adjust_end_time(
-        record,
-        record.working_hours_end,
-        is_permit_overtime(record.employee),
-    )
+def update_attendance_record(
+    attendance: DailyAttendanceRecord,
+) -> DailyAttendanceRecord:
+    """勤怠データを更新する"""
 
-    # 調整された出勤時間、退勤時間
-    working_hours = adjust_working_hours(record)
+    if attendance.clock_in is None or attendance.clock_out is None:
+        return attendance
+    if attendance.working_hours_start is None or attendance.working_hours_end is None:
+        return attendance
+
+    if attendance.date is None:
+        return attendance
+    if attendance.status is None:
+        return attendance
+
+    stamp = Period(attendance.clock_in, attendance.clock_out)
+    if stamp.start is None or stamp.end is None:
+        return attendance
+
+    work_hours = Period(attendance.working_hours_start, attendance.working_hours_end)
+    if work_hours.start is None or work_hours.end is None:
+        return attendance
+
     # 外出時間
-    stepping_out = calc_stepping_out(record.employee, Period(begin_work, end_work))
-    # 予定勤務時間
-    assumed_working_time = calc_assumed_working_time(
-        record, working_hours.start, working_hours.end
-    )
+    # stepping_out = calc_stepping_out(attendance.employee, Period(begin_work, end_work))
+    stepping_out = Const.TD_ZERO
     # 実労働時間(休息分は差し引かれてる)
-    actual_working_time = calc_actual_working_time(
-        record, working_hours.start, working_hours.end, stepping_out
-    )
+    working_duration = calc_actual_working_hours(stamp, attendance.status, stepping_out)
 
     # 勤怠詳細を計算してセットする
-    attendance.actual_work = actual_working_time
-    attendance.late = calc_tardiness(record, working_hours.start)
-    attendance.early_leave = calc_leave_early(record, working_hours.end)
-    attendance.over = calc_overtime(record, actual_working_time, assumed_working_time)
-    if attendance.over is not None and attendance.over.total_seconds() > 0:
-        attendance.over_8h = calc_over_8h(record, actual_working_time)
-        attendance.night = calc_midnight_work(record.get_clock_out())
-    else:
-        attendance.over_8h = Const.TD_ZERO
-        attendance.night = Const.TD_ZERO
-    attendance.legal_holiday = calc_legal_holiday(record.date, actual_working_time)
-    attendance.holiday = calc_holiday(record.date, actual_working_time)
     attendance.stepping_out = stepping_out
-    attendance.status = record.status
-    try:
-        attendance.save()
-    except Exception as e:
-        logger.error(f"Failed to save DailyAttendanceRecord: {e}")
+    attendance.actual_work = working_duration
+    if is_holiday(attendance.date):
+        if is_legal_holiday(attendance.date):
+            attendance.legal_holiday = working_duration
+        else:
+            attendance.holiday = working_duration
+    attendance.late = calc_tardiness(stamp.start, work_hours.start)
+    attendance.early_leave = calc_leave_early(stamp.end, work_hours.end)
+    attendance.over = calc_overtime(
+        stamp.duration(), working_duration, is_permit_overtime(attendance.employee)
+    )
+
+    attendance.over_8h = calc_over_8h(
+        working_duration, is_permit_overtime(attendance.employee)
+    )
+    # 休出でも深夜は計算する
+    attendance.night = calc_midnight_work(stamp.end)
+    attendance.save()
+    return attendance
+
+
+def adjust_clock_in_and_out(
+    attendance: DailyAttendanceRecord,
+) -> DailyAttendanceRecord:
+    """打刻と所定の勤務時間を調整する"""
+    if attendance.clock_in is None or attendance.clock_out is None:
+        return attendance
+    if attendance.working_hours_start is None or attendance.working_hours_end is None:
+        return attendance
+    if attendance.date is None:
+        return attendance
+    if attendance.status is None:
+        return attendance
+
+    if is_holiday(attendance.date):
+        # 休出の場合は打刻を調整しない
+        # 休出所的勤務時間がないので打刻をそのまま勤務時間にする
+        attendance.working_hours_start = attendance.clock_in
+        attendance.working_hours_end = attendance.clock_out
+        return attendance
+
+    stamp = Period(attendance.clock_in, attendance.clock_out)
+    work_hours = Period(attendance.working_hours_start, attendance.working_hours_end)
+    overtime = is_overtime_permitted(attendance.employee, attendance.date)
+    stamp = adjust_stamp(stamp, work_hours, attendance.date, overtime)
+
+    attendance.clock_in = stamp.start
+    attendance.clock_out = stamp.end
+
+    return attendance
+
+
+def generate_attendance_record(record: EmployeeDailyRecord) -> DailyAttendanceRecord:
+    """DailyAttendanceRecordを生成する
+    :param record: EmployeeDailyRecord
+    :return: 生成されたDailyAttendanceRecord"""
+
+    attendance = DailyAttendanceRecord(
+        time_record=record,
+        employee=record.employee,
+        date=record.date,
+        clock_in=record.clock_in,
+        clock_out=record.clock_out,
+        working_hours_start=record.working_hours_start,
+        working_hours_end=record.working_hours_end,
+        status=record.status,
+    )
+    attendance.save()
     return attendance
 
 
@@ -924,13 +884,16 @@ def finalize_daily_record(employee: Employee, date: datetime.date):
     try:
         with transaction.atomic():
             # EmployeeDailyRecordを生成する
-            record = generate_daily_record([x.stamp for x in stamps], employee, date)
+            record = generate_daily_record(stamps, employee, date)
             if record is None:
                 logger.info(f"[test]打刻データが存在しないためスキップします")
                 return
 
             # recordからDailyAttendanceRecordを生成する
-            generate_attendance_record(record)
+            attendance = generate_attendance_record(record)
+            attendance = adjust_clock_in_and_out(attendance)
+            attendance = update_attendance_record(attendance)
+
     except Exception as e:
         logger.error(f"[test]レコードの生成に失敗しました: {employee} {date} {e}")
         return
@@ -952,10 +915,7 @@ def finalize_daily_record(employee: Employee, date: datetime.date):
         logger.info("[test]DailyAttendanceRecordを生成しました")
 
     # WebTimeStampを削除する
-    try:
-        stamps.delete()
-    except Exception as e:
-        logger.error(f"[test]Web打刻データの削除に失敗しました: {employee} {date} {e}")
+    remove_daily_webstamps(employee, date)
 
     return
 
@@ -986,6 +946,19 @@ def get_daily_webstamps(
         employee=employee, stamp__gte=day_begin, stamp__lt=day_end
     ).order_by("stamp")
     return [x.stamp for x in stamps if x.stamp is not None]
+
+
+def remove_daily_webstamps(employee: Employee, date: datetime.date):
+    """WebStampから日にちを指定してスタンプを削除
+
+    :param employee: 対象の社員
+    :param date: 対象の日付
+    """
+    day_begin = datetime.datetime.combine(date, get_day_switch_time())
+    day_end = day_begin + datetime.timedelta(days=1)
+    stamps = WebTimeStamp.objects.filter(
+        employee=employee, stamp__gte=day_begin, stamp__lt=day_end
+    ).delete()
 
 
 def permit_overtime(employee: Employee, date: datetime.date) -> None:
@@ -1020,7 +993,6 @@ def assign_fixed_overtime_pay(
     obj, created = FixedOvertimePayEmployee.objects.update_or_create(
         employee=employee, hours=hours
     )
-    print(created)
 
 
 def is_assigned_fixed_overtime_pay(
