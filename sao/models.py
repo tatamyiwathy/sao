@@ -322,7 +322,9 @@ class Notification(models.Model):
 class Permission(models.Model):
     """権限"""
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="permission"
+    )
 
     # WEB打刻 - WEBでの打刻の許可
     enable_stamp_on_web = models.BooleanField(default=False)
