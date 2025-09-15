@@ -993,7 +993,6 @@ def assign_fixed_overtime_pay(
     obj, created = FixedOvertimePayEmployee.objects.update_or_create(
         employee=employee, hours=hours
     )
-    print(created)
 
 
 def is_assigned_fixed_overtime_pay(
