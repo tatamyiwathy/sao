@@ -921,7 +921,7 @@ def attendance_summary(request):
         }
         params["checked"] = "checked" if hide_deactive_staff else ""
         response = render(request, "sao/attendance_summary.html", params)
-        response.set_cookie("hide_deactive_staff", hide_deactive_staff)
+        response.set_cookie("hide_deactive_staff", str(hide_deactive_staff))
         return response
     else:
         # 年月指定
@@ -963,12 +963,12 @@ def modify_permission(request, user_id):
         form = forms.ModifyPermissionForm(request.POST)
         if form.is_valid():
             user.is_staff = form.cleaned_data["is_staff"]
-            user.permission.enable_view_detail = form.cleaned_data["enable_view_detail"]
-            user.permission.enable_stamp_on_web = form.cleaned_data[
+            user.permission.enable_view_detail = form.cleaned_data["enable_view_detail"]  # type: ignore
+            user.permission.enable_stamp_on_web = form.cleaned_data[  # type: ignore
                 "enable_stamp_on_web"
             ]
-            user.permission.enable_add_staff = form.cleaned_data["enable_add_staff"]
-            user.permission.save()
+            user.permission.enable_add_staff = form.cleaned_data["enable_add_staff"]  # type: ignore
+            user.permission.save()  # type: ignore
             user.save()
             logger.info("%sが%sの権限を変更しました" % (request.user, user))
         return redirect("sao:permission")
@@ -976,9 +976,9 @@ def modify_permission(request, user_id):
         form = forms.ModifyPermissionForm(
             {
                 "is_staff": user.is_staff,
-                "enable_view_detail": user.permission.enable_view_detail,
-                "enable_stamp_on_web": user.permission.enable_stamp_on_web,
-                "enable_add_staff": user.permission.enable_add_staff,
+                "enable_view_detail": user.permission.enable_view_detail,  # type: ignore
+                "enable_stamp_on_web": user.permission.enable_stamp_on_web,  # type: ignore
+                "enable_add_staff": user.permission.enable_add_staff,  # type: ignore
             }
         )
 
