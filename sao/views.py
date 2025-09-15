@@ -1328,20 +1328,6 @@ def get_employee_json(request):
     )
 
 
-def fix_holiday(request):
-    """休日の修正"""
-    employees = models.Employee.objects.filter(user__is_active=True)
-    for e in employees:
-        rec = models.EmployeeDailyRecord.objects.filter(employee=e)
-        rec = rec.filter(date__gte="2021-12-28")
-        rec = rec.filter(date__lt="2022-01-05")
-        for r in rec:
-            r.flag = "休日"
-            r.save()
-
-    return HttpResponse("done")
-
-
 @login_required
 def working_hours_view(request):
     return render(
