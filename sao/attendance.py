@@ -23,6 +23,12 @@ class Attendance:
         self.daily_attendance_record = record if record else None  # 元データ
         self.clock_in = record.clock_in if record else None  # 実打刻時間
         self.clock_out = record.clock_out if record else None  # 実打刻時間
+        self.working_hours_start = (
+            record.working_hours_start if record else None
+        )  # 勤務時間開始
+        self.working_hours_end = (
+            record.working_hours_end if record else None
+        )  # 勤務時間終了
         self.actual_work = record.actual_work if record else Const.TD_ZERO  # 実労働時間
         self.late = record.late if record else Const.TD_ZERO  # 遅刻
         self.early_leave = record.early_leave if record else Const.TD_ZERO  # 早退
@@ -38,6 +44,11 @@ class Attendance:
         )  # 法定休日
         self.holiday = record.holiday if record else Const.TD_ZERO  # 法定外休日
         self.status = record.status if record else WorkingStatus.C_NONE
+        self.overtime_permitted = (
+            record.overtime_permitted if record else False
+        )  # 残業許可
+
+        # 以下、DailyAttendanceRecordにはない
         self.total_overtime = Const.TD_ZERO
         self.remark = ""  # 届け
         self.flag = ""

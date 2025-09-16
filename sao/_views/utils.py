@@ -155,6 +155,10 @@ def collect_attendance_warning_messages(
 def collect_display_attendances(
     employee: Employee, view_date: datetime.date
 ) -> list[Attendance]:
+    """表示する勤怠データを取得する
+    :param employee: Employeeオブジェクト
+    :param view_date: 表示する年月日
+    :return: Attendanceオブジェクトのリスト"""
     first_day = datetime.datetime.combine(get_first_day(view_date), datetime.time(0, 0))
     next_month_first_day = datetime.datetime.combine(
         get_last_day(view_date) + datetime.timedelta(days=1), datetime.time(0, 0)

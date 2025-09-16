@@ -37,7 +37,7 @@ from sao.core import (
     calc_midnight_work,
     tally_steppingout,
     accumulate_weekly_working_hours,
-    is_permit_overtime,
+    has_permitted_overtime_work,
     get_half_year_day,
     get_annual_paied_holiday_days,
     get_recent_day_of_annual_leave_update,
@@ -52,14 +52,14 @@ from sao.core import (
     get_attendance_in_period,
     finalize_daily_record,
     get_monthly_attendance,
-    permit_overtime,
-    is_overtime_permitted,
-    revoke_overtime,
+    permit_daily_overtime,
+    has_permitted_daily_overtime,
+    revoke_daily_overtime_permission,
     assign_fixed_overtime_pay,
-    is_assigned_fixed_overtime_pay,
+    has_assigned_fixed_overtime_pay,
     remove_fixed_working_hours,
     generate_attendance_record,
-    adjust_clock_in_and_out,
+    initiate_daily_attendance_record,
 )
 from sao.const import Const
 from sao.calendar import monthdays, is_holiday
@@ -479,17 +479,17 @@ class TestCalcMidnightWork(TestCase):
 
 
 class TestIsPermitOvertime(TestCase):
-    def test_is_permit_overtime(self):
+    def test_has_permitted_overtime(self):
         """固定残業時間が設定されている場合、残業が許可されることを確認する"""
         employee = create_employee(create_user())
         assign_fixed_overtime_pay(employee, Const.FIXED_OVERTIME_HOURS_20)
-        permit_overtime = is_permit_overtime(employee)
+        permit_overtime = has_permitted_overtime_work(employee, None)
         self.assertTrue(permit_overtime)
 
-    def test_not_permit_overtime(self):
+    def test_has_not_overtime_permittion(self):
         """固定残業時間が設定されていない場合、残業が許可されないことを確認する"""
         employee = create_employee(create_user())
-        permit_overtime = is_permit_overtime(employee)
+        permit_overtime = has_permitted_overtime_work(employee, None)
         self.assertFalse(permit_overtime)
 
 
@@ -1168,7 +1168,7 @@ class TestOvertimePermission(TestCase):
 
     @patch("sao.core.is_overtime_permitted", return_value=False)
     def test_permit_overtime(self, mock_is_overtime_permitted):
-        permit_overtime(self.employee, date(2021, 8, 1))
+        permit_daily_overtime(self.employee, date(2021, 8, 1))
         self.assertTrue(
             OvertimePermission.objects.filter(
                 employee=self.employee, date=date(2021, 8, 1)
@@ -1181,18 +1181,18 @@ class TestOvertimePermission(TestCase):
         self, mock_is_overtime_permitted, mock_create
     ):
         """既に許可されている場合、再度許可しても重複しないこと"""
-        permit_overtime(self.employee, date(2021, 8, 1))
+        permit_daily_overtime(self.employee, date(2021, 8, 1))
         mock_create.assert_not_called()
 
     def test_oertime_permission_exists(self):
         """時間外労働が許可されているかどうかを確認するテスト"""
         OvertimePermission.objects.create(employee=self.employee, date=date(2021, 8, 1))
-        self.assertTrue(is_overtime_permitted(self.employee, date(2021, 8, 1)))
+        self.assertTrue(has_permitted_daily_overtime(self.employee, date(2021, 8, 1)))
 
     def test_revoke_overtime(self):
         """時間外労働の許可を取り消すテスト"""
         OvertimePermission.objects.create(employee=self.employee, date=date(2021, 8, 1))
-        revoke_overtime(self.employee, date(2021, 8, 1))
+        revoke_daily_overtime_permission(self.employee, date(2021, 8, 1))
         self.assertFalse(
             OvertimePermission.objects.filter(
                 employee=self.employee, date=date(2021, 8, 1)
@@ -1224,17 +1224,13 @@ class TestFixedOvertimePay(TestCase):
     def test_is_assigned_fixed_overtime_pay(self):
         """従業員に固定残業代が割り当てられているかどうかを確認するテスト"""
         assign_fixed_overtime_pay(self.employee, Const.FIXED_OVERTIME_HOURS_20)
-        self.assertTrue(
-            is_assigned_fixed_overtime_pay(self.employee, Const.FIXED_OVERTIME_HOURS_20)
-        )
+        self.assertTrue(has_assigned_fixed_overtime_pay(self.employee))
 
     def test_revoke_fixed_overtime_pay(self):
         """従業員の固定残業代を取り消すテスト"""
         assign_fixed_overtime_pay(self.employee, Const.FIXED_OVERTIME_HOURS_20)
         remove_fixed_working_hours(self.employee, Const.FIXED_OVERTIME_HOURS_20)
-        self.assertFalse(
-            is_assigned_fixed_overtime_pay(self.employee, Const.FIXED_OVERTIME_HOURS_20)
-        )
+        self.assertFalse(has_assigned_fixed_overtime_pay(self.employee))
 
 
 class TestGenerateDailyAttendanceRecord(TestCase):
@@ -1293,7 +1289,7 @@ class TestAdjustClockInAndOut(TestCase):
             working_hours_end=work_hours_end,
             status=WorkingStatus.C_KINMU,
         )
-        attendance = adjust_clock_in_and_out(attendance)
+        attendance = initiate_daily_attendance_record(attendance)
         self.assertEqual(attendance.clock_in, datetime.combine(self.day, time(10, 0)))
         self.assertEqual(attendance.clock_out, datetime.combine(self.day, time(19, 0)))
         self.assertEqual(attendance.working_hours_start, work_hours_start)
@@ -1310,7 +1306,7 @@ class TestAdjustClockInAndOut(TestCase):
             working_hours_end=datetime.combine(self.day, time(19, 0)),
             status=WorkingStatus.C_KINMU,
         )
-        attendance = adjust_clock_in_and_out(attendance)
+        attendance = initiate_daily_attendance_record(attendance)
         self.assertEqual(attendance.clock_in, datetime.combine(self.day, time(11, 0)))
         self.assertEqual(attendance.clock_out, datetime.combine(self.day, time(19, 0)))
 
@@ -1325,7 +1321,7 @@ class TestAdjustClockInAndOut(TestCase):
             working_hours_end=datetime.combine(self.day, time(19, 0)),
             status=WorkingStatus.C_KINMU,
         )
-        attendance = adjust_clock_in_and_out(attendance)
+        attendance = initiate_daily_attendance_record(attendance)
         self.assertEqual(attendance.clock_in, datetime.combine(self.day, time(10, 0)))
         self.assertEqual(attendance.clock_out, datetime.combine(self.day, time(18, 0)))
 
@@ -1343,7 +1339,7 @@ class TestAdjustClockInAndOut(TestCase):
             working_hours_end=datetime.combine(self.day, time(19, 0)),
             status=WorkingStatus.C_KINMU,
         )
-        attendance = adjust_clock_in_and_out(attendance)
+        attendance = initiate_daily_attendance_record(attendance)
         self.assertEqual(attendance.clock_in, datetime.combine(self.day, time(10, 0)))
         self.assertEqual(attendance.clock_out, datetime.combine(self.day, time(20, 0)))
 
@@ -1361,6 +1357,6 @@ class TestAdjustClockInAndOut(TestCase):
             working_hours_end=datetime.combine(self.day, time(19, 0)),
             status=WorkingStatus.C_KINMU,
         )
-        attendance = adjust_clock_in_and_out(attendance)
+        attendance = initiate_daily_attendance_record(attendance)
         self.assertEqual(attendance.clock_in, datetime.combine(self.day, time(10, 0)))
         self.assertEqual(attendance.clock_out, datetime.combine(self.day, time(19, 0)))

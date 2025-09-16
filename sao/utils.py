@@ -5,6 +5,7 @@ from sao import models, core
 from sao.attendance import Attendance
 from sao.period import Period
 from sao.calendar import is_legal_holiday
+from sao.const import Const
 
 
 def make_web_stamp_string(
@@ -308,7 +309,7 @@ def tally_attendances(attendances: list[Attendance]) -> dict:
     return attendance_tallied
 
 
-def setup_sample_data():
+def setup_sample_data() -> None:
     """サンプルデータを生成する"""
 
     sample_stamp = [
@@ -356,7 +357,7 @@ def setup_sample_data():
         return
 
     user = create_user("foobar", "山田", "太郎", "foobar", "foobartaro@example.com")
-    user.permission.enable_stamp_on_web = True
+    user.permission.enable_stamp_on_web = True  # type: ignore
     user.save()
 
     employee = create_employee(
@@ -368,6 +369,10 @@ def setup_sample_data():
         join_date=datetime.date(2021, 1, 1),
         payed_holiday=10.0,
     )
+
+    core.assign_fixed_overtime_pay(employee, Const.FIXED_OVERTIME_HOURS_20)
+    if not core.has_assigned_fixed_overtime_pay(employee):
+        raise ValueError("Failed to assign fixed overtime pay")
 
     working_hours = models.WorkingHour(
         begin_time=datetime.time(10, 0, 0),
@@ -399,4 +404,6 @@ def setup_sample_data():
 
         record = core.generate_daily_record([clock_in, clock_out], employee, date)
         if record:
-            core.generate_attendance_record(record)
+            attendance = core.generate_attendance_record(record)
+            attendance = core.initiate_daily_attendance_record(attendance)
+            attendance = core.update_attendance_record(attendance)

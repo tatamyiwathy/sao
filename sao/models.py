@@ -541,6 +541,8 @@ class DailyAttendanceRecord(models.Model):
     status = models.IntegerField(
         default=WorkingStatus.C_NONE, choices=WorkingStatus.choices
     )
+    # 残業許可
+    overtime_permitted = models.BooleanField(default=False)
 
     def __str__(self):
         if self.time_record is None:

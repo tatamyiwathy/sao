@@ -163,16 +163,16 @@
                     {% endif %}
                     <td>{{ r.flag }}</td>
                     <td class="text-end {% missed_stamp_color r.clock_out r.clock_in %}">
-                        {% if r.clock_in %}{{ r.clock_in }}{% endif %}
+                        {% if r.clock_in %}{{ r.clock_in.time }}{% endif %}
                     </td>
                     <td class="text-end {% missed_stamp_color r.clock_in r.clock_out %}">
                         {% if r.clock_out %}
                         <div style="{% warning_midnight r.clock_out r %}">
-                            {{ r.clock_out }}
+                            {{ r.clock_out.time }}
                         </div>
                         {% endif %}
                     </td>
-                    <td class="text-end">{{ r.work|strip_seconds:"" }}</td>
+                    <td class="text-end">{{ r.actual_work|strip_seconds:"" }}</td>
                     {% if not mypage %}
                         <td class="text-end {{ r.late|color_ifnot:'cream_bg' }}">{{ r.late|strip_seconds:"" }}</td>
                         <td class="text-end {{ r.before|color_ifnot:'cream_bg' }}">{{ r.before|strip_seconds:"" }}</td>

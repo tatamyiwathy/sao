@@ -463,13 +463,11 @@ def accumulate_weekly_working_hours(attendances: list[Attendance]) -> list[tuple
             week_begin = a.date
 
         # 所定の始業、終業、勤務時間を取得する
-        working_hours = a.time_record.get_scheduled_time()
+        actual_work = Period(a.clock_in, a.clock_out)
 
         # 実労働時間
         steppingout = tally_steppingout(r)
-        work_time += calc_actual_working_hours(
-            r, working_hours.start, working_hours.end, steppingout
-        )
+        work_time += calc_actual_working_hours(actual_work, a.status, steppingout)
 
         # 土曜日は集計
         if a.date.weekday() == 5:
@@ -480,19 +478,26 @@ def accumulate_weekly_working_hours(attendances: list[Attendance]) -> list[tuple
     return result
 
 
-def is_permit_overtime(employee: Employee) -> bool:
+def has_permitted_overtime_work(employee: Employee, date: datetime.date | None) -> bool:
     """employeeは残業が認められているか
+    日毎の許可と固定残業制度の両方を考慮するので、通常はこの関数で判断すべき
 
     :param employee: Employee
+    :param date: 日付
     :return: True:認められている False:認められていない
     """
     if employee.is_manager():
         # 管理職は常に残業が認められている
         return True
-    if is_assigned_fixed_overtime_pay(employee, Const.FIXED_OVERTIME_HOURS_20):
+    if has_assigned_fixed_overtime_pay(employee):
         # みなし残業20時間が割り当てられている場合は常に残業が認められている
         return True
-    # Todo: 個別で許可された残業の判定をする
+
+    if date is not None:
+        if has_permitted_daily_overtime(employee, date):
+            # 個別に残業が許可されている場合
+            return True
+
     return False
 
 
@@ -598,7 +603,6 @@ def get_attendance_in_period(employee: Employee, period: Period) -> list[Attenda
         time_record__date__gte=period.start.date(),
         time_record__date__lte=period.end.date(),
     ).order_by("time_record__date"):
-
         attn_date = datetime.datetime.combine(
             daily_record.time_record.date, datetime.time(0, 0, 0)
         )
@@ -696,7 +700,7 @@ def normalize_to_business_day(day: datetime.datetime) -> datetime.datetime:
     return day
 
 
-def get_clock_in_out(stamps: list[datetime.datetime]) -> Period:
+def get_clock_in_out(stamps: list[datetime.datetime | None]) -> Period:
     """打刻のリストから出社・退社のペアを取得する
     打刻がないときは(None, None)を返す
     打刻が1件のときは(打刻, None)を返す
@@ -710,7 +714,7 @@ def get_clock_in_out(stamps: list[datetime.datetime]) -> Period:
 
 
 def generate_daily_record(
-    stamps: list[datetime.datetime], employee: Employee, date: datetime.date
+    stamps: list[datetime.datetime | None], employee: Employee, date: datetime.date
 ) -> EmployeeDailyRecord | None:
     """EmployeeDailyRecordを生成する
 
@@ -739,9 +743,9 @@ def generate_daily_record(
         is_holiday(date), is_legal_holiday(date), not clock_in_out.is_empty()
     )
 
-    logger.debug(
-        f"generate_daily_record: {employee.name} {date} {stamps} -> {clock_in_out}"
-    )
+    # logger.debug(
+    #     f"generate_daily_record: {employee.name} {date} {stamps} -> {clock_in_out}"
+    # )
     return EmployeeDailyRecord.objects.create(
         employee=employee,
         date=date,
@@ -811,11 +815,14 @@ def update_attendance_record(
     attendance.late = calc_tardiness(stamp.start, work_hours.start)
     attendance.early_leave = calc_leave_early(stamp.end, work_hours.end)
     attendance.over = calc_overtime(
-        stamp.duration(), working_duration, is_permit_overtime(attendance.employee)
+        stamp.duration(),
+        working_duration,
+        has_permitted_overtime_work(attendance.employee, attendance.date),
     )
 
     attendance.over_8h = calc_over_8h(
-        working_duration, is_permit_overtime(attendance.employee)
+        working_duration,
+        has_permitted_overtime_work(attendance.employee, attendance.date),
     )
     # 休出でも深夜は計算する
     attendance.night = calc_midnight_work(stamp.end)
@@ -823,7 +830,7 @@ def update_attendance_record(
     return attendance
 
 
-def adjust_clock_in_and_out(
+def initiate_daily_attendance_record(
     attendance: DailyAttendanceRecord,
 ) -> DailyAttendanceRecord:
     """打刻と所定の勤務時間を調整する"""
@@ -836,6 +843,10 @@ def adjust_clock_in_and_out(
     if attendance.status is None:
         return attendance
 
+    if has_permitted_overtime_work(attendance.employee, attendance.date):
+        # 個別に残業が許可されている場合
+        attendance.overtime_permitted = True
+
     if is_holiday(attendance.date):
         # 休出の場合は打刻を調整しない
         # 休出所的勤務時間がないので打刻をそのまま勤務時間にする
@@ -845,9 +856,10 @@ def adjust_clock_in_and_out(
 
     stamp = Period(attendance.clock_in, attendance.clock_out)
     work_hours = Period(attendance.working_hours_start, attendance.working_hours_end)
-    overtime = is_overtime_permitted(attendance.employee, attendance.date)
-    stamp = adjust_stamp(stamp, work_hours, attendance.date, overtime)
-
+    stamp = adjust_stamp(
+        stamp, work_hours, attendance.date, attendance.overtime_permitted
+    )
+    print(stamp)
     attendance.clock_in = stamp.start
     attendance.clock_out = stamp.end
 
@@ -893,7 +905,7 @@ def finalize_daily_record(employee: Employee, date: datetime.date):
 
             # recordからDailyAttendanceRecordを生成する
             attendance = generate_attendance_record(record)
-            attendance = adjust_clock_in_and_out(attendance)
+            attendance = initiate_daily_attendance_record(attendance)
             attendance = update_attendance_record(attendance)
 
     except Exception as e:
@@ -963,9 +975,15 @@ def remove_daily_webstamps(employee: Employee, date: datetime.date):
     ).delete()
 
 
-def permit_overtime(employee: Employee, date: datetime.date) -> None:
+"""
+    残業許可の管理
+    
+"""
+
+
+def permit_daily_overtime(employee: Employee, date: datetime.date) -> None:
     """残業を許可する"""
-    if is_overtime_permitted(employee, date):
+    if has_permitted_daily_overtime(employee, date):
         # すでに許可されている
         logger.info(f"すでに残業が許可されています: {employee.name} {date}")
         return
@@ -973,15 +991,20 @@ def permit_overtime(employee: Employee, date: datetime.date) -> None:
     logger.info(f"残業を許可しました: {employee.name} {date}")
 
 
-def is_overtime_permitted(employee: Employee, date: datetime.date) -> bool:
+def has_permitted_daily_overtime(employee: Employee, date: datetime.date) -> bool:
     """残業が許可されているかどうか"""
     return OvertimePermission.objects.filter(employee=employee, date=date).exists()
 
 
-def revoke_overtime(employee: Employee, date: datetime.date) -> None:
+def revoke_daily_overtime_permission(employee: Employee, date: datetime.date) -> None:
     """残業許可を取り消す"""
     OvertimePermission.objects.filter(employee=employee, date=date).delete()
     logger.info(f"残業許可を取り消しました: {employee.name} {date}")
+
+
+"""
+    固定残業時間の設定
+"""
 
 
 def assign_fixed_overtime_pay(
@@ -997,9 +1020,7 @@ def assign_fixed_overtime_pay(
     )
 
 
-def is_assigned_fixed_overtime_pay(
-    employee: Employee, hours: datetime.timedelta
-) -> bool:
+def has_assigned_fixed_overtime_pay(employee: Employee) -> bool:
     """固定残業時間が設定されているかどうか"""
     return FixedOvertimePayEmployee.objects.filter(employee=employee).exists()
 
