@@ -2,11 +2,11 @@
 import datetime
 
 from django import template
-from sao import attendance
 from sao import utils
 from sao import calendar
 from sao import utils
 from sao.const import Const
+from sao.attendance import Attendance
 
 register = template.Library()
 
@@ -35,7 +35,7 @@ def is_saturday(date):
 
 
 @register.filter
-def is_holiday(date):
+def is_holiday(date: datetime.datetime) -> bool:
     return calendar.is_holiday(date.date())
 
 
@@ -45,11 +45,14 @@ def focus_today(date: datetime.date, day: datetime.date) -> str:
 
 
 @register.filter
-def row_bg_color(attn: attendance.Attendance, today: datetime.date) -> str:
-    if attn.date == today:
-        return "success"
-    elif attn.get_stamp().is_unset():
-        return "danger"
+def select_tr_color(attn: Attendance, today: datetime.date) -> str:
+    if attn.date.date() == today:
+        return "table-success"
+    else:
+        dt = datetime.datetime.combine(today, datetime.time(0, 0))
+        if attn.date < dt:
+            if attn.warnings:
+                return "table-warning"
     return ""
 
 
@@ -63,40 +66,48 @@ def missed_stamp_color(left, right):
 
 
 @register.filter
-def set_warning_color(attn: attendance.Attendance, key: str) -> str:
+def warning_messages(attn: Attendance) -> str:
+    message = ""
+    for key in attn.warnings.keys():
+        message += attn.warnings[key] + "\n"
+    return message
+
+
+@register.filter
+def set_warning_color(attn: Attendance, key: str) -> str:
     if key in attn.warnings.keys():
         return "danger"
     return ""
 
 
 @register.filter
-def set_any_warning_color(attn: attendance.Attendance) -> str:
+def set_any_warning_color(attn: Attendance) -> str:
     return "danger" if len(attn.warnings.keys()) > 0 else ""
 
 
 @register.simple_tag
-def warning_midnight(time: datetime.time, attn: attendance.Attendance) -> str:
+def warning_midnight(time: datetime.time, attn: Attendance) -> str:
     if attn.night > Const.TD_ZERO:
         return "color:red;"
     return ""
 
 
 @register.filter
-def warning_overtime(attn: attendance.Attendance) -> str:
+def warning_overtime(attn: Attendance) -> str:
     if attn.actual_work == Const.TD_ZERO:
         return ""
     return utils.get_overtime_warning(attn.total_overtime)[0]
 
 
 @register.filter
-def tooltip_overtime(attn: attendance.Attendance) -> str:
+def tooltip_overtime(attn: Attendance) -> str:
     if attn.actual_work == Const.TD_ZERO:
         return ""
     return utils.get_overtime_warning(attn.total_overtime)[1]
 
 
 @register.filter
-def overtime_hours(attn: attendance.Attendance) -> str:
+def overtime_hours(attn: Attendance) -> str:
     return ""
 
 

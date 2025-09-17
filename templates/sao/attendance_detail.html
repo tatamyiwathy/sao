@@ -3,6 +3,8 @@
 {% load sao_tags %}
 
 {% block content %}
+
+
 <div class="container">
     <div class="row mt-3">
         <!-- 基本データ -->
@@ -128,8 +130,8 @@
 
     <!-- 日毎勤怠記録 -->
     <div class="table-responsive mt-4">
-        <table class="table table-bordered table-striped table-hover align-middle">
-            <thead class="table-dark">
+        <table class="table table-bordered table-hover align-middle">
+            <thead class="table-primary">
                 <tr>
                     <th>日</th>
                     <th>曜日</th>
@@ -149,7 +151,11 @@
             </thead>
             <tbody>
                 {% for attn in attendances %}
-                <tr class="{{ attn|row_bg_color:today }}" data-bs-toggle="tooltip" title="nande">
+                <tr class="{{ attn|select_tr_color:today }}" 
+                    {% if attn.warnings %}
+                        data-bs-toggle="tooltip" title="{{ attn|warning_messages }}"
+                    {% endif %}
+                >
                     <!-- 日・曜日の色分け -->
                     {% if attn.date|is_saturday %}
                         <td class="text-end text-primary bg-light">{{ attn.date.day }}</td>

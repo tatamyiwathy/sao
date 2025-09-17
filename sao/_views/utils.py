@@ -69,31 +69,32 @@ def get_attendance_warnings(attn: Attendance, display_day: datetime.date) -> dic
 
     if is_missed_stamp(attn.clock_in, attn.clock_out):
         # 打刻が片方だけ
-        warnings["missed_stamp"] = True
+        warnings["missed_stamp"] = "打刻を忘れていませんか？"
     if not is_holiday(attn.date.date()) and is_empty_stamp(
         attn.clock_in, attn.clock_out
     ):
         # 平日で打刻なし
-        warnings["nostamp_workday"] = True
+        warnings["nostamp_workday"] = "欠勤の届を提出していますか？"
     if attn.legal_holiday > Const.TD_ZERO:
-        # 法廷休日で打刻あり
-        warnings["legal_holiday"] = True
+        # 法定休日で打刻あり
+        warnings["legal_holiday"] = "休日出勤の届を提出していますか？"
     if attn.holiday > Const.TD_ZERO:
         # 休日で打刻あり
-        warnings["holiday"] = True
+        warnings["holiday"] = "休日出勤の届を提出していますか？"
     if attn.late > Const.TD_ZERO:
         # 遅刻
-        warnings["tardy"] = True
-    if attn.actual_work > Const.TD_ZERO:
+        warnings["tardy"] = "遅刻の届を提出していますか？"
+    if attn.early_leave > Const.TD_ZERO:
         # 早退
-        warnings["leave_early"] = True
+        warnings["leave_early"] = "早退の届を提出していますか？"
     if attn.night > Const.TD_ZERO:
-        # 深夜
-        warnings["midnight_work"] = True
 
-    if attn.stepping_out > Const.TD_ZERO:
-        # 外出
-        warnings["steppingout"] = True
+        # 深夜
+        warnings["midnight_work"] = "深夜勤務の申請を提出していますか？"
+
+    # if attn.stepping_out > Const.TD_ZERO:
+    #     # 外出
+    #     warnings["steppingout"] = "外出があります"
 
     return warnings
 
@@ -128,10 +129,10 @@ def collect_attendance_warning_messages(
         warnings = get_attendance_warnings(attn, today)
         if warnings:
             attn.warnings = warnings
-            messages.append(
-                "%d/%d 届出の提出がされていない可能性があります。勤務データをご確認の上、届出の提出を行ってください"
-                % (attn.date.month, attn.date.day),
-            )
+            # messages.append(
+            #     "%d/%d 届出の提出がされていない可能性があります。勤務データをご確認の上、届出の提出を行ってください"
+            #     % (attn.date.month, attn.date.day),
+            # )
 
         if is_need_overwork_notification(attn, today):
             messages.append(
