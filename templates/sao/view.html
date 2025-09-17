@@ -38,7 +38,7 @@
 	</div>
 
 	<div class="row mt-3">
-		{% if duty_result %}
+		{% if attendances %}
 		<table class="table table-striped table-bordered table-condensed">
 
 			<tr>
@@ -64,147 +64,146 @@
 				<th>修正</th>
 
 			</tr>
-			{% for r in duty_result %}
-			<tr class="{{r.date|focus_today:today}}">
+			{% for attn in attendances %}
+			<tr class="{{attn.date|focus_today:today}}">
 
-				{%if r.is_absent %}
+				{%if attn.is_absent %}
 				{#----欠勤時の表示----#}
-				{% if r.date|is_saturday %}
-				<td class="red_color">{{r.date.day }}</td>
-				<td class="red_color">{{r.date|date:"D" }}</td>
-				{% elif r.date|is_holiday %}
-				<td class="red_color">{{r.date.day }}</td>
-				<td class="red_color">{{r.date|date:"D" }}</td>
+				{% if attn.date|is_saturday %}
+				<td class="red_color">{{attn.date.day }}</td>
+				<td class="red_color">{{attn.date|date:"D" }}</td>
+				{% elif attn.date|is_holiday %}
+				<td class="red_color">{{attn.date.day }}</td>
+				<td class="red_color">{{attn.date|date:"D" }}</td>
 				{% else %}
-				<td class="red_color text-right">{{r.date.day }}</td>
-				<td class="red_color">{{r.date|date:"D" }}</td>
+				<td class="red_color text-right">{{attn.date.day }}</td>
+				<td class="red_color">{{attn.date|date:"D" }}</td>
 				{% endif %}
 
-				<td class="red_color">{{r.flag}}</td>
+				<td class="red_color">{{attn.flag}}</td>
 				<td class="red_color">
-					{% if r.accepted_overtime %}
+					{% if attn.accepted_overtime %}
 					<span class="glyphicon glyphicon-ok"></span>
 					{% endif %}
 				</td>
 				<td class="red_color"></td>
 				<td class="red_color"></td>
 				<td class="red_color"></td>
+				<td class="red_color text-right">{{attn.work|strip_seconds:"0:00" }}</td>
+				<td class="red_color text-right">{{attn.late|strip_seconds:"0:00" }}</td>
+				<td class="red_color text-right">{{attn.before|strip_seconds:"0:00" }}</td>
+				<td class="red_color text-right">{{attn.steppingout|strip_seconds:"0:00" }}</td>
+				<td class="red_color text-right">{{attn.out_of_time|strip_seconds:"0:00"}}</td>
 				<td class="red_color"></td>
-				<td class="red_color text-right">{{r.work|strip_seconds:"0:00" }}</td>
-				<td class="red_color text-right">{{r.late|strip_seconds:"0:00" }}</td>
-				<td class="red_color text-right">{{r.before|strip_seconds:"0:00" }}</td>
-				<td class="red_color text-right">{{r.steppingout|strip_seconds:"0:00" }}</td>
-				<td class="red_color text-right">{{r.out_of_time|strip_seconds:"0:00"}}</td>
+				<td class="red_color text-right">{{attn.night|strip_seconds:"0:00" }}</td>
+				<td class="red_color text-right">{{attn.legal_holiday|strip_seconds:"0:00" }}</td>
+				<td class="red_color text-right">{{attn.holiday|strip_seconds:"0:00"}}</td>
 				<td class="red_color"></td>
-				<td class="red_color text-right">{{r.night|strip_seconds:"0:00" }}</td>
-				<td class="red_color text-right">{{r.legal_holiday|strip_seconds:"0:00" }}</td>
-				<td class="red_color text-right">{{r.holiday|strip_seconds:"0:00"}}</td>
-				<td class="red_color"></td>
-				{% if r.remark %}
-				<td class="red_color">{{r.remark}}</td>
+				{% if attn.remark %}
+				<td class="red_color">{{attn.remark}}</td>
 				{% else %}
 				<td class="red_color"></td>
 				{% endif %}
 				{%else%}
-				{% if r.date|is_saturday %}
-				<td class="text-right" style="color:#0000ff">{{r.date.day }}</td>
-				<td style="color:#0000ff">{{r.date|date:"D" }}</td>
-				{% elif r.date|is_holiday %}
-				<td class="text-right" style="color:#ff0000">{{r.date.day }}</td>
-				<td style="color:#ff0000">{{r.date|date:"D" }}</td>
+				{% if attn.date|is_saturday %}
+				<td class="text-right" style="color:#0000ff">{{attn.date.day }}</td>
+				<td style="color:#0000ff">{{attn.date|date:"D" }}</td>
+				{% elif attn.date|is_holiday %}
+				<td class="text-right" style="color:#ff0000">{{attn.date.day }}</td>
+				<td style="color:#ff0000">{{attn.date|date:"D" }}</td>
 				{% else %}
-				<td class="text-right">{{r.date.day }}</td>
-				<td>{{r.date|date:"D" }}</td>
+				<td class="text-right">{{attn.date.day }}</td>
+				<td>{{attn.date|date:"D" }}</td>
 				{% endif %}
 
-				<td>{{r.flag }}</td>
+				<td>{{attn.flag }}</td>
 				<td class="text-center">
-					{% if r.accepted_overtime %}
+					{% if attn.accepted_overtime %}
 					<span class="glyphicon glyphicon-ok"></span>
 					{% endif %}
 				</td>
 				<td class="text-right">
 					{#実打始#}
-					{% if r.clock_in %}
-					{{r.clock_in}}
+					{% if attn.clock_in %}
+					{{attn.clock_in}}
 					{% endif %}
 				</td>
 
 				{#実打終#}
 				<td class="text-right">
-					{% if r.clock_out %}
-					{{r.clock_out}}
+					{% if attn.clock_out %}
+					{{attn.clock_out}}
 					{% endif %}
 				</td>
 
 				{#修正始#}
 				<td class="text-right">
-					{% if r.adjusted_from %}
-					{{r.adjusted_from}}
+					{% if attn.adjusted_from %}
+					{{attn.adjusted_from}}
 					{% endif %}
 				</td>
 
 				{#修正終#}
 				<td class="text-right">
-					{% if r.adjusted_to %}
-					{{r.adjusted_to}}
+					{% if attn.adjusted_to %}
+					{{attn.adjusted_to}}
 					{% endif %}
 				</td>
 
 				{#実務#}
 				<td class="text-right">
-					{{r.work|strip_seconds:"0:00"}}
+					{{attn.work|strip_seconds:"0:00"}}
 				</td>
 
 				{#遅刻#}
-				<td class="text-right {{r.late|color_ifnot:'cream_bg'}}">
-					{{r.late|strip_seconds:"0:00" }}
+				<td class="text-right {{attn.late|color_ifnot:'cream_bg'}}">
+					{{attn.late|strip_seconds:"0:00" }}
 				</td>
 
 				{#早退#}
-				<td class="text-right {{r.before|color_ifnot:'cream_bg'}}">
-					{{r.before|strip_seconds:"0:00" }}
+				<td class="text-right {{attn.before|color_ifnot:'cream_bg'}}">
+					{{attn.before|strip_seconds:"0:00" }}
 				</td>
 
 				{#外出#}
-				<td class="text-right {{r.steppingout|color_ifnot:'cream_bg'}}">
-					{{r.steppingout|strip_seconds:"0:00" }}
+				<td class="text-right {{attn.steppingout|color_ifnot:'cream_bg'}}">
+					{{attn.steppingout|strip_seconds:"0:00" }}
 				</td>
 
 				{#時外勤#}
-				<td class="text-right">{{r.out_of_time|strip_seconds:"0:00"}}</td>
+				<td class="text-right">{{attn.out_of_time|strip_seconds:"0:00"}}</td>
 
 				{#割増#}
-				<td class="text-right">{{r.over_8h|strip_seconds:"0:00"}}</td>
+				<td class="text-right">{{attn.over_8h|strip_seconds:"0:00"}}</td>
 
 				{#深夜時間#}
-				<td class="text-right {{r.night|color_ifnot:'cream_bg'}}">
-					{{r.night|strip_seconds:"0:00" }}
+				<td class="text-right {{attn.night|color_ifnot:'cream_bg'}}">
+					{{attn.night|strip_seconds:"0:00" }}
 				</td>
 
 				{#法定休日#}
-				<td class="text-right {{r.legal_holiday|color_ifnot:'cream_bg'}}">
-					{{r.legal_holiday|strip_seconds:"0:00" }}
+				<td class="text-right {{attn.legal_holiday|color_ifnot:'cream_bg'}}">
+					{{attn.legal_holiday|strip_seconds:"0:00" }}
 				</td>
 
 				{#所定休日#}
-				<td class="text-right {{r.holiday|color_ifnot:'cream_bg'}}">
-					{{r.holiday|strip_seconds:"0:00"}}
+				<td class="text-right {{attn.holiday|color_ifnot:'cream_bg'}}">
+					{{attn.holiday|strip_seconds:"0:00"}}
 				</td>
 
 				<td>
 				</td>
 
 				{#届#}
-				{% if r.remark %}
-				<td>{{r.remark}}</td>
+				{% if attn.remark %}
+				<td>{{attn.remark}}</td>
 				{% else %}
 				<td></td>
 				{% endif %}
 				{%endif%}
 				<td>
-					{% if r.daily_attendance_record %}
-					<a class="btn btn-default" href="{% url 'sao:modify_record' r.daily_attendance_record_pk year month %}>
+					{% if attn.daily_attendance_record %}
+					<a class="btn btn-default" href="{% url 'sao:modify_record' attn.daily_attendance_record_pk year month %}>
 						<span class="oi oi-pencil"></span>
 						
 					</a>

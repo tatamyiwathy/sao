@@ -192,25 +192,3 @@ def render_employee_attendance(
     render_args["days_counted"] = summarize_attendance_days(attendances, view_date)
 
     return render_args
-
-
-# render(
-#     request,
-#     "sao/attendance_detail.html",
-#     {
-#         "form": form,
-#         "duty_result": attendances,
-#         "total_result": tallied_attn,
-#         "rounded_result": rounded,
-#         "employee": employee,
-#         "year": view_date.year,
-#         "month": view_date.month,
-#         "daycount": days_counted,
-#         "office_hours": office_hours,
-#         "fromTime": fromTime,
-#         "toTime": toTime,
-#         "mypage": True,
-#         "warn": warn_class,
-#         "today": today,
-#     },
-# )

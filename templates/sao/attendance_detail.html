@@ -148,61 +148,61 @@
                 </tr>
             </thead>
             <tbody>
-                {% for r in duty_result %}
-                <tr class="{{ r|row_bg_color:today }}">
+                {% for attn in attendances %}
+                <tr class="{{ attn|row_bg_color:today }}">
                     <!-- 日・曜日の色分け -->
-                    {% if r.date|is_saturday %}
-                        <td class="text-end text-primary bg-light">{{ r.date.day }}</td>
-                        <td class="text-end text-primary bg-light">{{ r.date|date:"D" }}</td>
-                    {% elif r.date|is_holiday %}
-                        <td class="text-end text-danger bg-light">{{ r.date.day }}</td>
-                        <td class="text-end text-danger bg-light">{{ r.date|date:"D" }}</td>
+                    {% if attn.date|is_saturday %}
+                        <td class="text-end text-primary bg-light">{{ attn.date.day }}</td>
+                        <td class="text-end text-primary bg-light">{{ attn.date|date:"D" }}</td>
+                    {% elif attn.date|is_holiday %}
+                        <td class="text-end text-danger bg-light">{{ attn.date.day }}</td>
+                        <td class="text-end text-danger bg-light">{{ attn.date|date:"D" }}</td>
                     {% else %}
-                        <td class="text-end bg-light">{{ r.date.day }}</td>
-                        <td class="text-end bg-light">{{ r.date|date:"D" }}</td>
+                        <td class="text-end bg-light">{{ attn.date.day }}</td>
+                        <td class="text-end bg-light">{{ attn.date|date:"D" }}</td>
                     {% endif %}
-                    <td>{{ r.flag }}</td>
-                    <td class="text-end {% missed_stamp_color r.clock_out r.clock_in %}">
-                        {% if r.clock_in %}{{ r.clock_in.time }}{% endif %}
+                    <td>{{ attn.flag }}</td>
+                    <td class="text-end {% missed_stamp_color attn.clock_out attn.clock_in %}">
+                        {% if attn.clock_in %}{{ attn.clock_in.time }}{% endif %}
                     </td>
-                    <td class="text-end {% missed_stamp_color r.clock_in r.clock_out %}">
-                        {% if r.clock_out %}
-                        <div style="{% warning_midnight r.clock_out r %}">
-                            {{ r.clock_out.time }}
+                    <td class="text-end {% missed_stamp_color attn.clock_in attn.clock_out %}">
+                        {% if attn.clock_out %}
+                        <div style="{% warning_midnight attn.clock_out attn %}">
+                            {{ attn.clock_out.time }}
                         </div>
                         {% endif %}
                     </td>
-                    <td class="text-end">{{ r.actual_work|strip_seconds:"" }}</td>
+                    <td class="text-end">{{ attn.actual_work|strip_seconds:"" }}</td>
                     {% if not mypage %}
-                        <td class="text-end {{ r.late|color_ifnot:'cream_bg' }}">{{ r.late|strip_seconds:"" }}</td>
-                        <td class="text-end {{ r.before|color_ifnot:'cream_bg' }}">{{ r.before|strip_seconds:"" }}</td>
-                        <td class="text-end">{{ r.steppingout|strip_seconds:"" }}</td>
+                        <td class="text-end {{ attn.late|color_ifnot:'cream_bg' }}">{{ attn.late|strip_seconds:"" }}</td>
+                        <td class="text-end {{ attn.before|color_ifnot:'cream_bg' }}">{{ attn.before|strip_seconds:"" }}</td>
+                        <td class="text-end">{{ attn.steppingout|strip_seconds:"" }}</td>
                         {% if employee.is_included_overtime_pay %}
-                            <td class="text-end {{ r|warning_overtime }}">
-                                {{ r.out_of_time|strip_seconds:"" }} <span class="small">{{ r|overtime_hours }}</span>
+                            <td class="text-end {{ attn|warning_overtime }}">
+                                {{ attn.out_of_time|strip_seconds:"" }} <span class="small">{{ attn|overtime_hours }}</span>
                             </td>
                         {% else %}
-                            <td class="text-end">{{ r.out_of_time|strip_seconds:"" }}</td>
+                            <td class="text-end">{{ attn.out_of_time|strip_seconds:"" }}</td>
                         {% endif %}
-                        <td class="text-end {{ r.night|color_ifnot:'cream_bg' }}">{{ r.night|strip_seconds:"" }}</td>
-                        <td class="text-end {{ r.legal_holiday|color_ifnot:'cream_bg' }}">{{ r.legal_holiday|strip_seconds:"" }}</td>
-                        <td class="text-end {{ r.holiday|color_ifnot:'cream_bg' }}">{{ r.holiday|strip_seconds:"" }}</td>
-                        <td>{% if r.remark %}{{ r.remark }}{% endif %}</td>
+                        <td class="text-end {{ attn.night|color_ifnot:'cream_bg' }}">{{ attn.night|strip_seconds:"" }}</td>
+                        <td class="text-end {{ attn.legal_holiday|color_ifnot:'cream_bg' }}">{{ attn.legal_holiday|strip_seconds:"" }}</td>
+                        <td class="text-end {{ attn.holiday|color_ifnot:'cream_bg' }}">{{ attn.holiday|strip_seconds:"" }}</td>
+                        <td>{% if attn.remark %}{{ attn.remark }}{% endif %}</td>
                     {% else %}
-                        <td class="text-end {{ r|set_warning_color:'tardy' }}">{{ r.late|strip_seconds:"" }}</td>
-                        <td class="text-end {{ r|set_warning_color:'leave_early' }}">{{ r.before|strip_seconds:"" }}</td>
-                        <td class="text-end {{ r|set_warning_color:'steppingout' }}">{{ r.steppingout|strip_seconds:"" }}</td>
+                        <td class="text-end {{ attn|set_warning_color:'tardy' }}">{{ attn.late|strip_seconds:"" }}</td>
+                        <td class="text-end {{ attn|set_warning_color:'leave_early' }}">{{ attn.before|strip_seconds:"" }}</td>
+                        <td class="text-end {{ attn|set_warning_color:'steppingout' }}">{{ attn.steppingout|strip_seconds:"" }}</td>
                         {% if employee.is_included_overtime_pay %}
-                            <td title="{{ r|tooltip_overtime }}" class="text-end {{ r|warning_overtime }}">
-                                {{ r.out_of_time|strip_seconds:"" }} <span class="small">{{ r|overtime_hours }}</span>
+                            <td title="{{ attn|tooltip_overtime }}" class="text-end {{ attn|warning_overtime }}">
+                                {{ attn.out_of_time|strip_seconds:"" }} <span class="small">{{ attn|overtime_hours }}</span>
                             </td>
                         {% else %}
-                            <td class="text-end">{{ r.out_of_time|strip_seconds:"" }}</td>
+                            <td class="text-end">{{ attn.out_of_time|strip_seconds:"" }}</td>
                         {% endif %}
-                        <td class="text-end {{ r|set_warning_color:'midnight_work' }}">{{ r.night|strip_seconds:"" }}</td>
-                        <td class="text-end {{ r|set_warning_color:'legal_holiday' }}">{{ r.legal_holiday|strip_seconds:"" }}</td>
-                        <td class="text-end {{ r|set_warning_color:'holiday' }}">{{ r.holiday|strip_seconds:"" }}</td>
-                        <td class="{{ r|set_any_warning_color }}">{% if r.remark %}{{ r.remark }}{% endif %}</td>
+                        <td class="text-end {{ attn|set_warning_color:'midnight_work' }}">{{ attn.night|strip_seconds:"" }}</td>
+                        <td class="text-end {{ attn|set_warning_color:'legal_holiday' }}">{{ attn.legal_holiday|strip_seconds:"" }}</td>
+                        <td class="text-end {{ attn|set_warning_color:'holiday' }}">{{ attn.holiday|strip_seconds:"" }}</td>
+                        <td class="{{ attn|set_any_warning_color }}">{% if attn.remark %}{{ attn.remark }}{% endif %}</td>
                     {% endif %}
                 </tr>
                 {% endfor %}

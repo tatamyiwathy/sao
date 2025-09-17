@@ -98,7 +98,7 @@ def home(request):
         "sao/attendance_detail.html",
         {
             "form": form,
-            "duty_result": attendances,
+            "attendances": attendances,
             "total_result": render_args["total_result"],
             "rounded_result": render_args["rounded"],
             "employee": employee,
@@ -372,7 +372,7 @@ def staff_detail(request, employee, year, month):
         request,
         "sao/attendance_detail.html",
         {
-            "duty_result": attendances,
+            "attendances": attendances,
             "total_result": summed_up,
             "rounded_result": rounded_result,
             "employee": employee,
@@ -656,7 +656,7 @@ def employee_record(request):
                     "sao/view.html",
                     {
                         "form": form,
-                        "duty_result": printable_calculated,
+                        "attendances": printable_calculated,
                         "total_result": printable_summed_up,
                         "rounded_result": printable_rounded,
                         "employee": employee,
@@ -714,7 +714,7 @@ def employee_record(request):
             "sao/view.html",
             {
                 "form": form,
-                "duty_result": printable_calculated,  # 勤務結果
+                "attendances": printable_calculated,  # 勤務結果
                 "total_result": printable_summed_up,  # 合算結果
                 "rounded_result": printable_rounded,  # まるめ結果
                 "employee": employee,
