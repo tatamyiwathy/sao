@@ -857,7 +857,6 @@ def initiate_daily_attendance_record(
         attendance.overtime_permitted = True
 
     if calendar_is_holiday(attendance.date) is True:
-        print("休日出勤")
         # 休出の場合は打刻を調整しない
         # 休出所的勤務時間がないので打刻をそのまま勤務時間にする
         attendance.working_hours_start = attendance.clock_in
