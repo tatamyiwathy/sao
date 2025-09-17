@@ -1290,20 +1290,20 @@ class WebTimeStampViewTest(TestCase):
 
 
 class TestEnumlateDays(TestCase):
-    def test_enumlate_days(self):
+    def test_enumrate_days(self):
         date = datetime.date(2022, 1, 1)
         expected_days = [
             datetime.date(2022, 1, i) for i in range(1, 32)
         ]  # January has 31 days
-        actual_days = calendar.enumlate_days(date)
+        actual_days = calendar.enumrate_days(date)
         self.assertEqual(actual_days, expected_days)
 
-    def test_enumlate_days_on_leap_year(self):
+    def test_enumrate_days_on_leap_year(self):
         date = datetime.date(2024, 2, 1)
         expected_days = [
             datetime.date(2024, 2, i) for i in range(1, 30)
         ]  # 2024年はうるう年なので2月は29日まで
-        actual_days = calendar.enumlate_days(date)
+        actual_days = calendar.enumrate_days(date)
         self.assertEqual(actual_days, expected_days)
 
 

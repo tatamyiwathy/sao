@@ -60,6 +60,7 @@ from sao.core import (
     remove_fixed_working_hours,
     generate_attendance_record,
     initiate_daily_attendance_record,
+    adjust_stamp,
 )
 from sao.const import Const
 from sao.calendar import monthdays, is_holiday
@@ -1166,8 +1167,8 @@ class TestOvertimePermission(TestCase):
     def setUp(self) -> None:
         self.employee = create_employee(create_user())
 
-    @patch("sao.core.is_overtime_permitted", return_value=False)
-    def test_permit_overtime(self, mock_is_overtime_permitted):
+    @patch("sao.core.has_permitted_overtime_work", return_value=False)
+    def test_permit_overtime(self, mock_has_permitted_overtime_work):
         permit_daily_overtime(self.employee, date(2021, 8, 1))
         self.assertTrue(
             OvertimePermission.objects.filter(
@@ -1176,9 +1177,9 @@ class TestOvertimePermission(TestCase):
         )
 
     @patch("sao.models.OvertimePermission.objects.create")
-    @patch("sao.core.is_overtime_permitted", return_value=True)
+    @patch("sao.core.has_permitted_overtime_work", return_value=True)
     def test_permit_overtime_if_not_exists(
-        self, mock_is_overtime_permitted, mock_create
+        self, mock_has_permitted_overtime_work, mock_create
     ):
         """既に許可されている場合、再度許可しても重複しないこと"""
         permit_daily_overtime(self.employee, date(2021, 8, 1))
@@ -1271,92 +1272,59 @@ class TestGenerateDailyAttendanceRecord(TestCase):
         self.assertIsNotNone(attendance)
 
 
-class TestAdjustClockInAndOut(TestCase):
+class TestAdjustStamp(TestCase):
     def setUp(self):
-        self.employee = create_employee(create_user())
         self.day = date(2023, 8, 2)
-        self.working_hour = WorkingHour(begin_time=time(10, 0), end_time=time(19, 0))
 
-    def test_adjust_stamp_and_working_hours(self):
-        work_hours_start = datetime.combine(self.day, time(10, 0))
-        work_hours_end = datetime.combine(self.day, time(19, 0))
-        attendance = DailyAttendanceRecord(
-            date=self.day,
-            employee=self.employee,
-            clock_in=datetime.combine(self.day, time(9, 0)),
-            clock_out=datetime.combine(self.day, time(20, 0)),
-            working_hours_start=work_hours_start,
-            working_hours_end=work_hours_end,
-            status=WorkingStatus.C_KINMU,
+    def test_adjust_stamp(self):
+        work_hours = Period(
+            datetime.combine(self.day, time(10, 0)),
+            datetime.combine(self.day, time(19, 0)),
         )
-        attendance = initiate_daily_attendance_record(attendance)
-        self.assertEqual(attendance.clock_in, datetime.combine(self.day, time(10, 0)))
-        self.assertEqual(attendance.clock_out, datetime.combine(self.day, time(19, 0)))
-        self.assertEqual(attendance.working_hours_start, work_hours_start)
-        self.assertEqual(attendance.working_hours_end, work_hours_end)
+        actual_work = Period(
+            datetime.combine(self.day, time(9, 50)),
+            datetime.combine(self.day, time(20, 0)),
+        )
 
-    def test_adjust_stamp_if_tardy(self):
-        """遅刻の場合、打刻はそのまま"""
-        attendance = DailyAttendanceRecord(
-            date=self.day,
-            employee=self.employee,
-            clock_in=datetime.combine(self.day, time(11, 0)),
-            clock_out=datetime.combine(self.day, time(19, 0)),
-            working_hours_start=datetime.combine(self.day, time(10, 0)),
-            working_hours_end=datetime.combine(self.day, time(19, 0)),
-            status=WorkingStatus.C_KINMU,
-        )
-        attendance = initiate_daily_attendance_record(attendance)
-        self.assertEqual(attendance.clock_in, datetime.combine(self.day, time(11, 0)))
-        self.assertEqual(attendance.clock_out, datetime.combine(self.day, time(19, 0)))
+        adjusted = adjust_stamp(actual_work, work_hours, False)
+        self.assertEqual(adjusted.start, datetime.combine(self.day, time(10, 0)))
+        self.assertEqual(adjusted.end, datetime.combine(self.day, time(19, 0)))
 
-    def test_adjust_stamp_if_leave_early(self):
-        """早退の場合、打刻はそのまま"""
-        attendance = DailyAttendanceRecord(
-            date=self.day,
-            employee=self.employee,
-            clock_in=datetime.combine(self.day, time(10, 0)),
-            clock_out=datetime.combine(self.day, time(18, 0)),
-            working_hours_start=datetime.combine(self.day, time(10, 0)),
-            working_hours_end=datetime.combine(self.day, time(19, 0)),
-            status=WorkingStatus.C_KINMU,
+    def test_adjust_stamp_overtime_permitted(self):
+        work_hours = Period(
+            datetime.combine(self.day, time(10, 0)),
+            datetime.combine(self.day, time(19, 0)),
         )
-        attendance = initiate_daily_attendance_record(attendance)
-        self.assertEqual(attendance.clock_in, datetime.combine(self.day, time(10, 0)))
-        self.assertEqual(attendance.clock_out, datetime.combine(self.day, time(18, 0)))
+        actual_work = Period(
+            datetime.combine(self.day, time(9, 50)),
+            datetime.combine(self.day, time(20, 0)),
+        )
 
-    @patch("sao.core.is_overtime_permitted", return_value=True)
-    def test_adjust_stamp_if_over_work_with_permission(
-        self, mock_is_overtime_permitted
-    ):
-        """時間外労働が許可されている場合、打刻はそのまま"""
-        attendance = DailyAttendanceRecord(
-            date=self.day,
-            employee=self.employee,
-            clock_in=datetime.combine(self.day, time(9, 0)),
-            clock_out=datetime.combine(self.day, time(20, 0)),
-            working_hours_start=datetime.combine(self.day, time(10, 0)),
-            working_hours_end=datetime.combine(self.day, time(19, 0)),
-            status=WorkingStatus.C_KINMU,
-        )
-        attendance = initiate_daily_attendance_record(attendance)
-        self.assertEqual(attendance.clock_in, datetime.combine(self.day, time(10, 0)))
-        self.assertEqual(attendance.clock_out, datetime.combine(self.day, time(20, 0)))
+        adjusted = adjust_stamp(actual_work, work_hours, True)
+        self.assertEqual(adjusted.start, datetime.combine(self.day, time(10, 0)))
+        self.assertNotEqual(adjusted.end, datetime.combine(self.day, time(19, 0)))
 
-    @patch("sao.core.is_overtime_permitted", return_value=False)
-    def test_adjust_stamp_if_over_work_without_permission(
-        self, mock_is_overtime_permitted
-    ):
-        """時間外労働の許可がない場合、打刻を勤務時間内に調整するテスト"""
-        attendance = DailyAttendanceRecord(
-            date=self.day,
-            employee=self.employee,
-            clock_in=datetime.combine(self.day, time(9, 0)),
-            clock_out=datetime.combine(self.day, time(20, 0)),
-            working_hours_start=datetime.combine(self.day, time(10, 0)),
-            working_hours_end=datetime.combine(self.day, time(19, 0)),
-            status=WorkingStatus.C_KINMU,
+    def test_adjust_stamp_no_stamp(self):
+        """打刻がない場合、Noneのままであること
+        - 欠勤
+        """
+        work_hours = Period(
+            datetime.combine(self.day, time(10, 0)),
+            datetime.combine(self.day, time(19, 0)),
         )
-        attendance = initiate_daily_attendance_record(attendance)
-        self.assertEqual(attendance.clock_in, datetime.combine(self.day, time(10, 0)))
-        self.assertEqual(attendance.clock_out, datetime.combine(self.day, time(19, 0)))
+        actual_work = Period(None, None)
+
+        adjusted = adjust_stamp(actual_work, work_hours, False)
+        self.assertIsNone(adjusted.start)
+        self.assertIsNone(adjusted.end)
+
+    def test_adjust_stamp_no_working_hours(self):
+        """所定労働時間がない場合、打刻をそのまま返すこと
+        - 休日出勤など
+        """
+        work_hours = Period(None, None)
+        actual_work = Period(None, None)
+
+        adjusted = adjust_stamp(actual_work, work_hours, False)
+        self.assertIsNone(adjusted.start)
+        self.assertIsNone(adjusted.end)

@@ -1,6 +1,5 @@
 import datetime
 
-import sao.calendar
 import logging
 
 from django.db import transaction
@@ -17,7 +16,14 @@ from sao.models import (
     FixedOvertimePayEmployee,
 )
 from sao.const import Const
-from sao.calendar import is_holiday, is_legal_holiday, get_first_day, get_last_day
+from sao.calendar import (
+    is_holiday as calendar_is_holiday,
+    is_legal_holiday,
+    get_first_day,
+    get_last_day,
+    count_working_days,
+    enumrate_days,
+)
 from sao.period import Period
 from sao.working_status import WorkingStatus, determine_working_status
 from sao.attendance import Attendance
@@ -368,7 +374,7 @@ def summarize_attendance_days(
     ]
     days = [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
-    days[0] = sao.calendar.count_working_days(year_month)  # 所定勤務日数
+    days[0] = count_working_days(year_month)  # 所定勤務日数
 
     for result in results:
         if result.late:
@@ -561,7 +567,7 @@ def get_monthy_time_record(
     もし打刻がない日はC_NONEのレコードを返す
     """
     # 集計
-    days = sao.calendar.enumlate_days(date)
+    days = enumrate_days(date)
 
     timerecords = []
     for day in days:
@@ -726,53 +732,58 @@ def generate_daily_record(
         date        対象の日付
     """
 
-    clock_in_out = get_clock_in_out(stamps)
+    stamp = get_clock_in_out(stamps)
 
     try:
-        working_hour = get_employee_hour(employee, date)
-        scheduled_time = working_hour.get_paired_time(date)
-        if is_holiday(date):
-            # 休日の場合は所定の勤務時間は設定しない
-            scheduled_time = Period(None, None)
+        employee_hours = get_employee_hour(employee, date).get_period(date)
+        if calendar_is_holiday(date):
+            # 休日の場合は所定の勤務時間は打刻と一致する
+            employee_hours = stamp
     except NoAssignedWorkingHourError:
         # 勤務時間が設定されていないので処理しない
         logger.warning(f"勤務時間が設定されていません {employee.name} {date}")
         return
-
+    except ValueError as e:
+        logger.warning(f"勤務時間の取得に失敗しました {employee.name} {date} {e}")
+        return
     working_status = determine_working_status(
-        is_holiday(date), is_legal_holiday(date), not clock_in_out.is_empty()
+        calendar_is_holiday(date), is_legal_holiday(date), not stamp.is_empty()
     )
 
     # logger.debug(
     #     f"generate_daily_record: {employee.name} {date} {stamps} -> {clock_in_out}"
     # )
-    return EmployeeDailyRecord.objects.create(
+    record = EmployeeDailyRecord(
         employee=employee,
         date=date,
-        clock_in=clock_in_out.start,
-        clock_out=clock_in_out.end,
-        working_hours_start=scheduled_time.start,
-        working_hours_end=scheduled_time.end,
+        clock_in=stamp.start,
+        clock_out=stamp.end,
+        working_hours_start=employee_hours.start,
+        working_hours_end=employee_hours.end,
         status=working_status,
     )
+    record.save()
+    return record
 
 
 def adjust_stamp(
-    stamp: Period, work_hours: Period, date: datetime.date, overtime_permission: bool
+    stamp: Period, work_hours: Period, overtime_permission: bool
 ) -> Period:
     """打刻を調整する
     - 出社打刻が所定の勤務開始時間より前なら所定の勤務開始時間に調整する
     - 退社打刻が所定の勤務終了時間より後なら
       - 残業許可があるなら打刻のまま
       - 残業許可がないなら所定の勤務終了時間に調整する
+    - stampはNoneでここに来ることがあるから、それを考慮すること
     """
-    if stamp.start is None or stamp.end is None:
-        raise ValueError("stamp is not set")
-    if work_hours.start is None or work_hours.end is None:
-        raise ValueError("work_hours is not set")
-    w_start = adjust_work_start_time(stamp.start, work_hours.start)
-    w_end = adjust_work_end_time(stamp.end, work_hours.end, overtime_permission)
-    return Period(w_start, w_end)
+    adjusted_stamp = Period(None, None)
+    if stamp.start is not None and work_hours.start is not None:
+        adjusted_stamp.start = adjust_work_start_time(stamp.start, work_hours.start)
+    if stamp.end is not None and work_hours.end is not None:
+        adjusted_stamp.end = adjust_work_end_time(
+            stamp.end, work_hours.end, overtime_permission
+        )
+    return adjusted_stamp
 
 
 def update_attendance_record(
@@ -807,7 +818,7 @@ def update_attendance_record(
     # 勤怠詳細を計算してセットする
     attendance.stepping_out = stepping_out
     attendance.actual_work = working_duration
-    if is_holiday(attendance.date):
+    if calendar_is_holiday(attendance.date):
         if is_legal_holiday(attendance.date):
             attendance.legal_holiday = working_duration
         else:
@@ -834,8 +845,6 @@ def initiate_daily_attendance_record(
     attendance: DailyAttendanceRecord,
 ) -> DailyAttendanceRecord:
     """打刻と所定の勤務時間を調整する"""
-    if attendance.clock_in is None or attendance.clock_out is None:
-        return attendance
     if attendance.working_hours_start is None or attendance.working_hours_end is None:
         return attendance
     if attendance.date is None:
@@ -847,7 +856,8 @@ def initiate_daily_attendance_record(
         # 個別に残業が許可されている場合
         attendance.overtime_permitted = True
 
-    if is_holiday(attendance.date):
+    if calendar_is_holiday(attendance.date) is True:
+        print("休日出勤")
         # 休出の場合は打刻を調整しない
         # 休出所的勤務時間がないので打刻をそのまま勤務時間にする
         attendance.working_hours_start = attendance.clock_in
@@ -856,10 +866,7 @@ def initiate_daily_attendance_record(
 
     stamp = Period(attendance.clock_in, attendance.clock_out)
     work_hours = Period(attendance.working_hours_start, attendance.working_hours_end)
-    stamp = adjust_stamp(
-        stamp, work_hours, attendance.date, attendance.overtime_permitted
-    )
-    print(stamp)
+    stamp = adjust_stamp(stamp, work_hours, attendance.overtime_permitted)
     attendance.clock_in = stamp.start
     attendance.clock_out = stamp.end
 

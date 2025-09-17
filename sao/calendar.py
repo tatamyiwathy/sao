@@ -76,7 +76,10 @@ def is_workday(date: datetime.date) -> bool:
 
 def is_holiday(d: datetime.date) -> bool:
     """休日チェック(土日も含まれる)"""
-    return not is_workday(d)
+    # return not is_workday(d)
+    if is_workday(d):
+        return False
+    return True
 
 
 def is_legal_holiday(d: datetime.date) -> bool:
@@ -106,7 +109,7 @@ def count_working_days(date: datetime.date) -> int:
     return count
 
 
-def enumlate_days(date: datetime.date) -> list:
+def enumrate_days(date: datetime.date) -> list:
     """月の日付を列挙する"""
     first_day = get_first_day(date)
     last_day = get_last_day(date)

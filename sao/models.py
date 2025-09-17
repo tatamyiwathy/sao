@@ -124,7 +124,7 @@ class WorkingHour(models.Model):
             return False
         return self.begin_time < self.end_time
 
-    def get_paired_time(self, date: datetime.date) -> Period:
+    def get_period(self, date: datetime.date) -> Period:
         """勤務時間の始業と終業をペアで取得する
         引数:
             date    対象の日付
