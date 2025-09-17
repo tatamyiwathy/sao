@@ -516,12 +516,15 @@ def generate_sample_data(employee: Employee, year: int, month: int) -> None:
             break
 
         if is_holiday(d.date()):
-            # 休日は打刻しない
-            continue
-
-        anomaly_type = get_anomaly_stamp_type()
-        stamp_func = STAMP_GENERATORS.get(anomaly_type, make_normal_stamp)
-        clock_in, clock_out = stamp_func(d.date())
+            if random.randint(1, 10) != 1:
+                # 休日は打刻しない
+                continue
+            clock_in = datetime.datetime.combine(d, datetime.time(11, 30))
+            clock_out = datetime.datetime.combine(d, datetime.time(17, 15))
+        else:
+            anomaly_type = get_anomaly_stamp_type()
+            stamp_func = STAMP_GENERATORS.get(anomaly_type, make_normal_stamp)
+            clock_in, clock_out = stamp_func(d.date())
 
         record = core.generate_daily_record([clock_in, clock_out], employee, d.date())
         if record:
