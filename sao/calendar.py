@@ -8,7 +8,10 @@ from sao import jholiday
 
 def get_last_sunday(date: datetime.date) -> datetime.date:
     """
-    引数で渡された日時から直近の日曜日を取得する
+    指定日時の直前の日曜日を取得する
+
+    :param date: datetime.date
+    :return: 直前の日曜日のdatetime.date
     """
     day = date.weekday()
     if day == 6:
@@ -21,7 +24,7 @@ def get_last_sunday(date: datetime.date) -> datetime.date:
 
 def get_next_sunday(d: datetime.date) -> datetime.date:
     """
-    直近の次の日曜日
+    指定日時の直後の日曜日を取得する
     """
     return d + datetime.timedelta(6 - d.weekday())
 
