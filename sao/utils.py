@@ -1,16 +1,21 @@
 import datetime
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from sao import models, core
+from sao import core
 from sao.attendance import Attendance
 from sao.period import Period
-from sao.calendar import is_legal_holiday
+from sao.calendar import is_legal_holiday, is_holiday
 from sao.const import Const
+from sao.models import (
+    DailyAttendanceRecord,
+    Employee,
+    WebTimeStamp,
+    WorkingHour,
+    EmployeeHour,
+)
 
 
-def make_web_stamp_string(
-    employee: models.Employee, date: datetime.date
-) -> tuple[str, str]:
+def make_web_stamp_string(employee: Employee, date: datetime.date) -> tuple[str, str]:
     """
     web打刻を文字列にして返す
     例: ("09:00", "18:00") or ("--:--:--", "--:--:--")
@@ -23,7 +28,7 @@ def make_web_stamp_string(
     toTime = "--:--:--"
 
     day_start = datetime.datetime.combine(date, core.get_day_switch_time())
-    stamps = models.WebTimeStamp.objects.filter(
+    stamps = WebTimeStamp.objects.filter(
         employee=employee, stamp__gte=day_start
     ).order_by("stamp")
 
@@ -71,9 +76,9 @@ def get_employee_type_display(type: int) -> str:
     :return: 雇用形態の文字列
     """
     name = ""
-    if type == models.Employee.TYPE_PERMANENT_STAFF:
+    if type == Employee.TYPE_PERMANENT_STAFF:
         name = "正社員"
-    elif type == models.Employee.TYPE_TEMPORARY_STAFF:
+    elif type == Employee.TYPE_TEMPORARY_STAFF:
         name = "派遣"
     else:
         name = "業務委託"
@@ -86,9 +91,9 @@ def get_department_display(type: int) -> str:
     :return: 部署の文字列
     """
     name = ""
-    if type == models.Employee.DEPT_GENERAL:
+    if type == Employee.DEPT_GENERAL:
         name = "一般"
-    elif type == models.Employee.DEPT_DEVELOPMENT:
+    elif type == Employee.DEPT_DEVELOPMENT:
         name = "開発"
     return name
 
@@ -117,7 +122,7 @@ def create_user(username, last, first, password=None, email=None) -> User:
     return user
 
 
-def create_employee(**kwargs) -> models.Employee:
+def create_employee(**kwargs) -> Employee:
     """雇用者を作成する
 
     必須項目
@@ -151,7 +156,7 @@ def create_employee(**kwargs) -> models.Employee:
         if "leave_date" in kwargs.keys()
         else datetime.date(2099, 12, 31)
     )
-    employee = models.Employee(
+    employee = Employee(
         employee_no=kwargs["employee_no"],
         name=kwargs["name"],
         join_date=join_date,
@@ -165,13 +170,13 @@ def create_employee(**kwargs) -> models.Employee:
     return employee
 
 
-def get_employee_status_display(employee: models.Employee, date: datetime.date) -> str:
+def get_employee_status_display(employee: Employee, date: datetime.date) -> str:
     """雇用者のステータスを文字列にする
 
     :param employee: 雇用者
     :param date: 判定日
     :return: ステータスの文字列"""
-    if employee.employee_type == models.Employee.TYPE_PERMANENT_STAFF:
+    if employee.employee_type == Employee.TYPE_PERMANENT_STAFF:
         if employee.join_date > date:
             return "未入社"
         elif employee.leave_date < date:
@@ -368,8 +373,8 @@ def setup_sample_data() -> None:
     employee = create_employee(
         employee_no=1,
         name="山田 太郎",
-        employee_type=models.Employee.TYPE_PERMANENT_STAFF,
-        department=models.Employee.DEPT_GENERAL,
+        employee_type=Employee.TYPE_PERMANENT_STAFF,
+        department=Employee.DEPT_GENERAL,
         user=user,
         join_date=datetime.date(2021, 1, 1),
         payed_holiday=10.0,
@@ -379,14 +384,14 @@ def setup_sample_data() -> None:
     if not core.has_assigned_fixed_overtime_pay(employee):
         raise ValueError("Failed to assign fixed overtime pay")
 
-    working_hours = models.WorkingHour(
+    working_hours = WorkingHour(
         begin_time=datetime.time(10, 0, 0),
         end_time=datetime.time(19, 0, 0),
         category="総務",
     )
     working_hours.save()
 
-    models.EmployeeHour.objects.create(
+    EmployeeHour.objects.create(
         employee=employee, date=datetime.date(2021, 1, 1), working_hours=working_hours
     )
 
@@ -408,6 +413,117 @@ def setup_sample_data() -> None:
             clock_out = datetime.datetime.combine(date, clock_out)
 
         record = core.generate_daily_record([clock_in, clock_out], employee, date)
+        if record:
+            attendance = core.generate_attendance_record(record)
+            attendance = core.initiate_daily_attendance_record(attendance)
+            attendance = core.update_attendance_record(attendance)
+
+
+import random
+
+
+class AnomalyType:
+    NORMAL = 1
+    LATE = 2
+    EARLY_LEAVE = 3
+    MISSED_CLOCK_IN = 4
+    MISSED_CLOCK_OUT = 5
+    HOLIDAY_WORK = 6
+    LEGAL_HOLIDAY_WORK = 7
+
+
+def get_anomaly_stamp_type() -> int:
+    """異常打刻の種類をランダムに返す"""
+    r = random.randint(1, 30)
+    # 1 late
+    # 2 early leave
+    # 3 missed clock in
+    # 4 missed clock out
+    return r
+
+
+def generate_sample_data(employee: Employee, year: int, month: int) -> None:
+    """指定した年月のサンプルデータを生成する"""
+
+    def make_late_stamp(d):
+        r = random.randint(1, 60 * 3)
+        clock_in = datetime.datetime.combine(
+            d, datetime.time(10, 0)
+        ) + datetime.timedelta(minutes=r)
+        r = random.randint(0, 3600)
+        clock_out = datetime.datetime.combine(
+            d, datetime.time(19, 0)
+        ) + datetime.timedelta(seconds=r)
+        return clock_in, clock_out
+
+    def make_early_leave_stamp(d):
+        r = random.randint(0, 3600)
+        clock_in = datetime.datetime.combine(
+            d, datetime.time(10, 0)
+        ) + datetime.timedelta(seconds=r)
+        r = random.randint(60, 60 * 3)
+        clock_out = datetime.datetime.combine(
+            d, datetime.time(19, 0)
+        ) - datetime.timedelta(minutes=r)
+        return clock_in, clock_out
+
+    def make_missed_clock_in_stamp(d):
+        clock_in = None
+        r = random.randint(0, 3600)
+        clock_out = datetime.datetime.combine(
+            d, datetime.time(19, 0)
+        ) + datetime.timedelta(seconds=r)
+        return clock_in, clock_out
+
+    def make_missed_clock_out_stamp(d):
+        r = random.randint(0, 3600)
+        clock_in = datetime.datetime.combine(
+            d, datetime.time(10, 0)
+        ) + datetime.timedelta(seconds=r)
+        clock_out = None
+        return clock_in, clock_out
+
+    def make_normal_stamp(d):
+        r = random.randint(-300, 300)
+        clock_in = datetime.datetime.combine(
+            d, datetime.time(9, 50)
+        ) + datetime.timedelta(seconds=r)
+        r = random.randint(0, 3600)
+        clock_out = datetime.datetime.combine(
+            d, datetime.time(19, 0)
+        ) + datetime.timedelta(seconds=r)
+        return clock_in, clock_out
+
+    STAMP_GENERATORS = {
+        1: make_late_stamp,
+        2: make_early_leave_stamp,
+        3: make_missed_clock_in_stamp,
+        4: make_missed_clock_out_stamp,
+    }
+
+    from django.contrib.auth import get_user_model
+
+    start_date = datetime.date(year, month, 1)
+    end_date = datetime.date(year, month + 1, 1)
+
+    period = Period(
+        datetime.datetime.combine(start_date, datetime.time.min),
+        datetime.datetime.combine(end_date, datetime.time.min),
+    )
+
+    for d in period.range():
+        if d >= datetime.datetime.now() - datetime.timedelta(days=1):
+            break
+
+        if is_holiday(d.date()):
+            # 休日は打刻しない
+            continue
+
+        anomaly_type = get_anomaly_stamp_type()
+        stamp_func = STAMP_GENERATORS.get(anomaly_type, make_normal_stamp)
+        clock_in, clock_out = stamp_func(d.date())
+
+        record = core.generate_daily_record([clock_in, clock_out], employee, d.date())
         if record:
             attendance = core.generate_attendance_record(record)
             attendance = core.initiate_daily_attendance_record(attendance)

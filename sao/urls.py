@@ -35,6 +35,7 @@ from sao.views import (
     day_switch_time_edit,
     day_switch,
     setup_sample_data,
+    generate_sample_data,
 )
 
 app_name = "sao"
@@ -131,4 +132,5 @@ urlpatterns = [
     ),
     path("day_switch", day_switch, name="day_switch"),
     path("setup_sample_data", setup_sample_data, name="setup_sample_data"),
+    path("generate_sample_data", generate_sample_data, name="generate_sample_data"),
 ]

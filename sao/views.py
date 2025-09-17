@@ -48,7 +48,7 @@ from sao.utils import (
     is_missed_stamp,
     create_user,
     create_employee,
-    format_seconds_to_hhmmss,
+    generate_sample_data as utils_generate_sample_data,
 )
 from sao.utils import setup_sample_data as utils_setup_sample_data
 from sao.period import Period
@@ -1461,4 +1461,26 @@ def day_switch(request):
 def setup_sample_data(request):
     """サンプルデータのセットアップ"""
     utils_setup_sample_data()
-    return HttpResponse("sample data setup done")
+    return redirect("sao:home")
+
+
+def generate_sample_data(request):
+    """サンプルデータの生成"""
+    if request.method == "GET":
+        year = (
+            request.GET.get("year")
+            if "year" in request.GET
+            else datetime.date.today().year
+        )
+        month = (
+            request.GET.get("month")
+            if "month" in request.GET
+            else datetime.date.today().month
+        )
+    else:
+        year = datetime.date.today().year
+        month = datetime.date.today().month
+    employee = get_employee_by_user(request.user)
+    if employee:
+        utils_generate_sample_data(employee, year, month)
+    return redirect("sao:home")

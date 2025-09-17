@@ -1,7 +1,7 @@
 import datetime
 from django.db.models import Sum
 from django.test import TestCase
-from sao.utils import setup_sample_data as utils_setup_sample_data
+from sao.utils import setup_sample_data as utils_setup_sample_data, generate_sample_data
 from common.utils_for_test import create_user
 from sao.models import Employee, DailyAttendanceRecord
 from sao.const import Const
