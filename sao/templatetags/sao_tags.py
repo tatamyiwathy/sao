@@ -55,6 +55,7 @@ def row_bg_color(attn: attendance.Attendance, today: datetime.date) -> str:
 
 @register.simple_tag
 def missed_stamp_color(left, right):
+    """打刻が片方だけの場合に色を付ける"""
     if utils.is_missed_stamp(left, right):
         if left and not right:
             return "red_color"

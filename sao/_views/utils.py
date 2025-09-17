@@ -56,7 +56,7 @@ def get_employee_by_user(user: User) -> Employee | None:
         return None
 
 
-def make_warnig_messages(attn: Attendance, display_day: datetime.date) -> dict:
+def get_attendance_warnings(attn: Attendance, display_day: datetime.date) -> dict:
     """警告メッセージを作成する"""
     warnings = {}
     if attn.remark:
@@ -125,7 +125,7 @@ def collect_attendance_warning_messages(
     """警告メッセージを設定する"""
     messages = []
     for attn in attendances:
-        warnings = make_warnig_messages(attn, today)
+        warnings = get_attendance_warnings(attn, today)
         if warnings:
             attn.warnings = warnings
             messages.append(

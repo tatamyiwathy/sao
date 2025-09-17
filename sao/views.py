@@ -83,9 +83,6 @@ def home(request):
 
     employee_hours = get_employee_hour(employee, datetime.date.today())
     today_stamp = make_web_stamp_string(employee, today)
-    render_args["employee"] = employee
-    render_args["employee_hours"] = employee_hours
-    render_args["today_stamp"] = today_stamp
 
     # messageで警告を表示する
     if employee.employee_type == models.Employee.TYPE_PERMANENT_STAFF:

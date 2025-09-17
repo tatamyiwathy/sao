@@ -126,7 +126,7 @@
         </div>
     </div>
 
-    <!-- 勤務詳細テーブル -->
+    <!-- 日毎勤怠記録 -->
     <div class="table-responsive mt-4">
         <table class="table table-bordered table-striped table-hover align-middle">
             <thead class="table-dark">
@@ -149,7 +149,7 @@
             </thead>
             <tbody>
                 {% for attn in attendances %}
-                <tr class="{{ attn|row_bg_color:today }}">
+                <tr class="{{ attn|row_bg_color:today }}" data-bs-toggle="tooltip" title="nande">
                     <!-- 日・曜日の色分け -->
                     {% if attn.date|is_saturday %}
                         <td class="text-end text-primary bg-light">{{ attn.date.day }}</td>
@@ -163,7 +163,9 @@
                     {% endif %}
                     <td>{{ attn.flag }}</td>
                     <td class="text-end {% missed_stamp_color attn.clock_out attn.clock_in %}">
-                        {% if attn.clock_in %}{{ attn.clock_in.time }}{% endif %}
+                        {% if attn.clock_in %}
+                        {{ attn.clock_in.time }}
+                        {% endif %}
                     </td>
                     <td class="text-end {% missed_stamp_color attn.clock_in attn.clock_out %}">
                         {% if attn.clock_out %}
@@ -260,6 +262,16 @@ function clock_func() {
 }
 window.onload = clock_func;
 {% endif %}
+
+// ページ読み込み時にツールチップを初期化
+document.addEventListener('DOMContentLoaded', function () {
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+    new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+});
+
+
 </script>
 {% endblock %}
 
