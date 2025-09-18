@@ -4,7 +4,6 @@
 
 {% block content%}
 
-
 <style>
 .vertical-header {
     writing-mode: vertical-rl;
@@ -128,15 +127,15 @@ function submit()
 			<td class="text-right">{{o.overtime_work|strip_seconds:"0:00"}}</td>
 			<td>
 			{% if user.is_staff or user.permission.enable_view_temporary_staff_record %}
-				<a class="btn btn-info btn-sm" title="詳細"
+				<a class="btn btn-info btn-sm" title="{{o.employee.name}}の詳細"
 				href="{% url 'sao:staff_detail' o.employee.employee_no year month %}">
-					<span class="oi oi-info"></span>
+					<span class="bi bi-person-lines-fill"></span>
 				</a>
 
 			{% endif %}
 				<a class="btn btn-secondary btn-sm" title="WEB打刻"
 				href="{% url 'sao:web_timestamp_view' o.employee.employee_no %}">
-					<span class="oi oi-clock"></span>
+					<span class="bi bi-clock"></span>
 				</a>
 			</td>
 		</tr>
