@@ -49,7 +49,6 @@ class StaffYearMonthForm(forms.Form):
     )
     yearmonth = forms.CharField(
         label="月",
-        initial=datetime.date.today(),
         widget=forms.DateInput(
             attrs={"class": "MonthPicker form-control"}, format="%Y-%m"
         ),
