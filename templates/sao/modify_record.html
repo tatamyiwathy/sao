@@ -12,27 +12,42 @@
         {{record.employee.employee_no}}:{{record.employee}} {{record.date}}
     </div>
 
-    {% if msg %}
-    <div class="alert alert-danger" role="alert">
-        {{msg}}
-    </div>
-    {% endif %}
-
     <div class="row">
         <div class="col">
-            <div class="card">
-                <div class="card-header">
-                    打刻修正
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <span class="bi bi-pencil"></span> 打刻修正
+    </div>
+    <div class="card-body">
+        <form class="form" name="form1" method="post" action="{% url 'sao:modify_record' record.id year month %}">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="form-group mb-3">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {% render_field field class="form-control" %}
+                    {% if field.errors %}
+                        <div class="text-danger small">{{ field.errors }}</div>
+                    {% endif %}
                 </div>
-                <div class="card-body">
-                    <form class="form-inline" name="form1" method="post" action={% url 'sao:modify_record' record.id year month %}>
-                        {% csrf_token %}
-                        {{form.as_p}}
-                        <button class="btn btn-primary" type='submit'>修正登録</button>
-                    </form>
-                </div>
+            {% endfor %}
+            <div class="d-grid">
+
+                <button class="btn btn-primary mb-3" type="submit">
+                    <span class="bi bi-check"></span> 修正登録
+                </button>
+
             </div>
+
+
+        <div class="d-grid">
+            <a href="{% url 'sao:employee_attendance_detail' record.employee.employee_no year month %}" class="btn btn-secondary">
+                戻る
+            </a>
         </div>
+
+        </form>
+    </div>
+</div>        </div>
 
 
         <div class="col">
@@ -53,13 +68,6 @@
         </div>
     </div>
 
-    <div class="row">
-        <a href={% url 'sao:employee_record' %}?employee={{record.employee.id}}&year={{year}}&month={{month}}>
-            <div class="text-right">
-                <button class="btn btn-secondary">戻る</button>
-            </div>
-        </a>
-    </div>
 </div>
 </div>
 

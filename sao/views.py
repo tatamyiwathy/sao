@@ -567,16 +567,19 @@ def modify_record(request, record_id, year, month):
     記録修正
     """
     msg = ""
+    record = get_object_or_404(models.DailyAttendanceRecord, id=record_id)
+    print(record.clock_out)
+    form = forms.ModifyRecordForm(request.POST or None, instance=record)
     if request.method == "POST":
-        record = get_object_or_404(models.EmployeeDailyRecord, id=record_id)
-        form = forms.ModifyRecordForm(request.POST, instance=record)
         if form.is_valid():
             form.save()
             logger.info(f"{request.user}が変更した: {record} {record.status}")
-            return redirect("sao:employee_record")
-    else:
-        record = get_object_or_404(models.EmployeeDailyRecord, id=record_id)
-        form = forms.ModifyRecordForm(instance=record)
+            return redirect(
+                "sao:employee_attendance_detail",
+                record.employee.employee_no,
+                year,
+                month,
+            )
 
     # 外出時間を取得する
     day_start = (

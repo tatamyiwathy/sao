@@ -6,9 +6,9 @@ from sao.models import (
     Employee,
     EmployeeHour,
     Holiday,
-    EmployeeDailyRecord,
     WorkingHour,
     DaySwitchTime,
+    DailyAttendanceRecord,
 )
 from sao.working_status import WorkingStatus
 
@@ -94,7 +94,7 @@ class ModifyRecordForm(forms.ModelForm):
     """勤怠記録修正フォーム"""
 
     class Meta:
-        model = EmployeeDailyRecord
+        model = DailyAttendanceRecord
         fields = [
             "clock_in",
             "clock_out",
@@ -102,16 +102,33 @@ class ModifyRecordForm(forms.ModelForm):
         ]
 
         widgets = {
-            "clock_in": forms.DateTimeInput(attrs={"class": "form-control"}),
-            "clock_out": forms.DateTimeInput(attrs={"class": "form-control"}),
+            "clock_in": forms.TimeInput(
+                attrs={"type": "time", "class": "form-control"}
+            ),
+            "clock_out": forms.TimeInput(
+                attrs={"type": "time", "class": "form-control"}
+            ),
             "status": forms.Select(attrs={"class": "form-select"}),
         }
-
+        input_formats = {
+            "clock_in": ["%H:%M"],
+            "clock_out": ["%H:%M"],
+        }
         labels = {
             "clock_in": "出勤",
             "clock_out": "退勤",
             "status": "ステータス",
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # instanceが渡されている場合、時刻部分だけを初期値として設定
+        instance = kwargs.get("instance")
+        if instance:
+            if instance.clock_in:
+                self.fields["clock_in"].initial = instance.clock_in.strftime("%H:%M")
+            if instance.clock_out:
+                self.fields["clock_out"].initial = instance.clock_out.strftime("%H:%M")
 
     def clean(self):
         cleaned_data = super(forms.ModelForm, self).clean()
