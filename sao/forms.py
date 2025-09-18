@@ -90,48 +90,28 @@ class YearMonthForm(forms.Form):
     )
 
 
-class ModifyRecordForm(forms.ModelForm):
+class ModifyRecordForm(forms.Form):
     """勤怠記録修正フォーム"""
 
-    class Meta:
-        model = DailyAttendanceRecord
-        fields = [
-            "clock_in",
-            "clock_out",
-            "status",
-        ]
+    clock_in = forms.TimeField(
+        widget=forms.TimeInput(
+            attrs={"type": "time", "class": "form-control"},
+        )
+    )
 
-        widgets = {
-            "clock_in": forms.TimeInput(
-                attrs={"type": "time", "class": "form-control"}
-            ),
-            "clock_out": forms.TimeInput(
-                attrs={"type": "time", "class": "form-control"}
-            ),
-            "status": forms.Select(attrs={"class": "form-select"}),
-        }
-        input_formats = {
-            "clock_in": ["%H:%M"],
-            "clock_out": ["%H:%M"],
-        }
-        labels = {
-            "clock_in": "出勤",
-            "clock_out": "退勤",
-            "status": "ステータス",
-        }
+    clock_out = forms.TimeField(
+        widget=forms.TimeInput(
+            attrs={"type": "time", "class": "form-control"},
+        )
+    )
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # instanceが渡されている場合、時刻部分だけを初期値として設定
-        instance = kwargs.get("instance")
-        if instance:
-            if instance.clock_in:
-                self.fields["clock_in"].initial = instance.clock_in.strftime("%H:%M")
-            if instance.clock_out:
-                self.fields["clock_out"].initial = instance.clock_out.strftime("%H:%M")
+    status = forms.ChoiceField(
+        choices=WorkingStatus.choices,
+        label="勤務状況",
+    )
 
     def clean(self):
-        cleaned_data = super(forms.ModelForm, self).clean()
+        cleaned_data = super().clean()
 
         if cleaned_data["status"] in WorkingStatus.HOLIDAY:
             if cleaned_data["clock_in"] or cleaned_data["clock_out"]:

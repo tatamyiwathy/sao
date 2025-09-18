@@ -568,11 +568,18 @@ def modify_record(request, record_id, year, month):
     """
     msg = ""
     record = get_object_or_404(models.DailyAttendanceRecord, id=record_id)
-    print(record.clock_out)
-    form = forms.ModifyRecordForm(request.POST or None, instance=record)
+    form = forms.ModifyRecordForm(request.POST or None)
     if request.method == "POST":
         if form.is_valid():
-            form.save()
+            clock_in = form.cleaned_data["clock_in"]
+            clock_out = form.cleaned_data["clock_out"]
+            status = form.cleaned_data["status"]
+
+            record.clock_in = datetime.datetime.combine(record.date, clock_in)
+            record.clock_out = datetime.datetime.combine(record.date, clock_out)
+            record.status = status
+            record.save()
+
             logger.info(f"{request.user}が変更した: {record} {record.status}")
             return redirect(
                 "sao:employee_attendance_detail",
@@ -580,7 +587,14 @@ def modify_record(request, record_id, year, month):
                 year,
                 month,
             )
-
+    elif request.method == "GET":
+        form = forms.ModifyRecordForm(
+            initial={
+                "clock_in": record.clock_in,
+                "clock_out": record.clock_out,
+                "status": record.status,
+            }
+        )
     # 外出時間を取得する
     day_start = (
         record.clock_in
