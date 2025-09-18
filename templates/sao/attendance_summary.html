@@ -74,12 +74,15 @@ function submit()
 
 		
 	<br>
+	<div>
+		<strong>{{ year }}年{{ month }}月</strong>の勤務実績一覧
+	</div>
 	<table class="table table-striped table-bordered table-hover">
 		<tr>
-			<th class="vertical-header">種別</th>
-			<th class="vertical-header">所属</th>
 			<th class="vertical-header">管理番号</th>
 			<th class="vertical-header">氏名</th>
+			<th class="vertical-header">種別</th>
+			<th class="vertical-header">所属</th>
 			{% if user.is_staff or user.permission.enable_view_temporary_staff_record %}
 			<th class="vertical-header">所定勤務日数</th>
 			<th class="vertical-header">出勤日数</th>
@@ -103,10 +106,10 @@ function submit()
 		{% else %}
 		<tr class="warning">
 		{% endif %}
-			<td>{{o.type}}</td>
-			<td>{{o.department}}</td>
 			<td>{{o.employee.employee_no}}</td>
 			<td>{{o.employee.name}}</td>
+			<td>{{o.type}}</td>
+			<td>{{o.department}}</td>
 			{% if user.is_staff or user.permission.enable_view_temporary_staff_record %}
 			<td class="text-right">{{o.daycount.0}}</td>
 			<td class="text-right">{{o.daycount.1}}</td>
