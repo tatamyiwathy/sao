@@ -449,8 +449,6 @@ def accumulate_weekly_working_hours(attendances: list[Attendance]) -> list[tuple
 
     if attendances is None:
         return []
-    if len(attendances) == 0:
-        return []
 
     result: list[tuple] = []
     work_time = Const.TD_ZERO
@@ -464,6 +462,10 @@ def accumulate_weekly_working_hours(attendances: list[Attendance]) -> list[tuple
             week_begin = a.date
 
         # 実労働時間
+        if a.clock_in is None or a.clock_out is None:
+            raise AnomalyAttendanceRecordError(
+                f"attendance record anomaly: {a.employee.name} {a.date}"
+            )
         steppingout = tally_steppingout(a.employee, a.clock_in, a.clock_out)
         work_time += a.actual_work + steppingout
 
