@@ -868,11 +868,10 @@ def attendance_summary(request):
         ) + datetime.timedelta(days=1)
         period = Period(start, end)
 
-        hide_deactive_staff = False
         if "f_deactive" in request.GET:
             hide_deactive_staff = True
-        elif "hide_deactive_staff" in request.COOKIES:
-            hide_deactive_staff = True
+        else:
+            hide_deactive_staff = False
 
         summaries = []
         employees = models.Employee.objects.all().order_by("employee_no")
