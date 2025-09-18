@@ -629,10 +629,11 @@ def employee_record(request):
                 get_next_sunday(to_date), datetime.time(0, 0)
             )
 
+            period = Period(last_sunday, next_sunday)
             # 前月の最終日曜日から次月の最初の日曜日までのデータを集める
-            attendances = get_attendance_in_period(
-                employee, Period(last_sunday, next_sunday)
-            )
+            attendances = get_attendance_in_period(employee, period)
+            # 欠損日補完
+            attendances = fill_missiing_attendance(employee, period, attendances)
             if not attendances:
                 pass
             else:
