@@ -617,19 +617,15 @@ def employee_record(request):
             # '計算ボタン'を押されてここ通る
             employee = models.Employee.objects.get(id=request.POST["employee"])
 
-            from_date = datetime.datetime.strptime(
-                form.cleaned_data["yearmonth"], "%Y-%m"
-            ).date()
-            to_date = get_next_month_date(from_date)
+            d = form.cleaned_data["yearmonth"]
+            n = get_next_month_date(d)
+            s0 = get_last_sunday(d)
+            s1 = get_next_sunday(n)
 
-            last_sunday = datetime.datetime.combine(
-                get_last_sunday(from_date), datetime.time(0, 0)
-            )
-            next_sunday = datetime.datetime.combine(
-                get_next_sunday(to_date), datetime.time(0, 0)
-            )
+            def to_datetime(date):
+                return datetime.datetime.combine(date, datetime.time(0, 0))
 
-            period = Period(last_sunday, next_sunday)
+            period = Period(to_datetime(s0), to_datetime(s1))
             # 前月の最終日曜日から次月の最初の日曜日までのデータを集める
             attendances = get_attendance_in_period(employee, period)
             # 欠損日補完
@@ -637,30 +633,27 @@ def employee_record(request):
             if not attendances:
                 pass
             else:
-                printable_calculated = attendances
 
                 # 集計
-                summed_up = tally_attendances(attendances)
-                printable_summed_up = summed_up
+                tallied = tally_attendances(attendances)
 
                 # まるめ
-                rounded = core.round_attendance_summary(summed_up)
-                printable_rounded = rounded
+                rounded = core.round_attendance_summary(tallied)
 
-                week_work_time = core.accumulate_weekly_working_hours(attendances)
+                weekly_work_time = core.accumulate_weekly_working_hours(attendances)
 
                 return render(
                     request,
                     "sao/view.html",
                     {
                         "form": form,
-                        "attendances": printable_calculated,
-                        "total_result": printable_summed_up,
-                        "rounded_result": printable_rounded,
+                        "attendances": attendances,
+                        "total_result": tallied,
+                        "rounded_result": rounded,
                         "employee": employee,
-                        "year": from_date.year,
-                        "month": from_date.month,
-                        "week_work_time": week_work_time,
+                        "year": d.year,
+                        "month": d.month,
+                        "week_work_time": weekly_work_time,
                         "today": datetime.date.today(),
                     },
                 )
@@ -699,13 +692,13 @@ def employee_record(request):
 
         printable_calculated = attendances
 
-        summed_up = tally_attendances(attendances)
-        printable_summed_up = summed_up
+        tallied = tally_attendances(attendances)
+        printable_summed_up = tallied
 
-        rounded = core.round_attendance_summary(summed_up)
+        rounded = core.round_attendance_summary(tallied)
         printable_rounded = rounded
 
-        week_work_time = core.accumulate_weekly_working_hours(attendances)
+        weekly_work_time = core.accumulate_weekly_working_hours(attendances)
 
         return render(
             request,
@@ -718,7 +711,7 @@ def employee_record(request):
                 "employee": employee,
                 "year": from_date.year,
                 "month": from_date.month,
-                "week_work_time": week_work_time,
+                "week_work_time": weekly_work_time,
                 "today": datetime.date.today(),
             },
         )

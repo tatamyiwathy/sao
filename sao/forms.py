@@ -47,11 +47,10 @@ class StaffYearMonthForm(forms.Form):
     employee = forms.ChoiceField(
         label="氏名", widget=forms.Select(attrs={"class": "form-select"})
     )
-    yearmonth = forms.CharField(
+    yearmonth = forms.DateField(
         label="月",
-        widget=forms.DateInput(
-            attrs={"class": "MonthPicker form-control"}, format="%Y-%m"
-        ),
+        widget=forms.DateInput(attrs={"type": "month", "class": "form-control"}),
+        input_formats=["%Y-%m"],
     )
 
     def __init__(self, *args, **kwargs):
