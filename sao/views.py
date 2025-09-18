@@ -855,9 +855,7 @@ def attendance_summary(request):
     if request.method == "GET":
         form = forms.YearMonthForm(request.GET)
         if form.is_valid():
-            from_date = datetime.datetime.strptime(
-                form.cleaned_data["yearmonth"], "%Y-%m"
-            ).date()
+            from_date = form.cleaned_data["yearmonth"]
         else:
             form = forms.YearMonthForm()
             from_date = get_first_day(datetime.date.today())

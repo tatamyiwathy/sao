@@ -1,5 +1,6 @@
 {% extends "base.html" %} 
 {% load sao_tags %}
+{% load widget_tweaks %}
 
 {% block content%}
 
@@ -52,7 +53,10 @@ function submit()
 
 		<div class="col-auto">
 			<div class="pull-left">
-			{{ form }}
+				<form class="form" method='GET' action={% url 'sao:attendance_summary' %}>
+					{% csrf_token %}
+					{{ form.yearmonth|attr:"onchange=submit()" }}
+				</form>
 			</div>
 			<div class="checkbox col-xs-4">
 				<label><input id='id_filter_deactive' type="checkbox" name="filter" onchange=submit() {{checked}}>在籍スタッフ以外非表示</label>
@@ -133,5 +137,5 @@ function submit()
 	</table>
 </div>
 
-{% endblock %} {% block footer %} ■
+{% endblock %} {% block footer %} 
 {% endblock %}
