@@ -1130,7 +1130,6 @@ class LoginTest(TestCase):
         create_user()
         c = create_client(TEST_USER)
         r = c.get("/")
-        print(r.context)
         self.assertEqual(TEST_USER["username"], r.context["user"].username)
 
     def test_admin_login(self):

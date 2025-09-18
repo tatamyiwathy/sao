@@ -41,8 +41,6 @@ def is_holiday(date: datetime.datetime) -> bool:
 
 @register.filter
 def focus_today(date: datetime.date, day: datetime.date) -> str:
-    if date == day:
-        print(date, day)
     return "success" if date == day else ""
 
 

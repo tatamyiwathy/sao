@@ -1511,9 +1511,6 @@ def employee_attendance_detail(request, employee_no, year, month):
 
     weekly_work_time = core.accumulate_weekly_working_hours(attendances)
 
-    for a in attendances:
-        print(a.daily_attendance_record.pk) if a.daily_attendance_record else None
-
     return render(
         request,
         "sao/employee_attendance_detail.html",
