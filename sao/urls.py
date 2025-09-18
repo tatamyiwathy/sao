@@ -36,6 +36,7 @@ from sao.views import (
     day_switch,
     setup_sample_data,
     generate_sample_data,
+    employee_attendance_detail,
 )
 
 app_name = "sao"
@@ -72,7 +73,6 @@ urlpatterns = [
         cancel_leave_from_company,
         name="cancel_leave_from_company",
     ),
-    path("employee_record/", employee_record, name="employee_record"),
     path(
         "staff_detail/<employee>/<int:year>/<int:month>/",
         staff_detail,
@@ -133,4 +133,10 @@ urlpatterns = [
     path("day_switch", day_switch, name="day_switch"),
     path("setup_sample_data", setup_sample_data, name="setup_sample_data"),
     path("generate_sample_data", generate_sample_data, name="generate_sample_data"),
+    path(
+        "employee_attendance_detail/<int:employee_no>/<int:year>/<int:month>/",
+        employee_attendance_detail,
+        name="employee_attendance_detail",
+    ),
+    path("employee_record/", employee_record, name="employee_record"),
 ]

@@ -128,7 +128,7 @@ function submit()
 			<td>
 			{% if user.is_staff or user.permission.enable_view_temporary_staff_record %}
 				<a class="btn btn-info btn-sm" title="{{o.employee.name}}の詳細"
-				href="{% url 'sao:staff_detail' o.employee.employee_no year month %}">
+				href="{% url 'sao:employee_attendance_detail' o.employee.employee_no year month %}">
 					<span class="bi bi-person-lines-fill"></span>
 				</a>
 

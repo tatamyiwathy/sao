@@ -1475,3 +1475,56 @@ def generate_sample_data(request):
     if employee:
         utils_generate_sample_data(employee, year, month)
     return redirect("sao:home")
+
+
+def employee_attendance_detail(request, employee_no, year, month):
+    """社員の勤務実績詳細"""
+
+    def get_display_period(display_date):
+        from_date = display_date
+        to_date = get_next_month_date(from_date)
+        # 前月の最終日曜日から次月の最初の日曜日までのデータを集める
+        last_sunday = datetime.datetime.combine(
+            get_last_sunday(from_date), datetime.time(0, 0)
+        )
+        next_sunday = datetime.datetime.combine(
+            get_next_sunday(to_date), datetime.time(0, 0)
+        )
+        return Period(last_sunday, next_sunday)
+
+    display_date = datetime.date(year=int(year), month=int(month), day=1)
+    employee = get_object_or_404(models.Employee, employee_no=employee_no)
+
+    period = get_display_period(display_date)
+    attendances = get_attendance_in_period(
+        employee,
+        period,
+    )
+    attendances = fill_missiing_attendance(employee, period, attendances)
+    attendances[-1].total_overtime = tally_over_work_time(
+        display_date.month, attendances
+    )
+
+    tallied = tally_attendances(attendances)
+
+    rounded = core.round_attendance_summary(tallied)
+
+    weekly_work_time = core.accumulate_weekly_working_hours(attendances)
+
+    for a in attendances:
+        print(a.daily_attendance_record.pk) if a.daily_attendance_record else None
+
+    return render(
+        request,
+        "sao/employee_attendance_detail.html",
+        {
+            "attendances": attendances,
+            "total_result": tallied,
+            "rounded_result": rounded,
+            "employee": employee,
+            "year": display_date.year,
+            "month": display_date.month,
+            "week_work_time": weekly_work_time,
+            "today": datetime.date.today(),
+        },
+    )
