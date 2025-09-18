@@ -63,16 +63,14 @@ def get_attendance_warnings(attn: Attendance, display_day: datetime.date) -> dic
         # 処理済み
         return {}
 
-    if (display_day - attn.date.date()).days < 2:
+    if (display_day - attn.date).days < 2:
         # 猶予期間
         return {}
 
     if is_missed_stamp(attn.clock_in, attn.clock_out):
         # 打刻が片方だけ
         warnings["missed_stamp"] = "打刻を忘れていませんか？"
-    if not is_holiday(attn.date.date()) and is_empty_stamp(
-        attn.clock_in, attn.clock_out
-    ):
+    if not is_holiday(attn.date) and is_empty_stamp(attn.clock_in, attn.clock_out):
         # 平日で打刻なし
         warnings["nostamp_workday"] = "欠勤の届を提出していますか？"
     if attn.legal_holiday > Const.TD_ZERO:

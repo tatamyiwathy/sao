@@ -37,6 +37,9 @@
 		</div>
 	</div>
 
+	<div >
+		<h5>{{ employee.name }}さんの{{ year }}年{{ month }}月の勤怠データ</h5>
+	</div>
 	<div class="row mt-3">
 		{% if attendances %}
 		<table class="table table-striped table-bordered table-condensed">
@@ -65,55 +68,65 @@
 
 			</tr>
 			{% for attn in attendances %}
-			<tr class="{{attn.date|focus_today:today}}">
+			<tr class="table-{{attn.date|focus_today:today}}">
 
 				{%if attn.is_absent %}
 				{#----欠勤時の表示----#}
-				{% if attn.date|is_saturday %}
-				<td class="red_color">{{attn.date.day }}</td>
-				<td class="red_color">{{attn.date|date:"D" }}</td>
-				{% elif attn.date|is_holiday %}
-				<td class="red_color">{{attn.date.day }}</td>
-				<td class="red_color">{{attn.date|date:"D" }}</td>
-				{% else %}
-				<td class="red_color text-right">{{attn.date.day }}</td>
-				<td class="red_color">{{attn.date|date:"D" }}</td>
-				{% endif %}
-
-				<td class="red_color">{{attn.flag}}</td>
-				<td class="red_color">
-					{% if attn.accepted_overtime %}
-					<span class="glyphicon glyphicon-ok"></span>
+					{% if attn.date|is_saturday %}
+						<td class="red_color">{{attn.date.day }}</td>
+						<td class="red_color">{{attn.date|date:"D" }}</td>
+					{% elif attn.date|is_holiday %}
+						<td class="red_color">{{attn.date.day }}</td>
+						<td class="red_color">{{attn.date|date:"D" }}</td>
+					{% else %}
+						<td class="red_color text-right">{{attn.date.day }}</td>
+						<td class="red_color">{{attn.date|date:"D" }}</td>
 					{% endif %}
-				</td>
-				<td class="red_color"></td>
-				<td class="red_color"></td>
-				<td class="red_color"></td>
-				<td class="red_color text-right">{{attn.work|strip_seconds:"0:00" }}</td>
-				<td class="red_color text-right">{{attn.late|strip_seconds:"0:00" }}</td>
-				<td class="red_color text-right">{{attn.before|strip_seconds:"0:00" }}</td>
-				<td class="red_color text-right">{{attn.steppingout|strip_seconds:"0:00" }}</td>
-				<td class="red_color text-right">{{attn.out_of_time|strip_seconds:"0:00"}}</td>
-				<td class="red_color"></td>
-				<td class="red_color text-right">{{attn.night|strip_seconds:"0:00" }}</td>
-				<td class="red_color text-right">{{attn.legal_holiday|strip_seconds:"0:00" }}</td>
-				<td class="red_color text-right">{{attn.holiday|strip_seconds:"0:00"}}</td>
-				<td class="red_color"></td>
-				{% if attn.remark %}
-				<td class="red_color">{{attn.remark}}</td>
-				{% else %}
-				<td class="red_color"></td>
-				{% endif %}
+
+					<td class="red_color">{{attn.flag}}</td>
+					<td class="red_color">
+						{% if attn.accepted_overtime %}
+						<span class="glyphicon glyphicon-ok"></span>
+						{% endif %}
+					</td>
+					<td class="red_color"></td>
+					<td class="red_color"></td>
+					<td class="red_color"></td>
+					<td class="red_color text-right">{{attn.work|strip_seconds:"0:00" }}</td>
+					<td class="red_color text-right">{{attn.late|strip_seconds:"0:00" }}</td>
+					<td class="red_color text-right">{{attn.before|strip_seconds:"0:00" }}</td>
+					<td class="red_color text-right">{{attn.steppingout|strip_seconds:"0:00" }}</td>
+					<td class="red_color text-right">{{attn.out_of_time|strip_seconds:"0:00"}}</td>
+					<td class="red_color"></td>
+					<td class="red_color text-right">{{attn.night|strip_seconds:"0:00" }}</td>
+					<td class="red_color text-right">{{attn.legal_holiday|strip_seconds:"0:00" }}</td>
+					<td class="red_color text-right">{{attn.holiday|strip_seconds:"0:00"}}</td>
+					<td class="red_color"></td>
+					{% if attn.remark %}
+						<td class="red_color">{{attn.remark}}</td>
+					{% else %}
+						<td class="red_color"></td>
+					{% endif %}
 				{%else%}
+
+
+				{#----出勤時の表示----#}
+				{#日付#}
+				{#土曜は青、休日は赤、それ以外は黒#}
+				{#日曜は赤にしたいが、祝日判定がないので保留#}
+				{#日付の横に今日の日付なら背景色を変える#}
+				{#日付のセルにtext-rightをつけて右寄せにする#}
+				{#曜日はDで表示する#}
+				{#土曜は青、休日は赤、それ以外は黒#}
 				{% if attn.date|is_saturday %}
-				<td class="text-right" style="color:#0000ff">{{attn.date.day }}</td>
-				<td style="color:#0000ff">{{attn.date|date:"D" }}</td>
+					<td class="text-right" style="color:#0000ff">{{attn.date.month}}/{{attn.date.day}}</td>
+					<td style="color:#0000ff">{{attn.date|date:"D" }}</td>
 				{% elif attn.date|is_holiday %}
-				<td class="text-right" style="color:#ff0000">{{attn.date.day }}</td>
-				<td style="color:#ff0000">{{attn.date|date:"D" }}</td>
+					<td class="text-right" style="color:#ff0000">{{attn.date.month}}/{{attn.date.day }}</td>
+					<td style="color:#ff0000">{{attn.date|date:"D" }}</td>
 				{% else %}
-				<td class="text-right">{{attn.date.day }}</td>
-				<td>{{attn.date|date:"D" }}</td>
+					<td class="text-right">{{attn.date.month}}/{{attn.date.day }}</td>
+					<td>{{attn.date|date:"D" }}</td>
 				{% endif %}
 
 				<td>{{attn.flag }}</td>
@@ -122,8 +135,8 @@
 					<span class="glyphicon glyphicon-ok"></span>
 					{% endif %}
 				</td>
+				{#実打始#}
 				<td class="text-right">
-					{#実打始#}
 					{% if attn.raw_clock_in %}
 					{{attn.raw_clock_in.time}}
 					{% endif %}

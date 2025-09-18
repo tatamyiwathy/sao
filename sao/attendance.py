@@ -14,10 +14,12 @@ class Attendance:
 
     def __init__(
         self,
-        date: datetime.datetime,
+        date: datetime.date,
         employee: Employee,
         record: DailyAttendanceRecord | None = None,
     ):
+        if isinstance(date, datetime.datetime):
+            raise TypeError("date must be datetime.date")
         self.date = date  # 日付
         self.employee = employee  # 従業員
         self.daily_attendance_record = record if record else None  # 元データ

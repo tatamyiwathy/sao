@@ -31,26 +31,27 @@ def color_ifnot(time, color_word):
 
 @register.filter
 def is_saturday(date):
-    return calendar.is_saturday(date.date())
+    return calendar.is_saturday(date)
 
 
 @register.filter
 def is_holiday(date: datetime.datetime) -> bool:
-    return calendar.is_holiday(date.date())
+    return calendar.is_holiday(date)
 
 
 @register.filter
 def focus_today(date: datetime.date, day: datetime.date) -> str:
+    if date == day:
+        print(date, day)
     return "success" if date == day else ""
 
 
 @register.filter
 def select_tr_color(attn: Attendance, today: datetime.date) -> str:
-    if attn.date.date() == today:
+    if attn.date == today:
         return "table-success"
     else:
-        dt = datetime.datetime.combine(today, datetime.time(0, 0))
-        if attn.date < dt:
+        if attn.date < today:
             if attn.warnings:
                 return "table-warning"
     return ""

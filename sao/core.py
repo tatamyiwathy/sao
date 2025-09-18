@@ -603,9 +603,10 @@ def get_attendance_in_period(employee: Employee, period: Period) -> list[Attenda
         time_record__date__gte=period.start.date(),
         time_record__date__lte=period.end.date(),
     ).order_by("time_record__date"):
-        attn_date = datetime.datetime.combine(
-            daily_record.time_record.date, datetime.time(0, 0, 0)
-        )
+        # attn_date = datetime.datetime.combine(
+        #     daily_record.time_record.date, datetime.time(0, 0, 0)
+        # )
+        attn_date = daily_record.time_record.date
         attn = Attendance(date=attn_date, employee=employee, record=daily_record)
         attendances.append(attn)
 
@@ -622,12 +623,11 @@ def fill_missiing_attendance(
     戻り値:
         欠損を補った勤怠データのリスト
     """
-    dates = []
-    if len(attendances) > 0:
-        dates = [x.date for x in attendances]
+    dates = [x.date for x in attendances]
 
     filled = []
     for d in period.range():
+        d = d.date()
         if d not in dates:
             # まだ勤怠データが存在しない日があるので生成する
             attn = Attendance(date=d, employee=employee)

@@ -81,7 +81,7 @@ def home(request):
     attendances = collect_display_attendances(employee, year_month)
     render_args = render_employee_attendance(attendances, year_month)
 
-    employee_hours = get_employee_hour(employee, datetime.date.today())
+    employee_hours = get_employee_hour(employee, today)
     today_stamp = make_web_stamp_string(employee, today)
 
     # messageで警告を表示する
