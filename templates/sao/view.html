@@ -124,29 +124,29 @@
 				</td>
 				<td class="text-right">
 					{#実打始#}
-					{% if attn.clock_in %}
-					{{attn.clock_in}}
+					{% if attn.raw_clock_in %}
+					{{attn.raw_clock_in.time}}
 					{% endif %}
 				</td>
 
 				{#実打終#}
 				<td class="text-right">
-					{% if attn.clock_out %}
-					{{attn.clock_out}}
+					{% if attn.raw_clock_out %}
+					{{attn.raw_clock_out.time}}
 					{% endif %}
 				</td>
 
 				{#修正始#}
 				<td class="text-right">
-					{% if attn.adjusted_from %}
-					{{attn.adjusted_from}}
+					{% if attn.clock_in %}
+					{{attn.clock_in.time}}
 					{% endif %}
 				</td>
 
 				{#修正終#}
 				<td class="text-right">
-					{% if attn.adjusted_to %}
-					{{attn.adjusted_to}}
+					{% if attn.clock_out %}
+					{{attn.clock_out.time}}
 					{% endif %}
 				</td>
 

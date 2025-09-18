@@ -21,8 +21,14 @@ class Attendance:
         self.date = date  # 日付
         self.employee = employee  # 従業員
         self.daily_attendance_record = record if record else None  # 元データ
-        self.clock_in = record.clock_in if record else None  # 実打刻時間
-        self.clock_out = record.clock_out if record else None  # 実打刻時間
+        self.clock_in = record.clock_in if record else None  # 打刻時間
+        self.clock_out = record.clock_out if record else None  # 打刻時間
+        self.raw_clock_in = (
+            record.time_record.clock_in if record else None
+        )  # 元打刻時間
+        self.raw_clock_out = (
+            record.time_record.clock_out if record else None
+        )  # 元打刻時間
         self.working_hours_start = (
             record.working_hours_start if record else None
         )  # 勤務時間開始
