@@ -131,9 +131,11 @@ class StaffYearMonthFormTest(TestCase):
 
     def test_form_is_valid(self):
         employee = create_employee(create_user())
-        form = StaffYearMonthForm({"employee": employee.pk, "yearmonth": "2017-02"})
+        form = StaffYearMonthForm(
+            {"employee": employee.pk, "yearmonth": datetime.date(2017, 2, 1)}
+        )
         self.assertTrue(form.is_valid())
-        self.assertEqual(form.cleaned_data["yearmonth"], "2017-02")
+        self.assertEqual(form.cleaned_data["yearmonth"], datetime.date(2017, 2, 1))
 
 
 class ModifyPermissionFormTest(TestCase):

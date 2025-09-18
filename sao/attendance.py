@@ -26,10 +26,10 @@ class Attendance:
         self.clock_in = record.clock_in if record else None  # 打刻時間
         self.clock_out = record.clock_out if record else None  # 打刻時間
         self.raw_clock_in = (
-            record.time_record.clock_in if record else None
+            record.time_record.clock_in if record and record.time_record else None
         )  # 元打刻時間
         self.raw_clock_out = (
-            record.time_record.clock_out if record else None
+            record.time_record.clock_out if record and record.time_record else None
         )  # 元打刻時間
         self.working_hours_start = (
             record.working_hours_start if record else None
