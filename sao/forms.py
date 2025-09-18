@@ -94,15 +94,17 @@ class ModifyRecordForm(forms.Form):
     """勤怠記録修正フォーム"""
 
     clock_in = forms.TimeField(
+        label="出勤",
         widget=forms.TimeInput(
             attrs={"type": "time", "class": "form-control"},
-        )
+        ),
     )
 
     clock_out = forms.TimeField(
+        label="退勤",
         widget=forms.TimeInput(
             attrs={"type": "time", "class": "form-control"},
-        )
+        ),
     )
 
     status = forms.ChoiceField(
