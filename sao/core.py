@@ -257,21 +257,16 @@ def calc_stepping_out(employee: Employee, stamp: Period) -> datetime.timedelta:
     return total_steppingout
 
 
-def tally_steppingout(timerecord: EmployeeDailyRecord) -> datetime.timedelta:
+def tally_steppingout(
+    employee: Employee, clock_in: datetime.datetime, clock_out: datetime.datetime
+) -> datetime.timedelta:
     """
     外出時間を集計する
     もし出勤/退勤の打刻がないばあいは0を返す
     """
-    clock_in = timerecord.get_clock_in()
-    if clock_in is None:
-        return Const.TD_ZERO
-    clock_out = timerecord.get_clock_out()
-    if clock_out is None:
-        return Const.TD_ZERO
-
     total_steppingout = Const.TD_ZERO
     for steppingout in SteppingOut.objects.filter(
-        employee=timerecord.employee,
+        employee=employee,
         out_time__gte=clock_in,
         return_time__lt=clock_out,
     ):
@@ -468,12 +463,9 @@ def accumulate_weekly_working_hours(attendances: list[Attendance]) -> list[tuple
         if a.date.weekday() == 6:
             week_begin = a.date
 
-        # 所定の始業、終業、勤務時間を取得する
-        actual_work = Period(a.clock_in, a.clock_out)
-
         # 実労働時間
-        steppingout = tally_steppingout(r)
-        work_time += calc_actual_working_hours(actual_work, a.status, steppingout)
+        steppingout = tally_steppingout(a.employee, a.clock_in, a.clock_out)
+        work_time += a.actual_work + steppingout
 
         # 土曜日は集計
         if a.date.weekday() == 5:

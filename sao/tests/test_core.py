@@ -326,32 +326,15 @@ class TestTallySteppingOut(TestCase):
             out_time=datetime(2021, 8, 2, 13, 0, 0),
             return_time=datetime(2021, 8, 2, 14, 0, 0),
         ).save()
-        time_record = EmployeeDailyRecord(
-            date=date(2021, 8, 2),
-            employee=employee,
-            status=WorkingStatus.C_KINMU,
-            clock_in=datetime.combine(date(2021, 8, 2), time(9, 0)),
-            clock_out=datetime.combine(date(2021, 8, 2), time(19, 0)),
-            working_hours_start=datetime.combine(date(2021, 8, 2), time(10, 0)),
-            working_hours_end=datetime.combine(date(2021, 8, 2), time(19, 0)),
+        total_stepping_out = tally_steppingout(
+            employee, datetime(2021, 8, 2, 9, 0), datetime(2021, 8, 2, 18, 0)
         )
-        total_stepping_out = tally_steppingout(time_record)
         self.assertEqual(total_stepping_out, Const.TD_1H)
 
     def test_tally_steppingout_when_empty(self):
         employee = create_employee(create_user())
 
-        time_record = EmployeeDailyRecord(
-            date=date(2021, 8, 2),
-            employee=employee,
-            status=WorkingStatus.C_KINMU,
-            clock_in=datetime.combine(date(2021, 8, 2), time(9, 0)),
-            clock_out=None,
-            working_hours_start=datetime.combine(date(2021, 8, 2), time(10, 0)),
-            working_hours_end=datetime.combine(date(2021, 8, 2), time(19, 0)),
-        )
-
-        total_stepping_out = tally_steppingout(time_record)
+        total_stepping_out = tally_steppingout(employee, None, None)
         self.assertEqual(total_stepping_out, Const.TD_ZERO)
 
 

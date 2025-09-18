@@ -203,7 +203,7 @@
 				{%endif%}
 				<td>
 					{% if attn.daily_attendance_record %}
-					<a class="btn btn-default" href="{% url 'sao:modify_record' attn.daily_attendance_record_pk year month %}>
+					<a class="btn btn-default" href="{% url 'sao:modify_record' attn.daily_attendance_record.pk year month %}>
 						<span class="oi oi-pencil"></span>
 						
 					</a>
