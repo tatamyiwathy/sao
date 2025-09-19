@@ -417,7 +417,7 @@ def setup_sample_data() -> None:
         if record:
             attendance = core.generate_attendance_record(record)
             attendance = core.initiate_daily_attendance_record(attendance)
-            attendance = core.update_attendance_record(attendance)
+            attendance = core.update_attendance_record_and_save(attendance)
 
 
 import random
@@ -531,7 +531,7 @@ def generate_sample_data(employee: Employee, year: int, month: int) -> None:
         if record:
             attendance = core.generate_attendance_record(record)
             attendance = core.initiate_daily_attendance_record(attendance)
-            attendance = core.update_attendance_record(attendance)
+            attendance = core.update_attendance_record_and_save(attendance)
 
 
 def get_stepout_record(

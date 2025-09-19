@@ -218,8 +218,8 @@ class ModifyRecordViewMockTest(TestCase):
         mock_form = mock.Mock()
         mock_form.is_valid.return_value = True
         mock_form.cleaned_data = {
-            "clock_in": datetime.time(9, 0),
-            "clock_out": datetime.time(18, 0),
+            "clock_in": datetime.datetime(2022, 5, 1, 9, 0),
+            "clock_out": datetime.datetime(2022, 5, 1, 18, 0),
             "status": WorkingStatus.C_KINMU,
         }
         mock_form_cls.return_value = mock_form
@@ -228,8 +228,8 @@ class ModifyRecordViewMockTest(TestCase):
         resp = self.client.post(
             url,
             {
-                "clock_in": "09:00",
-                "clock_out": "18:00",
+                "clock_in": "2022-05-01 09:00",
+                "clock_out": "2022-05-01 18:00",
                 "status": WorkingStatus.C_KINMU,
             },
         )
@@ -257,7 +257,7 @@ class ModifyRecordViewMockTest(TestCase):
             url,
             {
                 "clock_in": "",
-                "clock_out": "18:00",
+                "clock_out": "2020-03-09 18:00",
                 "status": WorkingStatus.C_KINMU,
             },
         )
@@ -285,8 +285,8 @@ class ModifyRecordViewMockTest(TestCase):
         resp = self.client.post(
             url,
             {
-                "clock_in": datetime.time(10, 0),
-                "clock_out": datetime.time(20, 0),
+                "clock_in": datetime.datetime(2022, 5, 1, 10, 0),
+                "clock_out": datetime.datetime(2022, 5, 1, 20, 0),
                 "status": WorkingStatus.C_KYUJITU,
             },
         )

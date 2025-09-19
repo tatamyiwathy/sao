@@ -93,19 +93,17 @@ class YearMonthForm(forms.Form):
 class ModifyRecordForm(forms.Form):
     """勤怠記録修正フォーム"""
 
-    clock_in = forms.TimeField(
+    clock_in = forms.DateTimeField(
         label="出勤",
-        widget=forms.TimeInput(
-            attrs={"type": "time", "class": "form-control"},
-            format="%H:%M",
+        widget=forms.DateTimeInput(
+            attrs={"type": "datetime-local", "class": "form-control"},
         ),
     )
 
-    clock_out = forms.TimeField(
+    clock_out = forms.DateTimeField(
         label="退勤",
-        widget=forms.TimeInput(
-            attrs={"type": "time", "class": "form-control"},
-            format="%H:%M",
+        widget=forms.DateTimeInput(
+            attrs={"type": "datetime-local", "class": "form-control"},
         ),
     )
 

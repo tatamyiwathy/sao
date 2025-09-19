@@ -22,8 +22,8 @@ from sao.tests.utils import (
 class ModifyRecordFormTest(TestCase):
     def test_valid_form(self):
         form_data = {
-            "clock_in": "09:00:00",
-            "clock_out": "18:00:00",
+            "clock_in": "2025-01-01 09:00:00",
+            "clock_out": "2025-01-01 18:00:00",
             "is_overtime_work_permitted": True,
             "status": WorkingStatus.C_KINMU,
         }
@@ -32,8 +32,8 @@ class ModifyRecordFormTest(TestCase):
 
     def test_invalid_form(self):
         form_data = {
-            "clock_in": "09:00:00",
-            "clock_out": "08:00:00",  # Invalid: clock_out before clock_in
+            "clock_in": "2025-01-01 09:00:00",
+            "clock_out": "2025-01-01 08:00:00",  # Invalid: clock_out before clock_in
             "is_overtime_work_permitted": True,
             "status": WorkingStatus.C_KINMU,
         }
@@ -46,14 +46,14 @@ class ModifyRecordFormTest(TestCase):
 
     def test_invalid_holiday_form(self):
         form_data = {
-            "clock_in": "09:00:00",
-            "clock_out": "18:00:00",
+            "clock_in": "2025-01-01 09:00:00",
+            "clock_out": "2025-01-01 18:00:00",
             "status": WorkingStatus.C_KYUJITU,
         }
         form = ModifyRecordForm(data=form_data)
         self.assertFalse(form.is_valid())
         self.assertIn(
-            "休日に出勤時間または退勤時間が指定されています",
+            "区分「休日」に出勤時間または退勤時間が指定されています",
             form.errors["__all__"],
         )
 
@@ -79,7 +79,7 @@ class AddEmproyeeFormTest(TestCase):
         params = self.params
         params["name"] = ("もろこし輪太郎",)
         form = AddEmployeeForm(params)
-        self.assertFormError(form, None, "姓と名の間に空白を入れてください")
+        self.assertIn("姓と名の間に空白を入れてください", form.errors["__all__"])
 
     def test_duplicate_employee_no(self):
         create_employee(create_user())
@@ -89,7 +89,7 @@ class AddEmproyeeFormTest(TestCase):
 
         form = AddEmployeeForm(self.params)
         self.assertFalse(form.is_valid())
-        self.assertFormError(form, None, "社員番号が重複しています")
+        self.assertIn("社員番号が重複しています", form.errors["__all__"])
 
 
 class YearMonthFormTest(TestCase):
@@ -178,5 +178,4 @@ class RegisterHolidayFromTest(TestCase):
         Holiday.objects.create(date=datetime.date(2017, 1, 1))
         form = RegisterHolidayForm({"date": "2017-01-01"})
         self.assertFalse(form.is_valid())
-        # Todo: assertFormErrorの使い方が間違ってる？
-        self.assertFormError(form, None, "すでに登録されています")
+        self.assertIn("すでに登録されています", form.errors["__all__"])

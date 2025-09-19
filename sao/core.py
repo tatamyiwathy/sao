@@ -780,7 +780,7 @@ def adjust_stamp(
     return adjusted_stamp
 
 
-def update_attendance_record(
+def update_attendance_record_and_save(
     attendance: DailyAttendanceRecord,
 ) -> DailyAttendanceRecord:
     """勤怠データを更新する"""
@@ -911,7 +911,7 @@ def finalize_daily_record(employee: Employee, date: datetime.date):
             # recordからDailyAttendanceRecordを生成する
             attendance = generate_attendance_record(record)
             attendance = initiate_daily_attendance_record(attendance)
-            attendance = update_attendance_record(attendance)
+            attendance = update_attendance_record_and_save(attendance)
 
     except Exception as e:
         logger.error(f"[test]レコードの生成に失敗しました: {employee} {date} {e}")

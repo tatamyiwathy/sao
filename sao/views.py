@@ -33,6 +33,7 @@ from sao.core import (
     get_attendance_in_period,
     fill_missiing_attendance,
     finalize_daily_record,
+    update_attendance_record_and_save,
 )
 from sao.const import Const
 from sao.working_status import WorkingStatus
@@ -576,10 +577,10 @@ def modify_record(request, pk, year, month):
             clock_out = form.cleaned_data["clock_out"]
             status = form.cleaned_data["status"]
 
-            record.clock_in = datetime.datetime.combine(record.date, clock_in)
-            record.clock_out = datetime.datetime.combine(record.date, clock_out)
+            record.clock_in = clock_in
+            record.clock_out = clock_out
             record.status = status
-            record.save()
+            update_attendance_record_and_save(record)
 
             logger.info(f"{request.user}が変更した: {record}")
             return redirect(
