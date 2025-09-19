@@ -97,6 +97,7 @@ class ModifyRecordForm(forms.Form):
         label="出勤",
         widget=forms.TimeInput(
             attrs={"type": "time", "class": "form-control"},
+            format="%H:%M",
         ),
     )
 
@@ -104,6 +105,7 @@ class ModifyRecordForm(forms.Form):
         label="退勤",
         widget=forms.TimeInput(
             attrs={"type": "time", "class": "form-control"},
+            format="%H:%M",
         ),
     )
 

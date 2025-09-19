@@ -7,6 +7,7 @@ from sao import calendar
 from sao import utils
 from sao.const import Const
 from sao.attendance import Attendance
+from sao.working_status import WorkingStatus
 
 register = template.Library()
 
@@ -113,3 +114,10 @@ def overtime_hours(attn: Attendance) -> str:
 @register.simple_tag
 def tomorrow(date: datetime.date) -> datetime.date:
     return date + datetime.timedelta(days=1)
+
+
+@register.filter
+def status_display(status: int) -> str:
+    status_dict = dict(WorkingStatus.choices)
+    display_status = status_dict.get(status, "")
+    return display_status if status != WorkingStatus.C_NONE else ""

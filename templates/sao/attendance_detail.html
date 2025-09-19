@@ -167,7 +167,7 @@
                         <td class="text-end bg-light">{{ attn.date.day }}</td>
                         <td class="text-end bg-light">{{ attn.date|date:"D" }}</td>
                     {% endif %}
-                    <td>{{ attn.flag }}</td>
+                    <td>{{ attn.status|status_display }}</td>
                     <td class="text-end {% missed_stamp_color attn.clock_out attn.clock_in %}">
                         {% if attn.clock_in %}
                         {{ attn.clock_in.time }}

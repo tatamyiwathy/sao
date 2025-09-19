@@ -580,7 +580,7 @@ def modify_record(request, record_id, year, month):
             record.status = status
             record.save()
 
-            logger.info(f"{request.user}が変更した: {record} {record.status}")
+            logger.info(f"{request.user}が変更した: {record}")
             return redirect(
                 "sao:employee_attendance_detail",
                 record.employee.employee_no,

@@ -549,7 +549,7 @@ class DailyAttendanceRecord(models.Model):
             return "No TimeRecord"
         if self.time_record.employee is None:
             return "No Employee"
-        return "%s %s" % (self.time_record.employee, self.time_record.date)
+        return f"{self.time_record.employee}, {self.clock_in}, {self.clock_out}"
 
     def get_over(self) -> datetime.timedelta:
         return self.over

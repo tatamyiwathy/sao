@@ -139,7 +139,7 @@
 					<td>{{attn.date|date:"D" }}</td>
 				{% endif %}
 
-				<td>{{attn.flag }}</td>
+				<td>{{attn.status|status_display }}</td>
 				<td class="text-center">
 					{% if attn.accepted_overtime %}
 					<span class="glyphicon glyphicon-ok"></span>
