@@ -49,6 +49,7 @@ from sao.utils import (
     create_user,
     create_employee,
     generate_sample_data as utils_generate_sample_data,
+    get_stepout_record,
 )
 from sao.utils import setup_sample_data as utils_setup_sample_data
 from sao.period import Period
@@ -562,12 +563,12 @@ def employee_list(request):
 
 
 @login_required
-def modify_record(request, record_id, year, month):
+def modify_record(request, pk, year, month):
     """
     記録修正
     """
     msg = ""
-    record = get_object_or_404(models.DailyAttendanceRecord, id=record_id)
+    record = get_object_or_404(models.DailyAttendanceRecord, pk=pk)
     form = forms.ModifyRecordForm(request.POST or None)
     if request.method == "POST":
         if form.is_valid():
@@ -595,20 +596,13 @@ def modify_record(request, record_id, year, month):
                 "status": record.status,
             }
         )
+
     # 外出時間を取得する
-    day_start = (
-        record.clock_in
-        if record.clock_in
-        else core.datetime.datetime.combine(record.date, datetime.time(hour=5))
-    )
-    day_end = (
-        record.clock_out
-        if record.clock_out
-        else core.datetime.datetime.combine(record.date, datetime.time(hour=5))
-        + datetime.timedelta(days=1)
-    )
-    steppingouts = models.SteppingOut.objects.filter(
-        employee=record.employee, out_time__gte=day_start, return_time__lt=day_end
+    if record.date is None:
+        raise Http404("勤務日が不明なレコードです")
+
+    steppingouts = get_stepout_record(
+        record.employee, record.clock_in, record.clock_out
     )
 
     return render(

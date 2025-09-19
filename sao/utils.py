@@ -12,6 +12,7 @@ from sao.models import (
     WebTimeStamp,
     WorkingHour,
     EmployeeHour,
+    SteppingOut,
 )
 
 
@@ -531,3 +532,22 @@ def generate_sample_data(employee: Employee, year: int, month: int) -> None:
             attendance = core.generate_attendance_record(record)
             attendance = core.initiate_daily_attendance_record(attendance)
             attendance = core.update_attendance_record(attendance)
+
+
+def get_stepout_record(
+    employee: Employee, clock_in: datetime.datetime, clock_out: datetime.datetime
+):
+    day_start = (
+        clock_in
+        if clock_in
+        else datetime.datetime.combine(record.date, datetime.time(hour=5))
+    )
+    day_end = (
+        clock_out
+        if clock_out
+        else datetime.datetime.combine(record.date, datetime.time(hour=5))
+        + datetime.timedelta(days=1)
+    )
+    return SteppingOut.objects.filter(
+        employee=employee, out_time__gte=day_start, return_time__lt=day_end
+    )

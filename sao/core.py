@@ -871,6 +871,11 @@ def generate_attendance_record(record: EmployeeDailyRecord) -> DailyAttendanceRe
     :param record: EmployeeDailyRecord
     :return: 生成されたDailyAttendanceRecord"""
 
+    if record is None:
+        raise ValueError("record is None")
+    if record.status is None:
+        raise ValueError("record.status is None")
+
     attendance = DailyAttendanceRecord(
         time_record=record,
         employee=record.employee,

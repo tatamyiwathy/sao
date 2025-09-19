@@ -117,10 +117,11 @@ class ModifyRecordForm(forms.Form):
     def clean(self):
         cleaned_data = super().clean()
 
-        if cleaned_data["status"] in WorkingStatus.HOLIDAY:
+        status = int(cleaned_data["status"])
+        if status in WorkingStatus.HOLIDAY:
             if cleaned_data["clock_in"] or cleaned_data["clock_out"]:
                 raise forms.ValidationError(
-                    "休日に出勤時間または退勤時間が指定されています"
+                    "区分「休日」に出勤時間または退勤時間が指定されています"
                 )
 
         if "clock_in" in cleaned_data.keys() and "clock_out" in cleaned_data.keys():

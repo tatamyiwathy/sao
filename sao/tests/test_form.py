@@ -22,8 +22,8 @@ from sao.tests.utils import (
 class ModifyRecordFormTest(TestCase):
     def test_valid_form(self):
         form_data = {
-            "clock_in": "2022-01-01 09:00:00",
-            "clock_out": "2022-01-01 18:00:00",
+            "clock_in": "09:00:00",
+            "clock_out": "18:00:00",
             "is_overtime_work_permitted": True,
             "status": WorkingStatus.C_KINMU,
         }
@@ -32,30 +32,29 @@ class ModifyRecordFormTest(TestCase):
 
     def test_invalid_form(self):
         form_data = {
-            "clock_in": "2022-01-01 09:00:00",
-            "clock_out": "2022-01-01 08:00:00",  # Invalid: clock_out before clock_in
+            "clock_in": "09:00:00",
+            "clock_out": "08:00:00",  # Invalid: clock_out before clock_in
             "is_overtime_work_permitted": True,
             "status": WorkingStatus.C_KINMU,
         }
         form = ModifyRecordForm(data=form_data)
         self.assertFalse(form.is_valid())
-        self.assertFormError(form, None, "出勤時間が退勤時間より後です")
-        # self.assertIn(
-        #     "残業開始時間が残業終了時間より後です",
-        #     form.errors['__all__'],
-        # )
+        self.assertIn(
+            "出勤時間が退勤時間より後です",
+            form.errors["__all__"],
+        )
 
     def test_invalid_holiday_form(self):
         form_data = {
-            "clock_in": "2022-01-01 09:00:00",
-            "clock_out": "2022-01-01 18:00:00",
-            "is_overtime_work_permitted": False,
+            "clock_in": "09:00:00",
+            "clock_out": "18:00:00",
             "status": WorkingStatus.C_KYUJITU,
         }
         form = ModifyRecordForm(data=form_data)
         self.assertFalse(form.is_valid())
-        self.assertFormError(
-            form, None, "休日に出勤時間または退勤時間が指定されています"
+        self.assertIn(
+            "休日に出勤時間または退勤時間が指定されています",
+            form.errors["__all__"],
         )
 
 

@@ -54,7 +54,7 @@ urlpatterns = [
         name="employee_hour_view",
     ),
     path(
-        "modify_record/<int:record_id>/<int:year>/<int:month>/",
+        "modify_record/<int:pk>/<int:year>/<int:month>/",
         modify_record,
         name="modify_record",
     ),
