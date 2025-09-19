@@ -206,10 +206,12 @@ class ModifyRecordViewMockTest(TestCase):
         self.a_day = datetime.date(2020, 3, 9)
         self.client = create_client(TEST_USER)
 
+    @mock.patch("sao.views.update_attendance_record_and_save")
     @mock.patch("sao.views.get_object_or_404")
     @mock.patch("sao.views.forms.ModifyRecordForm")
-    def test_modify_record_post_success(self, mock_form_cls, mock_get_obj):
+    def test_modify_record_post_success(self, mock_form_cls, mock_get_obj, mock_update):
         # モックレコードとフォーム
+        mock_update.return_value = None
         mock_record = mock.Mock(spec=DailyAttendanceRecord)
         mock_record.pk = 123
         mock_record.date = datetime.date(2022, 5, 1)  # ここを追加
@@ -235,8 +237,11 @@ class ModifyRecordViewMockTest(TestCase):
         )
         self.assertEqual(resp.status_code, 302)  # リダイレクト
 
+    @mock.patch("sao.views.update_attendance_record_and_save")
     @mock.patch("sao.views.get_stepout_record", return_value=None)
-    def test_modify_record_post_invalid(self, mock_get_stepout):
+    def test_modify_record_post_invalid(self, mock_get_stepout, mock_update):
+        mock_update.return_value = None
+        mock_get_stepout.return_value = None
         time_record = create_timerecord(
             employee=self.employee,
             date=self.a_day,
@@ -264,8 +269,11 @@ class ModifyRecordViewMockTest(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(resp.context["form"].is_valid())
 
+    @mock.patch("sao.views.update_attendance_record_and_save")
     @mock.patch("sao.views.get_stepout_record", return_value=None)
-    def test_modify_record_with_holiday_status(self, mock_get_stepout):
+    def test_modify_record_with_holiday_status(self, mock_get_stepout, mock_update):
+        mock_update.return_value = None
+        mock_get_stepout.return_value = None
         time_record = create_timerecord(
             employee=self.employee,
             date=self.a_day,
