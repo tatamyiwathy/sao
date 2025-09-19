@@ -744,9 +744,6 @@ def generate_daily_record(
         calendar_is_holiday(date), is_legal_holiday(date), not stamp.is_empty()
     )
 
-    # logger.debug(
-    #     f"generate_daily_record: {employee.name} {date} {stamps} -> {clock_in_out}"
-    # )
     record = EmployeeDailyRecord(
         employee=employee,
         date=date,
