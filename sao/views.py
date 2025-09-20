@@ -11,7 +11,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404, HttpResponse, HttpRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
-from sao import core, forms, models
+from sao import forms, models
 from sao.calendar import (
     get_first_day,
     get_last_day,
@@ -34,7 +34,14 @@ from sao.core import (
     fill_missiing_attendance,
     finalize_daily_record,
     update_attendance_record_and_save,
+    get_today,
+    round_attendance_summary,
+    summarize_attendance_days,
+    accumulate_weekly_working_hours,
+    get_annual_paied_holiday_days,
+    get_recent_day_of_annual_leave_update,
 )
+
 from sao.const import Const
 from sao.working_status import WorkingStatus
 from sao.utils import (
@@ -68,7 +75,7 @@ logger = logging.getLogger("sao")  # views専用のロガー
 @login_required
 def home(request):
 
-    today = year_month = core.get_today()
+    today = year_month = get_today()
     form = forms.YearMonthForm(request.GET or None)
     if form.is_valid():
         year_month = form.cleaned_data["yearmonth"]
@@ -254,9 +261,9 @@ def home(request):
     #         warn_class, warn_title = attention_overtime(summed_up["out_of_time"])
 
     #         # 計算結果をまるめる
-    #         rounded = core.round_attendance_summary(summed_up)
+    #         rounded = round_attendance_summary(summed_up)
 
-    #         daycount = core.count_days(attendances, view_date)
+    #         daycount = count_days(attendances, view_date)
 
     #         return render(
     #             request,
@@ -291,7 +298,7 @@ def home(request):
     #         )
 
     #     # 今日の出退勤時刻を取得する
-    #     today = core.get_today()
+    #     today = get_today()
 
     #     # 設定された勤務時間を取得する
     #     try:
@@ -302,7 +309,7 @@ def home(request):
     #             office_hours = get_working_hour_pre_assign(employee).working_hours
     #         except ValueError:
     #             attendaces = tally_attendances([])
-    #             rounded = core.round_attendance_summary(attendaces)
+    #             rounded = round_attendance_summary(attendaces)
     #             return render(
     #                 request,
     #                 "sao/attendance_detail.html",
@@ -363,9 +370,9 @@ def staff_detail(request, employee, year, month):
     total_overtime = tally_over_work_time(from_date.month, attendances)
 
     summed_up = tally_attendances(attendances)
-    rounded_result = core.round_attendance_summary(summed_up)
+    rounded_result = round_attendance_summary(summed_up)
 
-    daycount = core.summarize_attendance_days(attendances, from_date)
+    daycount = summarize_attendance_days(attendances, from_date)
 
     return render(
         request,
@@ -650,9 +657,9 @@ def employee_record(request):
                 tallied = tally_attendances(attendances)
 
                 # まるめ
-                rounded = core.round_attendance_summary(tallied)
+                rounded = round_attendance_summary(tallied)
 
-                weekly_work_time = core.accumulate_weekly_working_hours(attendances)
+                weekly_work_time = accumulate_weekly_working_hours(attendances)
 
                 return render(
                     request,
@@ -707,10 +714,10 @@ def employee_record(request):
         tallied = tally_attendances(attendances)
         printable_summed_up = tallied
 
-        rounded = core.round_attendance_summary(tallied)
+        rounded = round_attendance_summary(tallied)
         printable_rounded = rounded
 
-        weekly_work_time = core.accumulate_weekly_working_hours(attendances)
+        weekly_work_time = accumulate_weekly_working_hours(attendances)
 
         return render(
             request,
@@ -902,7 +909,7 @@ def attendance_summary(request):
                 continue
             attendances = fill_missiing_attendance(employee, period, attendances)
             total_overwork = tally_over_work_time(from_date.month, attendances)
-            daycount = core.summarize_attendance_days(attendances, from_date)
+            daycount = summarize_attendance_days(attendances, from_date)
             summed_up = tally_attendances(attendances)
 
             summary = {
@@ -935,15 +942,29 @@ def time_clock(request):
     stamp = datetime.datetime.now().replace(microsecond=0)
     if request.method == "POST":
         models.WebTimeStamp(employee=employee, stamp=stamp).save()
+    return redirect("sao:home")
+
+
+@login_required
+def time_clock_detail(request, employee_no):
+    """■打刻詳細"""
+    employee = get_object_or_404(models.Employee, employee_no=employee_no)
 
     day_switch_time = get_day_switch_time()
-    business_day = normalize_to_business_day(stamp)
+    business_day = get_today()
     stamps = models.WebTimeStamp.objects.filter(
         employee=employee,
-        stamp__gte=datetime.datetime.combine(business_day.date(), day_switch_time),
-    ).order_by("-stamp")
+        stamp__gte=datetime.datetime.combine(business_day, day_switch_time),
+    ).order_by("stamp")
+
+    display_stamps = [[s.stamp, ""] for s in stamps]
+    display_stamps[0][1] = "出勤"
+    display_stamps[-1][1] = "退勤"
+
     return render(
-        request, "sao/time_clock.html", {"employee": employee, "stamps": stamps}
+        request,
+        "sao/time_clock_detail.html",
+        {"employee": employee, "stamps": display_stamps},
     )
 
 
@@ -1026,11 +1047,11 @@ def update_annual_leave(request):
     for employee in models.Employee.objects.filter(
         employee_type=models.Employee.TYPE_PERMANENT_STAFF
     ).filter(user__is_active=True):
-        employee.payed_holiday = core.get_annual_paied_holiday_days(
+        employee.payed_holiday = get_annual_paied_holiday_days(
             today, employee.join_date
         )
 
-        d = core.get_recent_day_of_annual_leave_update(
+        d = get_recent_day_of_annual_leave_update(
             datetime.date.today().year, employee.join_date
         )
 
@@ -1066,12 +1087,12 @@ def download_csv(request, employee_no, year, month):
     filename = make_filename(employee, year, month)
     response = HttpResponse(content_type="text/csv; charset=Shift-JIS")
     response["Content-Disposition"] = 'attachment; filename="' + filename + '.csv"'
-    # records = core.get_monthy_time_record(employee, csv_date)
+    # records = get_monthy_time_record(employee, csv_date)
     # try:
-    #     calculated = core.tally_monthly_attendance(csv_date.month, records)
+    #     calculated = tally_monthly_attendance(csv_date.month, records)
     # except NoAssignedWorkingHourError:
     #     sumup = attendance.sumup_attendances([])
-    #     rounded = core.round_attendance_summary(sumup)
+    #     rounded = round_attendance_summary(sumup)
     #     messages.warning(
     #         request, f"・{employee}の打刻データが存在しないためCVSの出力ができません"
     #     )
@@ -1096,7 +1117,7 @@ def download_csv(request, employee_no, year, month):
     # # warn_class, warn_title = utils.warning_to_out_of_time(summed_up["out_of_time"])
 
     # # 計算結果をまるめる
-    # rounded = core.round_attendance_summary(summed_up)
+    # rounded = round_attendance_summary(summed_up)
 
     ## HttpResponseオブジェクトはファイルっぽいオブジェクトなので、csv.writerにそのまま渡せます。
     writer = csv.writer(response)
@@ -1519,9 +1540,9 @@ def employee_attendance_detail(request, employee_no, year, month):
 
     tallied = tally_attendances(attendances)
 
-    rounded = core.round_attendance_summary(tallied)
+    rounded = round_attendance_summary(tallied)
 
-    weekly_work_time = core.accumulate_weekly_working_hours(attendances)
+    weekly_work_time = accumulate_weekly_working_hours(attendances)
 
     return render(
         request,

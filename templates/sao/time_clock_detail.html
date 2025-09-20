@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+
+{% block header %}
+{% endblock %}
+
+
+{% block content %}
+
+
+<div class="container">
+	<div class="row mt-3">
+        <div class="col-md-3"></div>
+		<div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    打刻詳細
+                </div>
+                <div class="card-body">
+					<table class="table table-sm table-borderless mt-3">
+						{% for stamp in stamps %}
+						<tr>
+                            <td><span class='badge bg-secondary'>{{ stamp.1 }}</span></td>
+                            <td>{{ stamp.0 }}</td>
+						<!-- <td>{{ stamp.1 }}</td>
+						<td>{{ stamp.0.stamp |date:"Y/n/j H:i" }}</td> -->
+					</tr>
+					{% endfor %}
+				</table>
+            </div>
+            <a href="{% url 'sao:home' %}" class="btn btn-secondary mt-3">
+                <button type="button" class="btn btn-secondary">戻る</button>
+            </a>
+		</div>
+        <div class="col"></div>
+	</div>
+
+</div>
+
+{% endblock %}
+
+
+{% block footer %}
+{% endblock %}

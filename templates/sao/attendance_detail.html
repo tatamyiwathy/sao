@@ -37,26 +37,40 @@
                     <strong>WEB打刻</strong>
                 </div>
                 <div class="card-body">
-                    <form method="GET" action="{% url 'sao:time_clock' %}">
-                        <table class="table table-borderless mb-2">
-                            <tr>
-                                <td colspan="2">
-                                    <div id="clock_box" style="font-size: 20px;"></div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>入</th>
-                                <td>{{ today_stamp.0 }}</td>
-                            </tr>
-                            <tr>
-                                <th>出</th>
-                                <td>{{ today_stamp.1 }}</td>
-                            </tr>
+                            <!-- WEB打刻エリア -->
+                            <div id="clock_box" style="font-size: 20px;"></div>
+
+                            <table class="table table-borderless mb-2">
+                                <tr>
+                                    <th><span class="badge bg-secondary">出勤</span></th>
+                                    <td>
+                            <a class="link-underline link-underline-opacity-0" href="{% url 'sao:time_clock_detail' employee.employee_no %}" title="打刻詳細" data-bs-toggle="tooltip" data-bs-html="true">
+                                        <h5>{{ today_stamp.0 }}</h5>
+                            </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th><span class="badge bg-secondary">退勤</span></th>
+                                    <td>
+                            <a class="link-underline link-underline-opacity-0" href="{% url 'sao:time_clock_detail' employee.employee_no %}" title="打刻詳細" data-bs-toggle="tooltip" data-bs-html="true">
+                                        <h5>{{ today_stamp.1 }}</h5>
+                                    </a>
+                                    </td>
+                                </tr>
                         </table>
+                    <!-- <form method="GET" action="{% url 'sao:time_clock' %}">
                         <div class="d-grid">
                             <button class="btn btn-primary" type="submit">打刻ページへ</button>
                         </div>
-                    </form>
+                    </form> -->
+					<form class="form-inline" method='POST' action={% url 'sao:time_clock' %}>
+						{% csrf_token %}
+
+						<div class="d-grid">
+							<button class="btn btn-primary" type="submit" name="dakoku"
+								value="退勤" />打刻する</button>
+						</div>
+					</form>
                 </div>
             </div>
         </div>
@@ -253,20 +267,20 @@
 
 <script>
 {% if mypage and user.permission.enable_stamp_on_web %}
-function clock_func() {
-    const dd = new Date();
-    let year = dd.getFullYear();
-    let mon = String(dd.getMonth() + 1).padStart(2, '0');
-    let date = String(dd.getDate()).padStart(2, '0');
-    let hour = String(dd.getHours()).padStart(2, '0');
-    let min = String(dd.getMinutes()).padStart(2, '0');
-    let sec = String(dd.getSeconds()).padStart(2, '0');
-    document.getElementById("clock_box").innerHTML =
-        year + "/" + mon + "/" + date + " " +
-        hour + ":" + min + ":" + sec;
-    setTimeout(clock_func, 1000);
-}
-window.onload = clock_func;
+    function clock_func() {
+        const dd = new Date();
+        let year = dd.getFullYear();
+        let mon = String(dd.getMonth() + 1).padStart(2, '0');
+        let date = String(dd.getDate()).padStart(2, '0');
+        let hour = String(dd.getHours()).padStart(2, '0');
+        let min = String(dd.getMinutes()).padStart(2, '0');
+        let sec = String(dd.getSeconds()).padStart(2, '0');
+        document.getElementById("clock_box").innerHTML =
+            year + "/" + mon + "/" + date + " " +
+            hour + ":" + min + ":" + sec;
+        setTimeout(clock_func, 1000);
+    }
+    window.onload = clock_func;
 {% endif %}
 
 // ページ読み込み時にツールチップを初期化

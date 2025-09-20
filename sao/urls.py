@@ -37,6 +37,7 @@ from sao.views import (
     setup_sample_data,
     generate_sample_data,
     employee_attendance_detail,
+    time_clock_detail,
 )
 
 app_name = "sao"
@@ -139,4 +140,9 @@ urlpatterns = [
         name="employee_attendance_detail",
     ),
     path("employee_record/", employee_record, name="employee_record"),
+    path(
+        "time_clock_detail/<int:employee_no>/",
+        time_clock_detail,
+        name="time_clock_detail",
+    ),
 ]

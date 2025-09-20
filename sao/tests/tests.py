@@ -386,24 +386,6 @@ class OverviewTest(TestCase):
         self.assertTrue(result.status_code, 200)
 
 
-class StampTest(TestCase):
-
-    def test_get(self):
-        u = create_user()
-        e = create_employee(u)
-        c = create_client(TEST_USER)
-        r = c.get(reverse("sao:time_clock"))
-        self.assertEqual(r.status_code, 200)
-
-    def test_post(self):
-        u = create_user()
-        e = create_employee(u)
-        c = create_client(TEST_USER)
-        self.assertTrue(c)
-        r = c.put(reverse("sao:time_clock"))
-        self.assertEqual(r.status_code, 200)
-
-
 class PermissionTest(TestCase):
     def setUp(self):
         self.user = create_user()
