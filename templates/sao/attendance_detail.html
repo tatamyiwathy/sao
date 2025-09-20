@@ -237,7 +237,14 @@
                 {% endfor %}
                 <!-- 合計行 -->
                 <tr>
-                    <td colspan="4"></td>
+                    <td colspan="4" rowspan="2" class="table-light">
+                    <div class="">
+                        <a href="{% url 'sao:download_csv' employee.employee_no year month %}" class="btn btn-success">
+                            <i class="oi oi-data-transfer-download"></i> CSVダウンロード
+                        </a>
+                    </div>
+
+                    </td>
                     <td class="orange_bg">合計時間</td>
                     <td class="text-end">{{ total_result.work|strip_seconds:"0:00" }}</td>
                     <td class="text-end">{{ total_result.late|strip_seconds:"0:00" }}</td>
@@ -247,10 +254,10 @@
                     <td class="text-end">{{ total_result.night|strip_seconds:"0:00" }}</td>
                     <td class="text-end">{{ total_result.legal_holiday|strip_seconds:"0:00" }}</td>
                     <td class="text-end">{{ total_result.holiday|strip_seconds:"0:00" }}</td>
+                    <td rowspan="2" class="table-light"></td>
                 </tr>
                 <!-- まるめ処理行 -->
                 <tr>
-                    <td colspan="4"></td>
                     <td class="orange_bg">まるめ処理</td>
                     <td class="text-end">{{ rounded_result.work|strip_seconds:"0:00" }}</td>
                     <td class="text-end">{{ rounded_result.late|strip_seconds:"0:00" }}</td>
@@ -263,11 +270,6 @@
                 </tr>
             </tbody>
         </table>
-    </div>
-    <div class="mt-3">
-        <a href="{% url 'sao:download_csv' employee.employee_no year month %}" class="btn btn-success">
-            <i class="oi oi-data-transfer-download"></i> CSVダウンロード
-        </a>
     </div>
     {% endif %}
 </div>
