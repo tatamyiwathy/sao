@@ -37,32 +37,36 @@
                     <strong>WEB打刻</strong>
                 </div>
                 <div class="card-body">
-                            <!-- WEB打刻エリア -->
-                            <div id="clock_box" style="font-size: 20px;"></div>
-
-                            <table class="table table-borderless mb-2">
-                                <tr>
-                                    <th><span class="badge bg-secondary">出勤</span></th>
-                                    <td>
-                            <a class="link-underline link-underline-opacity-0" href="{% url 'sao:time_clock_detail' employee.employee_no %}" title="打刻詳細" data-bs-toggle="tooltip" data-bs-html="true">
-                                        <h5>{{ today_stamp.0 }}</h5>
-                            </a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th><span class="badge bg-secondary">退勤</span></th>
-                                    <td>
-                            <a class="link-underline link-underline-opacity-0" href="{% url 'sao:time_clock_detail' employee.employee_no %}" title="打刻詳細" data-bs-toggle="tooltip" data-bs-html="true">
-                                        <h5>{{ today_stamp.1 }}</h5>
-                                    </a>
-                                    </td>
-                                </tr>
-                        </table>
-                    <!-- <form method="GET" action="{% url 'sao:time_clock' %}">
-                        <div class="d-grid">
-                            <button class="btn btn-primary" type="submit">打刻ページへ</button>
+                    <!-- WEB打刻エリア -->
+                    <div class="row">
+                        <div class="col-md-11 mx-auto"> 
+                            <div class="alert alert-info" role="alert">
+                                <div class="text-center" id="clock_box" style="font-size: 20px;"></div>
+                            </div>
                         </div>
-                    </form> -->
+                    </div>
+
+                    <div class="row">
+                        <div class="col-3">
+
+                            <span class="badge bg-secondary">出勤</span>
+                        </div>
+                        <div class="col">
+                            <a class="link-underline link-underline-opacity-0" href="{% url 'sao:time_clock_detail' employee.employee_no %}" title="打刻詳細" data-bs-toggle="tooltip" data-bs-html="true">
+                                <h5>{{ today_stamp.0 }}</h5>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-3">
+                            <span class="badge bg-secondary">退勤</span>
+                        </div>
+                        <div class="col">
+                            <a class="link-underline link-underline-opacity-0" href="{% url 'sao:time_clock_detail' employee.employee_no %}" title="打刻詳細" data-bs-toggle="tooltip" data-bs-html="true">
+                                <h5>{{ today_stamp.1 }}</h5>
+                            </a>
+                        </div>
+                    </div>
 					<form class="form-inline" method='POST' action={% url 'sao:time_clock' %}>
 						{% csrf_token %}
 
