@@ -29,46 +29,49 @@
 <div class="container">
 
 	<div class="row mt-3">
-		<div class="col"></div>
-		<div class="col">
+        <div class="col"></div>
+		<div class="col-md-4">
 			<div class="card card-default">
-				<div class="card-header">
+				<div class="card-header text-center">
 					WEB打刻
 				</div>
 
 				<div class="card-body">
-					<div style="margin: 10px">
-						<font size="5">
-							<div id="clock_box"></div>
-						</font>
+					<div class="alert alert-info">
+							<h4><div class="text-center" id="clock_box"></div></h4>
 					</div>
+
 
 					<form class="form-inline" method='POST' action={% url 'sao:time_clock' %}>
 						{% csrf_token %}
 
-						<table class="table">
-							<tr>
-								<td>
-									<button class="btn btn-primary" type="submit" name="dakoku"
-										value="退勤" />打刻する</button>
-								</td>
-							</tr>
-						</table>
+						<div class="d-grid">
+							<button class="btn btn-primary" type="submit" name="dakoku"
+								value="退勤" />打刻する</button>
+						</div>
 					</form>
-
 				</div>
-				<table class="table">
+			</div>
+		</div>
+        <div class="col"></div>
+	</div>
+
+	<div class="row mt-3">
+        <div class="col"></div>
+		<div class="col"">
+				<table class="table table-sm table-bordered mt-3">
 					{% for stamp in stamps %}
 					<tr>
-						<td>{{ stamp.stamp |date:"Y/n/j H:i:s" }}</td>
+						<td>{{ forloop.counter }}</td>
+						<td>{{ stamp.stamp |date:"Y/n/j H:i" }}</td>
 					</tr>
 					{% endfor %}
 				</table>
 
-			</div>
 		</div>
-		<div class="col"></div>
+        <div class="col"></div>
 	</div>
+
 </div>
 
 {% endblock %}
