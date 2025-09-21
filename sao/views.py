@@ -297,7 +297,7 @@ def home(request):
     #         )
 
     #     # 今日の出退勤時刻を取得する
-    #     today = get_today()
+    #     today = get_attendance_day()
 
     #     # 設定された勤務時間を取得する
     #     try:
@@ -360,7 +360,7 @@ def staff_detail(request, employee, year, month):
     ) + datetime.timedelta(days=1)
     period = Period(from_date, to_date)
 
-    office_hours = get_employee_hour(employee, get_today())
+    office_hours = get_employee_hour(employee, get_attendance_day())
 
     # 期間
     attendances = get_attendance_in_period(employee, Period(from_date, to_date))
@@ -521,7 +521,7 @@ def employee_list(request):
         manager = e.is_manager()
         employee_type = get_employee_type_display(e.employee_type)
         department = get_department_display(e.department)
-        bussiness_day = get_today()
+        bussiness_day = get_attendance_day()
         try:
             recently = get_working_hour_pre_assign(e)  # 直近から適用される勤務時間
             try:
