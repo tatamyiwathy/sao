@@ -28,7 +28,7 @@ from sao.core import (
     get_employee_hour,
     get_working_hour_pre_assign,
     get_day_switch_time,
-    normalize_to_business_day,
+    normalize_to_attendance_day,
     get_monthly_attendance,
     get_attendance_in_period,
     fill_missiing_attendance,
@@ -68,7 +68,7 @@ logger = logging.getLogger("sao")  # views専用のロガー
 @login_required
 def home(request):
 
-    today = year_month = core.get_today()
+    today = year_month = core.get_attendance_day()
     form = forms.YearMonthForm(request.GET or None)
     if form.is_valid():
         year_month = form.cleaned_data["yearmonth"]
@@ -937,10 +937,10 @@ def time_clock(request):
         models.WebTimeStamp(employee=employee, stamp=stamp).save()
 
     day_switch_time = get_day_switch_time()
-    business_day = normalize_to_business_day(stamp)
+    attendance_day = normalize_to_attendance_day(stamp)
     stamps = models.WebTimeStamp.objects.filter(
         employee=employee,
-        stamp__gte=datetime.datetime.combine(business_day.date(), day_switch_time),
+        stamp__gte=datetime.datetime.combine(attendance_day.date(), day_switch_time),
     ).order_by("-stamp")
     return render(
         request, "sao/time_clock.html", {"employee": employee, "stamps": stamps}

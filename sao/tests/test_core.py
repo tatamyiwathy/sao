@@ -46,7 +46,7 @@ from sao.core import (
     get_employee_hour,
     get_working_hour_pre_assign,
     get_day_switch_time,
-    normalize_to_business_day,
+    normalize_to_attendance_day,
     get_clock_in_out,
     generate_daily_record,
     get_attendance_in_period,
@@ -662,19 +662,19 @@ class TestNormalizeToBusinessDay(TestCase):
     def test_normalize_to_business_day_before_switch_time(self):
         # 4:30 AM, should normalize to previous day
         dt = datetime(2021, 8, 2, 4, 30)
-        normalized = normalize_to_business_day(dt)
+        normalized = normalize_to_attendance_day(dt)
         self.assertEqual(normalized, datetime(2021, 8, 1, 4, 30))
 
     def test_normalize_to_business_day_at_switch_time(self):
         # 5:00 AM, should not normalize
         dt = datetime(2021, 8, 2, 5, 0)
-        normalized = normalize_to_business_day(dt)
+        normalized = normalize_to_attendance_day(dt)
         self.assertEqual(normalized, dt)
 
     def test_normalize_to_business_day_after_switch_time(self):
         # 6:00 AM, should not normalize
         dt = datetime(2021, 8, 2, 6, 0)
-        normalized = normalize_to_business_day(dt)
+        normalized = normalize_to_attendance_day(dt)
         self.assertEqual(normalized, dt)
 
 
