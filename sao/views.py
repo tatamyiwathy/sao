@@ -952,7 +952,7 @@ def time_clock_detail(request, employee_no):
     attendance_day = get_attendance_day()
     stamps = models.WebTimeStamp.objects.filter(
         employee=employee,
-        stamp__gte=datetime.datetime.combine(attendance_day.date(), day_switch_time),
+        stamp__gte=datetime.datetime.combine(attendance_day, day_switch_time),
     ).order_by("stamp")
 
     today_working_hours = get_employee_hour(employee, attendance_day).get_period(
