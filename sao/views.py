@@ -360,7 +360,7 @@ def staff_detail(request, employee, year, month):
     ) + datetime.timedelta(days=1)
     period = Period(from_date, to_date)
 
-    office_hours = get_employee_hour(employee, datetime.date.today())
+    office_hours = get_employee_hour(employee, get_today())
 
     # 期間
     attendances = get_attendance_in_period(employee, Period(from_date, to_date))
@@ -521,17 +521,18 @@ def employee_list(request):
         manager = e.is_manager()
         employee_type = get_employee_type_display(e.employee_type)
         department = get_department_display(e.department)
+        bussiness_day = get_today()
         try:
             recently = get_working_hour_pre_assign(e)  # 直近から適用される勤務時間
             try:
-                oh = get_employee_hour(e, datetime.date.today())
+                oh = get_employee_hour(e, bussiness_day)
                 working_hour = str(oh)
             except NoAssignedWorkingHourError:
                 working_hour = "%s (%s～)" % (recently.working_hours, recently.date)
         except ValueError:
             working_hour = "未設定"
 
-        employee_status = get_employee_status_display(e, datetime.date.today())
+        employee_status = get_employee_status_display(e, bussiness_day)
 
         employee_data = {
             "department": department,

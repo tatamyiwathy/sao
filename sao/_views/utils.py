@@ -12,6 +12,7 @@ from sao.core import (
     fill_missiing_attendance,
     round_attendance_summary,
     summarize_attendance_days,
+    get_today,
 )
 from sao.models import Employee, WorkingHour
 from sao.calendar import (
@@ -40,7 +41,7 @@ def get_employee_hours_display(employee: Employee) -> WorkingHour | None:
     :return: WorkingHourオブジェクト、勤務時間が設定されていない場合はNone
     """
     try:
-        return get_employee_hour(employee, datetime.date.today())
+        return get_employee_hour(employee, get_today())
     except NoAssignedWorkingHourError:
         # 合流前で勤務時間が取得できない
         try:
