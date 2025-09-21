@@ -958,8 +958,10 @@ def time_clock_detail(request, employee_no):
     ).order_by("stamp")
 
     display_stamps = [[s.stamp, ""] for s in stamps]
-    display_stamps[0][1] = "出勤"
-    display_stamps[-1][1] = "退勤"
+    if len(display_stamps) > 0:
+        display_stamps[0][1] = "出勤"
+    if len(display_stamps) > 1:
+        display_stamps[-1][1] = "退勤"
 
     return render(
         request,
