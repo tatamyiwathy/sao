@@ -90,7 +90,6 @@ def home(request):
     attendances = collect_display_attendances(employee, year_month)
     render_args = render_employee_attendance(attendances, year_month)
 
-    employee_hours = get_employee_hour(employee, today)
     today_stamp = make_web_stamp_string(employee, today)
 
     # messageで警告を表示する
@@ -111,7 +110,7 @@ def home(request):
             "year": year_month.year,
             "month": year_month.month,
             "daycount": render_args["days_counted"],
-            "office_hours": employee_hours,
+            "office_hours": get_employee_hour(employee, today),
             "today_stamp": today_stamp,
             "warn": render_args["warn"],
             "today": today,
@@ -433,10 +432,8 @@ def employee_hour_view(request, employee_no):
         form = forms.WorkingHourAssignForm(
             instance=employee, initial={"date": datetime.date.today()}
         )
-    employee_hours = (
-        models.EmployeeHour.objects.filter(employee=employee)
-        # .filter(date__gte=datetime.date.today())
-        .order_by("-date")
+    employee_hours = models.EmployeeHour.objects.filter(employee=employee).order_by(
+        "-date"
     )
 
     return render(
@@ -957,11 +954,32 @@ def time_clock_detail(request, employee_no):
         stamp__gte=datetime.datetime.combine(business_day, day_switch_time),
     ).order_by("stamp")
 
+    today_working_hours = get_employee_hour(employee, business_day).get_period(
+        business_day
+    )
     display_stamps = [[s.stamp, ""] for s in stamps]
-    if len(display_stamps) > 0:
-        display_stamps[0][1] = "出勤"
-    if len(display_stamps) > 1:
-        display_stamps[-1][1] = "退勤"
+
+    labels = []
+    n = len(display_stamps)
+
+    if n == 0:
+        pass
+    elif n == 1:
+        labels = ["出勤"]
+    else:
+        labels = ["出勤"]
+        for i in range(1, n - 1):
+            labels.append("外出" if i % 2 == 1 else "戻り")
+
+        if labels[-1] == "外出":
+            labels.append("戻り")
+        elif today_working_hours.end > display_stamps[-1][0]:
+            labels.append("外出")
+        else:
+            labels.append("退勤")
+
+    for i, label in enumerate(labels):
+        display_stamps[i][1] = label
 
     return render(
         request,
@@ -1560,3 +1578,26 @@ def employee_attendance_detail(request, employee_no, year, month):
             "today": datetime.date.today(),
         },
     )
+
+
+def sample_stamp(request):
+    """サンプル打刻"""
+
+    samples = [
+        datetime.datetime.combine(datetime.date.today(), datetime.time(10, 0)),
+        datetime.datetime.combine(datetime.date.today(), datetime.time(12, 0)),
+        # datetime.datetime.combine(datetime.date.today(), datetime.time(13, 0)),
+        # datetime.datetime.combine(datetime.date.today(), datetime.time(19, 0)),
+    ]
+
+    employee = get_employee_by_user(request.user)
+    for sample in samples:
+        models.WebTimeStamp(employee=employee, stamp=sample).save()
+    return redirect("sao:home")
+
+
+def clear_stamp(request):
+    """打刻のクリア"""
+    employee = get_employee_by_user(request.user)
+    models.WebTimeStamp.objects.filter(employee=employee).delete()
+    return redirect("sao:home")

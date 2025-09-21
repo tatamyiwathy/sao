@@ -38,6 +38,8 @@ from sao.views import (
     generate_sample_data,
     employee_attendance_detail,
     time_clock_detail,
+    sample_stamp,
+    clear_stamp,
 )
 
 app_name = "sao"
@@ -132,8 +134,6 @@ urlpatterns = [
         name="day_switch_time_edit",
     ),
     path("day_switch", day_switch, name="day_switch"),
-    path("setup_sample_data", setup_sample_data, name="setup_sample_data"),
-    path("generate_sample_data", generate_sample_data, name="generate_sample_data"),
     path(
         "employee_attendance_detail/<int:employee_no>/<int:year>/<int:month>/",
         employee_attendance_detail,
@@ -145,4 +145,9 @@ urlpatterns = [
         time_clock_detail,
         name="time_clock_detail",
     ),
+    # for sample data
+    path("setup_sample_data", setup_sample_data, name="setup_sample_data"),
+    path("generate_sample_data", generate_sample_data, name="generate_sample_data"),
+    path("sample_stamp", sample_stamp, name="sample_stamp"),
+    path("clear_stamp", clear_stamp, name="clear_stamp"),
 ]
