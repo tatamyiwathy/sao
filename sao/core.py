@@ -682,15 +682,15 @@ def get_day_switch_time() -> datetime.time:
     return switch_time.switch_time
 
 
-def get_today() -> datetime.date:
+def get_attendance_day() -> datetime.date:
     # 勤怠システムでは１日はAM5:00-翌AM4:59までとする
     # なので、もし日をまたいだAM0:00-AM4:59の間は前日の日付を返す
     now = datetime.datetime.now()
-    return normalize_to_business_day(now).date()
+    return normalize_to_attendance_day(now).date()
 
 
-def normalize_to_business_day(day: datetime.datetime) -> datetime.datetime:
-    """日付をビジネスデーに正規化する"""
+def normalize_to_attendance_day(day: datetime.datetime) -> datetime.datetime:
+    """日付を勤怠システムの日付に正規化する"""
     day_switch_time = get_day_switch_time()
     if day.time() < day_switch_time:
         # dayは日を跨いでる

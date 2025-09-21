@@ -28,13 +28,13 @@ from sao.core import (
     get_employee_hour,
     get_working_hour_pre_assign,
     get_day_switch_time,
-    normalize_to_business_day,
+    normalize_to_attendance_day,
     get_monthly_attendance,
     get_attendance_in_period,
     fill_missiing_attendance,
     finalize_daily_record,
     update_attendance_record_and_save,
-    get_today,
+    get_attendance_day,
     round_attendance_summary,
     summarize_attendance_days,
     accumulate_weekly_working_hours,
@@ -75,7 +75,7 @@ logger = logging.getLogger("sao")  # views専用のロガー
 @login_required
 def home(request):
 
-    today = year_month = get_today()
+    today = year_month = get_attendance_day()
     form = forms.YearMonthForm(request.GET or None)
     if form.is_valid():
         year_month = form.cleaned_data["yearmonth"]
@@ -949,14 +949,14 @@ def time_clock_detail(request, employee_no):
     employee = get_object_or_404(models.Employee, employee_no=employee_no)
 
     day_switch_time = get_day_switch_time()
-    business_day = get_today()
+    attendance_day = get_attendance_day()
     stamps = models.WebTimeStamp.objects.filter(
         employee=employee,
-        stamp__gte=datetime.datetime.combine(business_day, day_switch_time),
+        stamp__gte=datetime.datetime.combine(attendance_day.date(), day_switch_time),
     ).order_by("stamp")
 
-    today_working_hours = get_employee_hour(employee, business_day).get_period(
-        business_day
+    today_working_hours = get_employee_hour(employee, attendance_day).get_period(
+        attendance_day
     )
     display_stamps = [[s.stamp, ""] for s in stamps]
 
