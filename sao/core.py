@@ -1059,9 +1059,6 @@ def assign_stamp_status(
     - 打刻が1件の場合は「出勤」
     - 打刻が2件以上の場合は、最初の打刻は「出勤」、最後の打刻は「退勤」
       それ以外の打刻は「外出」「戻り」を交互に割り当てる
-    - もし最後の打刻が「外出」の場合は「戻り」を追加する
-    - もし最後の打刻が「戻り」で、所定の勤務終了時間が最後の打刻より後の場合は「外出」を追加する
-    - もし所定の勤務時間が設定されていない場合は空のリストを返す
 
     1 - 出勤
     2 - 外出
@@ -1085,15 +1082,16 @@ def assign_stamp_status(
             status = [1]
     else:
         status = [1]
-        for i in range(1, n - 1):
+        for i in range(1, n - 1):  # 出勤、退勤を除く
             status.append(2 if i % 2 == 1 else 3)
 
-        if status[-1] == 2:
-            status.append(3)
-        elif working_hours.end > stamps[-1]:
-            status.append(2)
-        else:
-            status.append(4)
+        if status[-1] == 2:  # 外出
+            if stamps[-1] >= working_hours.end:
+                status.append(4)
+            else:
+                status.append(3)  # 戻り
+        else:  # 戻り
+            status.append(4)  # 退勤
 
     stamps_with_status = []
     for i, label in enumerate(status):
@@ -1129,14 +1127,18 @@ def get_stepout_period(
     working_hours: Period,
 ) -> list[Period]:
     """打刻のリストから外出・戻りのペアを取得する
-    - 打刻がない場合は空のリストを返す
-    - 打刻が1件の場合は空のリストを返す
-    - 打刻が2件以上の場合は、最初の打刻は「出勤」、最後の打刻は「退勤」
-      それ以外の打刻は「外出」「戻り」を交互に割り当てる
+    - 外出がない場合は空のリストを返す
+    - 外出が1件の場合はPeriod(stamp,None)を返す
     """
     stamps_with_status = assign_stamp_status(stamps, working_hours)
-    return [
-        Period(stamps_with_status[i][0], stamps_with_status[i + 1][0])
-        for i in range(len(stamps_with_status) - 1)
-        if stamps_with_status[i][1] == 2  # 外出:
-    ]
+    periods = []
+
+    for i in range(len(stamps_with_status) - 1):
+        if stamps_with_status[i][1] == 2:
+            if stamps_with_status[i + 1][1] == 3:
+                periods.append(
+                    Period(stamps_with_status[i][0], stamps_with_status[i + 1][0])
+                )
+            elif stamps_with_status[i + 1][1] == 4:
+                periods.append(Period(stamps_with_status[i][0], None))
+    return periods

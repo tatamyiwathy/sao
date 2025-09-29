@@ -1379,6 +1379,17 @@ class AssignStampStatusTest(TestCase):
         self.assertEqual(stamps[4][1], 3)  # 戻り
         self.assertEqual(stamps[5][1], 4)  # 退勤
 
+    def test_when_missed_return_stamp(self):
+        # 戻りの打刻がない場合
+        stamps = [
+            datetime(2023, 8, 2, 10, 0),
+            datetime(2023, 8, 2, 15, 0),
+            datetime(2023, 8, 2, 19, 0),
+        ]
+
+        stamps = assign_stamp_status(stamps, self.working_hours)
+        self.assertEqual(stamps[2][1], 4)  # 退勤
+
 
 class GetStepoutPeriodTest(TestCase):
     def setUp(self):
@@ -1388,11 +1399,13 @@ class GetStepoutPeriodTest(TestCase):
         )
 
     def test_get_stepout_period_empty(self):
+        # 打刻がない場合
         stamps = []
         stepout_period = get_stepout_period(stamps, self.working_hours)
         self.assertEqual(len(stepout_period), 0)
 
     def test_get_stepout_period(self):
+        # 外出、戻りの打刻がある場合
         stamps = [
             datetime(2023, 8, 2, 10, 0),
             datetime(2023, 8, 2, 12, 0),
@@ -1410,6 +1423,7 @@ class GetStepoutPeriodTest(TestCase):
         self.assertEqual(stepout_period[1].end, datetime(2023, 8, 2, 15, 0))
 
     def test_get_stepout_period_no_stepout(self):
+        # 外出、戻りの打刻がない場合
         stamps = [
             datetime(2023, 8, 2, 10, 0),  # 出勤
             datetime(2023, 8, 2, 19, 0),  # 退勤
@@ -1418,8 +1432,13 @@ class GetStepoutPeriodTest(TestCase):
         stepout_period = get_stepout_period(stamps, self.working_hours)
         self.assertEqual(len(stepout_period), 0)
 
-    # def test_get_stepout_period_incomplete(self):
-    #     stamps = [
-    #         (datetime(2023, 8, 2, 10, 0), 1),  # 出勤
-    #         (datetime(2023, 8, 2, 12, 0), 2),  # 外出
-    # 戻りの打刻が
+    def test_get_stepout_period_incomplete(self):
+        # 外出、戻りの打刻がない場合
+        stamps = [
+            datetime(2023, 8, 2, 10, 0),  # 出勤
+            datetime(2023, 8, 2, 12, 0),  # 外出
+            datetime(2023, 8, 2, 19, 0),  # 退勤
+        ]
+        stepout_period = get_stepout_period(stamps, self.working_hours)
+        self.assertEqual(len(stepout_period), 1)
+        print("################ %s" % stepout_period[0])
