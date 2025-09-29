@@ -905,8 +905,7 @@ def finalize_daily_record(employee: Employee, date: datetime.date):
     )
 
     # 外出打刻を抽出する
-    stamps_with_status = assign_stamp_status(stamps, employee_hours)
-    stepouts = [x for x in stamps_with_status if x[1] == 2 or x[1] == 3]
+    stepouts = get_stepout_period(stamps, employee_hours)
 
     try:
         with transaction.atomic():
@@ -925,8 +924,8 @@ def finalize_daily_record(employee: Employee, date: datetime.date):
             for stepout in stepouts:
                 so = SteppingOut(
                     employee=employee,
-                    out_time=stepout[0] if stepout[1] == 2 else None,
-                    return_time=stepout[0] if stepout[1] == 3 else None,
+                    out_time=stepout.start,
+                    return_time=stepout.end,
                 )
                 so.save()
 
@@ -1123,3 +1122,21 @@ def convert_status_to_display_string(
         status_str = status_dict.get(status, "不明")
         result.append((stamp, status_str))
     return result
+
+
+def get_stepout_period(
+    stamps: list[datetime.datetime],
+    working_hours: Period,
+) -> list[Period]:
+    """打刻のリストから外出・戻りのペアを取得する
+    - 打刻がない場合は空のリストを返す
+    - 打刻が1件の場合は空のリストを返す
+    - 打刻が2件以上の場合は、最初の打刻は「出勤」、最後の打刻は「退勤」
+      それ以外の打刻は「外出」「戻り」を交互に割り当てる
+    """
+    stamps_with_status = assign_stamp_status(stamps, working_hours)
+    return [
+        Period(stamps_with_status[i][0], stamps_with_status[i + 1][0])
+        for i in range(len(stamps_with_status) - 1)
+        if stamps_with_status[i][1] == 2  # 外出:
+    ]

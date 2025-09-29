@@ -62,6 +62,7 @@ from sao.core import (
     initiate_daily_attendance_record,
     adjust_stamp,
     assign_stamp_status,
+    get_stepout_period,
 )
 from sao.const import Const
 from sao.calendar import monthdays, is_holiday
@@ -1377,3 +1378,48 @@ class AssignStampStatusTest(TestCase):
         self.assertEqual(stamps[3][1], 2)  # 外出
         self.assertEqual(stamps[4][1], 3)  # 戻り
         self.assertEqual(stamps[5][1], 4)  # 退勤
+
+
+class GetStepoutPeriodTest(TestCase):
+    def setUp(self):
+        self.working_hours = Period(
+            datetime(2023, 8, 2, 10, 0),
+            datetime(2023, 8, 2, 19, 0),
+        )
+
+    def test_get_stepout_period_empty(self):
+        stamps = []
+        stepout_period = get_stepout_period(stamps, self.working_hours)
+        self.assertEqual(len(stepout_period), 0)
+
+    def test_get_stepout_period(self):
+        stamps = [
+            datetime(2023, 8, 2, 10, 0),
+            datetime(2023, 8, 2, 12, 0),
+            datetime(2023, 8, 2, 13, 0),
+            datetime(2023, 8, 2, 14, 0),
+            datetime(2023, 8, 2, 15, 0),
+            datetime(2023, 8, 2, 19, 0),
+        ]
+
+        stepout_period = get_stepout_period(stamps, self.working_hours)
+        self.assertEqual(len(stepout_period), 2)
+        self.assertEqual(stepout_period[0].start, datetime(2023, 8, 2, 12, 0))
+        self.assertEqual(stepout_period[0].end, datetime(2023, 8, 2, 13, 0))
+        self.assertEqual(stepout_period[1].start, datetime(2023, 8, 2, 14, 0))
+        self.assertEqual(stepout_period[1].end, datetime(2023, 8, 2, 15, 0))
+
+    def test_get_stepout_period_no_stepout(self):
+        stamps = [
+            datetime(2023, 8, 2, 10, 0),  # 出勤
+            datetime(2023, 8, 2, 19, 0),  # 退勤
+        ]
+
+        stepout_period = get_stepout_period(stamps, self.working_hours)
+        self.assertEqual(len(stepout_period), 0)
+
+    # def test_get_stepout_period_incomplete(self):
+    #     stamps = [
+    #         (datetime(2023, 8, 2, 10, 0), 1),  # 出勤
+    #         (datetime(2023, 8, 2, 12, 0), 2),  # 外出
+    # 戻りの打刻が
