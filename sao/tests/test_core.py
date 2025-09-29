@@ -61,6 +61,7 @@ from sao.core import (
     generate_attendance_record,
     initiate_daily_attendance_record,
     adjust_stamp,
+    assign_stamp_status,
 )
 from sao.const import Const
 from sao.calendar import monthdays, is_holiday
@@ -1311,3 +1312,68 @@ class TestAdjustStamp(TestCase):
         adjusted = adjust_stamp(actual_work, work_hours, False)
         self.assertIsNone(adjusted.start)
         self.assertIsNone(adjusted.end)
+
+
+class AssignStampStatusTest(TestCase):
+    def setUp(self):
+        self.working_hours = Period(
+            datetime(2023, 8, 2, 10, 0),
+            datetime(2023, 8, 2, 19, 0),
+        )
+
+    def test_assign_stamp_status(self):
+        # 打刻が両方ある場合
+        stamps = [
+            datetime(2023, 8, 2, 10, 0),
+            datetime(2023, 8, 2, 19, 0),
+        ]
+
+        stamps = assign_stamp_status(stamps, self.working_hours)
+        self.assertEqual(stamps[0][1], 1)  # 出勤
+        self.assertEqual(stamps[1][1], 4)  # 退勤
+
+        stamps = [
+            datetime(2023, 8, 2, 10, 0),
+        ]
+        stamps = assign_stamp_status(stamps, self.working_hours)
+        self.assertEqual(stamps[0][1], 1)  # 出勤
+
+        stamps = [
+            datetime(2023, 8, 2, 19, 0),
+        ]
+        stamps = assign_stamp_status(stamps, self.working_hours)
+        self.assertEqual(stamps[0][1], 4)  # 退勤
+
+    def test_when_stepping_out(self):
+        # 外出、戻りの打刻がある場合
+        stamps = [
+            datetime(2023, 8, 2, 10, 0),
+            datetime(2023, 8, 2, 12, 0),
+            datetime(2023, 8, 2, 13, 0),
+            datetime(2023, 8, 2, 19, 0),
+        ]
+
+        stamps = assign_stamp_status(stamps, self.working_hours)
+        self.assertEqual(stamps[0][1], 1)  # 出勤
+        self.assertEqual(stamps[1][1], 2)  # 外出
+        self.assertEqual(stamps[2][1], 3)  # 戻り
+        self.assertEqual(stamps[3][1], 4)  # 退勤
+
+    def test_when_stepping_out_any_times(self):
+        # 外出、戻りの打刻がある場合
+        stamps = [
+            datetime(2023, 8, 2, 10, 0),
+            datetime(2023, 8, 2, 12, 0),
+            datetime(2023, 8, 2, 13, 0),
+            datetime(2023, 8, 2, 14, 0),
+            datetime(2023, 8, 2, 15, 0),
+            datetime(2023, 8, 2, 19, 0),
+        ]
+
+        stamps = assign_stamp_status(stamps, self.working_hours)
+        self.assertEqual(stamps[0][1], 1)  # 出勤
+        self.assertEqual(stamps[1][1], 2)  # 外出
+        self.assertEqual(stamps[2][1], 3)  # 戻り
+        self.assertEqual(stamps[3][1], 2)  # 外出
+        self.assertEqual(stamps[4][1], 3)  # 戻り
+        self.assertEqual(stamps[5][1], 4)  # 退勤

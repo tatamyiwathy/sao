@@ -40,6 +40,8 @@ from sao.core import (
     accumulate_weekly_working_hours,
     get_annual_paied_holiday_days,
     get_recent_day_of_annual_leave_update,
+    assign_stamp_status,
+    convert_status_to_display_string,
 )
 
 from sao.const import Const
@@ -954,38 +956,27 @@ def time_clock_detail(request, employee_no):
         employee=employee,
         stamp__gte=datetime.datetime.combine(attendance_day, day_switch_time),
     ).order_by("stamp")
+    if not stamps:
+        return render(
+            request,
+            "sao/time_clock_detail.html",
+            {"employee": employee, "stamps": []},
+        )
 
     today_working_hours = get_employee_hour(employee, attendance_day).get_period(
         attendance_day
     )
-    display_stamps = [[s.stamp, ""] for s in stamps]
+    display_stamps = [s.stamp for s in stamps]
 
-    labels = []
-    n = len(display_stamps)
+    filtered_stamps = [s for s in display_stamps if s is not None]
+    stamps_with_status = assign_stamp_status(filtered_stamps, today_working_hours)
 
-    if n == 0:
-        pass
-    elif n == 1:
-        labels = ["出勤"]
-    else:
-        labels = ["出勤"]
-        for i in range(1, n - 1):
-            labels.append("外出" if i % 2 == 1 else "戻り")
-
-        if labels[-1] == "外出":
-            labels.append("戻り")
-        elif today_working_hours.end > display_stamps[-1][0]:
-            labels.append("外出")
-        else:
-            labels.append("退勤")
-
-    for i, label in enumerate(labels):
-        display_stamps[i][1] = label
+    stamps_with_status = convert_status_to_display_string(stamps_with_status)
 
     return render(
         request,
         "sao/time_clock_detail.html",
-        {"employee": employee, "stamps": display_stamps},
+        {"employee": employee, "stamps": stamps_with_status},
     )
 
 

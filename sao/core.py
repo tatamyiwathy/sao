@@ -897,6 +897,17 @@ def finalize_daily_record(employee: Employee, date: datetime.date):
     # WebTimeStampを集める
     stamps = get_daily_webstamps(employee, date)
 
+    # 勤務時間
+    employee_hours = get_employee_hour(employee, date)
+    employee_hours = Period(
+        datetime.datetime.combine(date, employee_hours.begin_time),
+        datetime.datetime.combine(date, employee_hours.end_time),
+    )
+
+    # 外出打刻を抽出する
+    stamps_with_status = assign_stamp_status(stamps, employee_hours)
+    stepouts = [x for x in stamps_with_status if x[1] == 2 or x[1] == 3]
+
     try:
         with transaction.atomic():
             # EmployeeDailyRecordを生成する
@@ -908,7 +919,16 @@ def finalize_daily_record(employee: Employee, date: datetime.date):
             # recordからDailyAttendanceRecordを生成する
             attendance = generate_attendance_record(record)
             attendance = initiate_daily_attendance_record(attendance)
-            attendance = update_attendance_record_and_save(attendance)
+            update_attendance_record_and_save(attendance)
+
+            # 外出のレコードを生成する
+            for stepout in stepouts:
+                so = SteppingOut(
+                    employee=employee,
+                    out_time=stepout[0] if stepout[1] == 2 else None,
+                    return_time=stepout[0] if stepout[1] == 3 else None,
+                )
+                so.save()
 
     except Exception as e:
         logger.error(f"[test]レコードの生成に失敗しました: {employee} {date} {e}")
@@ -1030,3 +1050,76 @@ def has_assigned_fixed_overtime_pay(employee: Employee) -> bool:
 def remove_fixed_working_hours(employee: Employee, hours: datetime.timedelta) -> None:
     """固定残業時間の設定を削除する"""
     FixedOvertimePayEmployee.objects.filter(employee=employee, hours=hours).delete()
+
+
+def assign_stamp_status(
+    stamps: list[datetime.datetime], working_hours: Period
+) -> list[tuple[datetime.datetime, int]]:
+    """打刻にステータスを割り当てる
+    - 打刻がない場合は空のリストを返す
+    - 打刻が1件の場合は「出勤」
+    - 打刻が2件以上の場合は、最初の打刻は「出勤」、最後の打刻は「退勤」
+      それ以外の打刻は「外出」「戻り」を交互に割り当てる
+    - もし最後の打刻が「外出」の場合は「戻り」を追加する
+    - もし最後の打刻が「戻り」で、所定の勤務終了時間が最後の打刻より後の場合は「外出」を追加する
+    - もし所定の勤務時間が設定されていない場合は空のリストを返す
+
+    1 - 出勤
+    2 - 外出
+    3 - 戻り
+    4 - 退勤
+
+
+    """
+    if working_hours.start is None or working_hours.end is None:
+        return []
+
+    status = []
+    n = len(stamps)
+
+    if n == 0:
+        pass
+    elif n == 1:
+        if stamps[0] >= working_hours.end:
+            status = [4]
+        else:
+            status = [1]
+    else:
+        status = [1]
+        for i in range(1, n - 1):
+            status.append(2 if i % 2 == 1 else 3)
+
+        if status[-1] == 2:
+            status.append(3)
+        elif working_hours.end > stamps[-1]:
+            status.append(2)
+        else:
+            status.append(4)
+
+    stamps_with_status = []
+    for i, label in enumerate(status):
+        stamps_with_status.append((stamps[i], label))
+
+    return stamps_with_status
+
+
+def convert_status_to_display_string(
+    stamps: list[tuple[datetime.datetime, int]],
+) -> list[tuple[datetime.datetime, str]]:
+    """打刻のステータスを表示用の文字列に変換する
+    - 1 - 出勤
+    - 2 - 外出
+    - 3 - 戻り
+    - 4 - 退勤
+    """
+    status_dict = {
+        1: "出勤",
+        2: "外出",
+        3: "戻り",
+        4: "退勤",
+    }
+    result = []
+    for stamp, status in stamps:
+        status_str = status_dict.get(status, "不明")
+        result.append((stamp, status_str))
+    return result
