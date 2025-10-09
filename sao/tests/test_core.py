@@ -64,9 +64,16 @@ from sao.core import (
     adjust_stamp,
     assign_stamp_status,
     get_stepout_periods,
+    fill_missing_attendance,
 )
 from sao.const import Const
-from sao.calendar import monthdays, is_holiday
+from sao.calendar import (
+    monthdays,
+    is_holiday,
+    get_next_month_date,
+    get_last_sunday,
+    get_next_sunday,
+)
 from sao.working_status import WorkingStatus
 from django.test import TestCase
 from unittest.mock import patch, MagicMock
@@ -84,100 +91,45 @@ from sao.models import (
     WebTimeStamp,
 )
 
-# class TallyMonthAttendancesTest(TestCase):
-#     """月の勤怠を集計するテスト"""
 
-#     def setUp(self):
-#         self.day = date(2021, 8, 6)
-#         self.emp = create_employee(create_user())
-#         self.today = date(year=2020, month=1, day=23)
-#         create_working_hours()
-#         create_time_stamp_data(self.emp)  # 月の勤怠データを生成
+class AccumulateWeeklyWorkingHoursTest(TestCase):
+    """"""
 
-#     def test_tally_monthly_attendance(self):
-#         set_office_hours_to_employee(
-#             self.emp, date(1900, 1, 1), get_working_hours_by_category("A")
-#         )
+    def setUp(self) -> None:
+        self.employee = create_employee(create_user())
+        create_working_hours()
 
-#         # 勤怠記録収集
-#         records = collect_timerecord_by_month(self.emp, self.day)
-#         self.assertEqual(len(records), monthdays(self.day))
+    def test_accumulate_weekly_working_hours(self) -> None:
+        # 勤怠記録がある場合の週間勤務時間集計のテスト
+        create_time_stamp_data(self.employee)
+        records = get_monthly_attendance(self.employee, date(2021, 8, 1))
+        results = accumulate_weekly_working_hours(records)
+        week = 1
+        for r in results:
+            self.assertEqual(r[0], week)
+            week += 1
 
-#         # 勤怠記録を集計
-#         results = attendance.tally_monthly_attendance(self.day.month, records)
-#         self.assertEqual(len(results), monthdays(self.day))
+    def test_accumulate_weekly_working_hours_when_empty(self) -> None:
+        """勤怠記録がない場合の週間勤務時間集計のテスト"""
+        # assign_working_hour(
+        #     self.employee, date(1900, 1, 1), get_working_hour_by_category("A")
+        # )
 
-#         # self.assertEqual(results[5].date, date(2021, 9, 6))
+        d = date(2021, 8, 1)
+        n = get_next_month_date(d)
+        s0 = get_last_sunday(d)
+        s1 = get_next_sunday(n)
+        period = Period(
+            datetime.combine(s0, time(0, 0)), datetime.combine(s1, time(0, 0))
+        )
 
-#         for r in results:
-#             self.assertTrue(r.is_valid())
-
-#     def test_tally_month_attendances_empty(self):
-#         set_office_hours_to_employee(
-#             self.emp, date(1900, 1, 1), get_working_hours_by_category("A")
-#         )
-#         # 勤怠記録がない場合
-#         records = collect_timerecord_by_month(self.emp, self.day)
-#         self.assertEqual(len(records), monthdays(self.day))
-
-#         results = attendance.tally_monthly_attendance(self.day.month, records)
-#         self.assertEqual(len(results), monthdays(self.day))
-
-
-# class AccumulateWeeklyWorkingHoursTest(TestCase):
-#     """"""
-
-#     def setUp(self) -> None:
-#         self.employee = create_employee(create_user())
-
-#         create_working_hours()
-#         create_time_stamp_data(self.employee)
-
-#     def test_accumulate_weekly_working_hours(self) -> None:
-#         records = get_monthly_attendance(self.employee, date(2021, 8, 1))
-#         results = accumulate_weekly_working_hours(records)
-#         week = 1
-#         for r in results:
-#             self.assertEqual(r[0], week)
-#             week += 1
-
-#     def test_accumulate_weekly_working_hours_when_empty(self) -> None:
-#         EmployeeDailyRecord.objects.all().delete()
-#         """勤怠記録がない場合の週間勤務時間集計のテスト"""
-#         assign_working_hour(
-#             self.employee, date(1900, 1, 1), get_working_hour_by_category("A")
-#         )
-#         records = get_monthly_attendance(self.employee, date(2021, 8, 1))
-#         results = accumulate_weekly_working_hours(records)
-#         week = 1
-#         for r in results:
-#             self.assertEqual(r[0], week)
-#             week += 1
-
-
-# class TestSumupAttendances(TestCase):
-#     def test_sumup_attendances(self):
-#         employee = create_employee(create_user())
-#         create_time_stamp_data(employee)
-#         create_working_hours()
-#         set_office_hours_to_employee(
-#             employee, date(1901, 1, 1), get_working_hours_by_category("A")
-#         )
-#         period = Period(datetime(2021, 8, 1,0,0), datetime(2021, 9, 1,0,0))
-#         attendances = get_attendance_in_period(employee, period.start.date(), period.end.date())
-#         print(len(attendances))
-#         attendances[-1].total_over = tally_over_work_time(8, attendances)
-#         summed_up = tally_attendances(attendances)
-#         self.assertEqual(summed_up["work"], TOTAL_ACTUAL_WORKING_TIME)
-#         self.assertEqual(summed_up["late"], Const.TD_3H)  # 遅刻
-#         self.assertEqual(summed_up["before"], timedelta(minutes=24))  # 早退
-#         self.assertEqual(summed_up["steppingout"], timedelta(minutes=0))
-#         self.assertEqual(summed_up["out_of_time"], timedelta(seconds=61560))
-#         self.assertEqual(summed_up["over_8h"], timedelta(seconds=61560))
-#         self.assertEqual(summed_up["night"], timedelta(seconds=3060))
-#         self.assertEqual(summed_up["legal_holiday"], timedelta(hours=0))
-#         self.assertEqual(summed_up["holiday"], timedelta(seconds=11580))
-#         self.assertEqual(summed_up["accumulated_overtime"], timedelta(seconds=61560))
+        attendances = get_monthly_attendance(self.employee, date(2021, 8, 1))
+        attendances = fill_missing_attendance(self.employee, period, attendances)
+        results = accumulate_weekly_working_hours(attendances)
+        week = 1
+        for r in results:
+            self.assertEqual(r[0], week)
+            week += 1
 
 
 class TestRoundDown(TestCase):
@@ -197,22 +149,6 @@ class TestRoundStamp(TestCase):
         t = timedelta(seconds=13 * 3600 + 35 * 60)
         value = round_to_half_hour(t)
         self.assertEqual(value, timedelta(seconds=14 * 3600))
-
-
-# class TestRoundResult(TestCase):
-#     def test_round_result(self):
-#         employee = create_employee(create_user()
-#         create_time_stamp_data(employee)
-#         create_working_hours()
-#         set_office_hours_to_employee(
-#             employee, date(1901, 1, 1), get_working_hours_by_category("A")
-#         )
-#         attendances = attendance.tally_monthly_attendance(8, EmployeeDailyRecord.objects.all())
-#         summed_up = attendance.sumup_attendances(attendances)
-#         rounded_result = round_result(summed_up)
-#         self.assertEqual(
-#             rounded_result["work"], timedelta(seconds=6 * 24 * 3600 + 90 * 60)
-#         )
 
 
 class TestAdjustWorkStartTime(TestCase):

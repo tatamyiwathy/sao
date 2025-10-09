@@ -9,7 +9,7 @@ from sao.core import (
     get_employee_hour,
     get_working_hour_pre_assign,
     get_attendance_in_period,
-    fill_missiing_attendance,
+    fill_missing_attendance,
     round_attendance_summary,
     summarize_attendance_days,
     get_attendance_day,
@@ -167,7 +167,7 @@ def collect_display_attendances(
     # 月次集計
     attendances = get_attendance_in_period(employee, period)
     # 欠損日補完
-    attendances = fill_missiing_attendance(employee, period, attendances)
+    attendances = fill_missing_attendance(employee, period, attendances)
     return attendances
 
 

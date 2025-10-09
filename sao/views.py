@@ -31,7 +31,7 @@ from sao.core import (
     normalize_to_attendance_day,
     get_monthly_attendance,
     get_attendance_in_period,
-    fill_missiing_attendance,
+    fill_missing_attendance,
     finalize_daily_record,
     update_attendance_record_and_save,
     get_attendance_day,
@@ -367,7 +367,7 @@ def staff_detail(request, employee, year, month):
     # 期間
     attendances = get_attendance_in_period(employee, Period(from_date, to_date))
     # 欠損日補完
-    attendances = fill_missiing_attendance(employee, period, attendances)
+    attendances = fill_missing_attendance(employee, period, attendances)
     total_overtime = tally_over_work_time(from_date.month, attendances)
 
     summed_up = tally_attendances(attendances)
@@ -648,7 +648,7 @@ def employee_record(request):
             # 前月の最終日曜日から次月の最初の日曜日までのデータを集める
             attendances = get_attendance_in_period(employee, period)
             # 欠損日補完
-            attendances = fill_missiing_attendance(employee, period, attendances)
+            attendances = fill_missing_attendance(employee, period, attendances)
             if not attendances:
                 pass
             else:
@@ -704,7 +704,7 @@ def employee_record(request):
             get_next_sunday(to_date), datetime.time(0, 0)
         ) + datetime.timedelta(days=1)
         period = Period(start, end)
-        attendances = fill_missiing_attendance(employee, period, attendances)
+        attendances = fill_missing_attendance(employee, period, attendances)
         attendances[-1].total_overtime = tally_over_work_time(
             from_date.month, attendances
         )
@@ -907,7 +907,7 @@ def attendance_summary(request):
             attendances = get_attendance_in_period(employee, period)
             if len(attendances) <= 0:
                 continue
-            attendances = fill_missiing_attendance(employee, period, attendances)
+            attendances = fill_missing_attendance(employee, period, attendances)
             total_overwork = tally_over_work_time(from_date.month, attendances)
             daycount = summarize_attendance_days(attendances, from_date)
             summed_up = tally_attendances(attendances)
@@ -1545,7 +1545,7 @@ def employee_attendance_detail(request, employee_no, year, month):
         employee,
         period,
     )
-    attendances = fill_missiing_attendance(employee, period, attendances)
+    attendances = fill_missing_attendance(employee, period, attendances)
     attendances[-1].total_overtime = tally_over_work_time(
         display_date.month, attendances
     )

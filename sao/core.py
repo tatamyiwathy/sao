@@ -449,8 +449,10 @@ def summarize_attendance_days(
 
 def accumulate_weekly_working_hours(attendances: list[Attendance]) -> list[tuple]:
     """週ごとの労働時間を累計する
+    attendancesは１か月分の勤怠データを保持していること。足りないときはfill_missiing_attendanceで補うこと。
 
-    戻り    (n週, 週の始まり, 労働時間, 丸めた労働時間) * 週の数
+    :param attendances: 勤怠データのリスト
+    :return: (n週, 週の始まり, 労働時間, 丸めた労働時間) * 週の数
     """
 
     if attendances is None:
@@ -614,7 +616,7 @@ def get_attendance_in_period(employee: Employee, period: Period) -> list[Attenda
     return attendances
 
 
-def fill_missiing_attendance(
+def fill_missing_attendance(
     employee: Employee, period: Period, attendances: list[Attendance]
 ) -> list[Attendance]:
     """勤怠データの欠損を補う
