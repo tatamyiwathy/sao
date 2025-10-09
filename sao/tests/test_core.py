@@ -1100,6 +1100,7 @@ class TestGenerateDailyAttendanceRecord(TestCase):
         )
 
     def test_generate_attendance_record(self):
+        # 正常に勤怠記録が生成されること
         generate_attendance_record(self.record)
         attendance_record = DailyAttendanceRecord.objects.filter(
             employee=self.employee, date=self.day
@@ -1117,6 +1118,7 @@ class TestGenerateDailyAttendanceRecord(TestCase):
             self.assertEqual(attendance_record.status, self.record.status)
 
     def test_generate_attendance_if_stamp_empty(self):
+        # 打刻がない場合でも勤怠記録が生成されること
         self.record.clock_in = None
         self.record.clock_out = None
         attendance = generate_attendance_record(self.record)
@@ -1308,3 +1310,70 @@ class GetStepoutPeriodTest(TestCase):
         stepout_period = get_stepout_periods(stamps, self.working_hours)
         self.assertEqual(len(stepout_period), 1)
         print("################ %s" % stepout_period[0])
+
+
+class TestInitiateDailyAttendanceRecord(TestCase):
+    def setUp(self):
+        self.employee = create_employee(create_user())
+        self.day = date(2023, 8, 2)
+        self.record = EmployeeDailyRecord.objects.create(
+            date=self.day,
+            employee=self.employee,
+            clock_in=datetime.combine(self.day, time(10, 0)),
+            clock_out=datetime.combine(self.day, time(19, 0)),
+            working_hours_start=datetime.combine(self.day, time(10, 0)),
+            working_hours_end=datetime.combine(self.day, time(19, 0)),
+            status=WorkingStatus.C_KINMU,
+        )
+        self.attendance = DailyAttendanceRecord.objects.create(
+            time_record=self.record,
+            employee=self.employee,
+            date=self.day,
+            clock_in=datetime.combine(self.day, time(10, 0)),
+            clock_out=datetime.combine(self.day, time(19, 0)),
+            working_hours_start=datetime.combine(self.day, time(10, 0)),
+            working_hours_end=datetime.combine(self.day, time(19, 0)),
+            status=WorkingStatus.C_KINMU,
+        )
+
+    def test_return_if_missing_working_hours(self):
+        self.attendance.working_hours_start = None
+        result = initiate_daily_attendance_record(self.attendance)
+        self.assertEqual(result, self.attendance)
+
+        self.attendance.working_hours_start = datetime.combine(self.day, time(10, 0))
+        self.attendance.working_hours_end = None
+        result = initiate_daily_attendance_record(self.attendance)
+        self.assertEqual(result, self.attendance)
+
+    def test_return_if_missing_date(self):
+        self.attendance.date = None
+        result = initiate_daily_attendance_record(self.attendance)
+        self.assertEqual(result, self.attendance)
+
+    @patch("sao.core.has_permitted_overtime_work", return_value=True)
+    def test_overtime_permission_sets_flag(self, mock_has_permitted_overtime_work):
+        self.attendance.overtime_permitted = False
+        result = initiate_daily_attendance_record(self.attendance)
+        self.assertTrue(result.overtime_permitted)
+
+    @patch("sao.core.calendar_is_holiday", return_value=True)
+    def test_holiday_sets_working_hours_to_stamp(self, mock_calendar_is_holiday):
+        self.attendance.clock_in = datetime.combine(self.day, time(11, 0))
+        self.attendance.clock_out = datetime.combine(self.day, time(18, 0))
+        result = initiate_daily_attendance_record(self.attendance)
+        self.assertEqual(result.working_hours_start, self.attendance.clock_in)
+        self.assertEqual(result.working_hours_end, self.attendance.clock_out)
+
+    @patch("sao.core.adjust_stamp")
+    @patch("sao.core.calendar_is_holiday", return_value=False)
+    def test_adjust_stamp_called_when_not_holiday(
+        self, mock_calendar_is_holiday, mock_adjust_stamp
+    ):
+        mock_adjust_stamp.return_value = Period(
+            datetime.combine(self.day, time(10, 5)),
+            datetime.combine(self.day, time(18, 55)),
+        )
+        result = initiate_daily_attendance_record(self.attendance)
+        self.assertEqual(result.clock_in, datetime.combine(self.day, time(10, 5)))
+        self.assertEqual(result.clock_out, datetime.combine(self.day, time(18, 55)))

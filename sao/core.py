@@ -836,7 +836,12 @@ def update_attendance_record_and_save(
 def initiate_daily_attendance_record(
     attendance: DailyAttendanceRecord,
 ) -> DailyAttendanceRecord:
-    """打刻と所定の勤務時間を調整する"""
+    """勤怠データを初期化する
+
+    :param attendance: DailyAttendanceRecord
+    :return: 初期化されたDailyAttendanceRecord
+    """
+
     if attendance.working_hours_start is None or attendance.working_hours_end is None:
         return attendance
     if attendance.date is None:
