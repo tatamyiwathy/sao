@@ -126,12 +126,10 @@ class WorkingHour(models.Model):
 
     def get_period(self, date: datetime.date) -> Period:
         """勤務時間の始業と終業をペアで取得する
-        引数:
-            date    対象の日付
-        戻り値:
-            Period    始業と終業のペア
-        例外:
-            ValueError  勤務時間が不正
+
+        :param date: 対象の日付
+        :return: Period    始業と終業のペア
+        :raise ValueError: 勤務時間が不正
         """
         if not self.is_valid():
             raise ValueError("Invalid working hour")
