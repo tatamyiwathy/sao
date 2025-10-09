@@ -62,7 +62,7 @@ from sao.core import (
     initiate_daily_attendance_record,
     adjust_stamp,
     assign_stamp_status,
-    get_stepout_period,
+    get_stepout_periods,
 )
 from sao.const import Const
 from sao.calendar import monthdays, is_holiday
@@ -808,172 +808,38 @@ class TestGetClockInOut(TestCase):
 class TestGenerateDailyRecord(TestCase):
     def setUp(self) -> None:
         self.employee = create_employee(create_user())
+        create_working_hours()
+        assign_working_hour(
+            self.employee, date(1901, 1, 1), get_working_hour_by_category("A")
+        )
         return super().setUp()
 
     def test_generate(self):
         stamps = [datetime(2023, 8, 2, 10, 0), datetime(2023, 8, 2, 19, 0)]
         day = date(2023, 8, 2)
         generate_daily_record(stamps, self.employee, day)
+        self.assertTrue(EmployeeDailyRecord.objects.all().count() == 1)
 
+    def test_no_stamps(self):
+        stamps = []
+        day = date(2023, 8, 2)
+        generate_daily_record(stamps, self.employee, day)
+        self.assertTrue(EmployeeDailyRecord.objects.all().count() == 1)
 
-##         mock_determine_working_status,
-#     ):
-#         # 平日、出勤退勤あり
-#         # Setup
-#         stamps = [datetime(2023, 8, 2, 10, 0), datetime(2023, 8, 2, 19, 0)]
-#         mock_get_clock_in_out.return_value = Period(stamps[0], stamps[1])
-#         mock_get_employee_hour.return_value = self.working_hour
-#         self.working_hour.get_paired_time = MagicMock(return_value=self.period)
+    @patch("sao.core.get_employee_hour")
+    def test_no_working_hour_assigned(self, mock_get_employee_hour):
+        mock_get_employee_hour.side_effect = NoAssignedWorkingHourError(
+            "勤務時間が設定されていません"
+        )
 
-#         # Act
-#         generate_daily_record(stamps, self.employee, self.day)
+        stamps = [datetime(2023, 8, 2, 10, 0), datetime(2023, 8, 2, 19, 0)]
+        day = date(2023, 8, 2)
 
-#         # Assert
-#         record = EmployeeDailyRecord.objects.filter(
-#             employee=self.employee, date=self.day
-#         ).first()
-#         self.assertIsNotNone(record)
-#         if record is not None:
-#             self.assertIsNotNone(record.clock_in)
-#             self.assertEqual(record.clock_in, stamps[0])
-#             self.assertEqual(record.clock_out, stamps[1])
-#             self.assertEqual(record.working_hours_start, self.period.start)
-#             self.assertEqual(record.working_hours_end, self.period.end)
-#             self.assertEqual(record.status, WorkingStatus.C_KINMU)
+        # テスト実行
+        result = generate_daily_record(stamps, self.employee, day)
 
-#     @patch(
-#         "sao.working_status.determine_working_status",
-#         return_value=WorkingStatus.C_KEKKIN,
-#     )
-#     @patch("sao.calendar.is_legal_holiday", return_value=False)
-#     @patch("sao.calendar.is_holiday", return_value=False)
-#     @patch("sao.core.get_employee_hour")
-#     @patch("sao.core.get_clock_in_out")
-#     def test_generate_daily_record_no_stamp(
-#         self,
-#         mock_get_clock_in_out,
-#         mock_get_employee_hour,
-#         mock_is_holiday,
-#         mock_is_legal_holiday,
-#         mock_determine_working_status,
-#     ):
-#         # 平日、出勤退勤なし
-#         stamps = []
-#         mock_get_clock_in_out.return_value = Period(None, None)
-#         mock_get_employee_hour.return_value = self.working_hour
-#         self.working_hour.get_paired_time = MagicMock(return_value=self.period)
-
-#         # Act
-#         generate_daily_record(stamps, self.employee, self.day)
-
-#         # Assert
-#         record = EmployeeDailyRecord.objects.filter(
-#             employee=self.employee, date=self.day
-#         ).first()
-#         self.assertIsNotNone(record)
-#         if record is not None:
-#             self.assertEqual(record.clock_in, None)
-#             self.assertEqual(record.clock_out, None)
-#             self.assertEqual(record.working_hours_start, self.period.start)
-#             self.assertEqual(record.working_hours_end, self.period.end)
-#             self.assertEqual(record.status, WorkingStatus.C_KEKKIN)
-
-#     @patch(
-#         "sao.core.determine_working_status",
-#         return_value=WorkingStatus.C_HOUTEIGAI_KYUJITU,
-#     )
-#     @patch("sao.core.is_legal_holiday", return_value=False)
-#     @patch("sao.core.is_holiday", return_value=True)
-#     @patch("sao.core.get_employee_hour")
-#     @patch("sao.core.get_clock_in_out")
-#     def test_generate_daily_record_holiday(
-#         self,
-#         mock_get_clock_in_out,
-#         mock_get_employee_hour,
-#         mock_is_holiday,
-#         mock_is_legal_holiday,
-#         mock_determine_working_status,
-#     ):
-#         # 法定外休日、出勤退勤あり->打刻そのまま
-#         # Setup
-#         stamps = [datetime(2023, 8, 2, 10, 0), datetime(2023, 8, 2, 19, 0)]
-#         mock_get_clock_in_out.return_value = Period(stamps[0], stamps[1])
-#         mock_get_employee_hour.return_value = self.working_hour
-#         # get_paired_time should not be called, but if it is, return normal
-#         self.working_hour.get_paired_time = MagicMock(return_value=self.period)
-
-#         # Act
-#         generate_daily_record(stamps, self.employee, self.day)
-
-#         # Assert
-#         record = EmployeeDailyRecord.objects.filter(
-#             employee=self.employee, date=self.day
-#         ).first()
-#         self.assertIsNotNone(record)
-#         if record is not None:
-#             self.assertEqual(record.working_hours_start, None)
-#             self.assertEqual(record.working_hours_end, None)
-#             self.assertEqual(record.clock_in, stamps[0])
-#             self.assertEqual(record.clock_out, stamps[1])
-#             self.assertEqual(record.status, WorkingStatus.C_HOUTEIGAI_KYUJITU)
-
-#     @patch(
-#         "sao.core.determine_working_status", return_value=WorkingStatus.C_HOUTEI_KYUJITU
-#     )
-#     @patch("sao.core.is_legal_holiday", return_value=True)
-#     @patch("sao.core.is_holiday", return_value=True)
-#     @patch("sao.core.get_employee_hour")
-#     @patch("sao.core.get_clock_in_out")
-#     def test_generate_daily_record_legal_holiday(
-#         self,
-#         mock_get_clock_in_out,
-#         mock_get_employee_hour,
-#         mock_is_holiday,
-#         mock_is_legal_holiday,
-#         mock_determine_working_status,
-#     ):
-#         # 法定休日、出勤退勤あり->打刻そのまま
-#         # Setup
-#         stamps = [datetime(2023, 8, 2, 10, 0), datetime(2023, 8, 2, 19, 0)]
-#         mock_get_clock_in_out.return_value = Period(stamps[0], stamps[1])
-#         mock_get_employee_hour.return_value = self.working_hour
-#         # get_paired_time should not be called, but if it is, return normal
-#         self.working_hour.get_paired_time = MagicMock(return_value=self.period)
-
-#         # Act
-#         generate_daily_record(stamps, self.employee, self.day)
-
-#         # Assert
-#         record = EmployeeDailyRecord.objects.filter(
-#             employee=self.employee, date=self.day
-#         ).first()
-#         self.assertIsNotNone(record)
-#         if record is not None:
-#             self.assertEqual(record.working_hours_start, None)
-#             self.assertEqual(record.working_hours_end, None)
-#             self.assertEqual(record.clock_in, stamps[0])
-#             self.assertEqual(record.clock_out, stamps[1])
-#             self.assertEqual(record.status, WorkingStatus.C_HOUTEI_KYUJITU)
-
-#     @patch("sao.core.is_holiday", return_value=True)
-#     @patch("sao.core.get_employee_hour")
-#     def test_generate_daily_record_holiday_no_stamps(
-#         self, mock_get_employee_hour, mock_is_holiday
-#     ):
-#         # 休日出勤なし 打刻が空のレコードを作成するい
-#         stamps = []
-#         mock_get_employee_hour.return_value = self.working_hour
-#         generate_daily_record(stamps, self.employee, self.day)
-#         record = EmployeeDailyRecord.objects.filter(
-#             employee=self.employee, date=self.day
-#         ).first()
-#         self.assertIsNotNone(record)
-#         if record is not None:
-#             self.assertIsNone(record.clock_in)
-#             self.assertIsNone(record.clock_out)
-#             self.assertEqual(record.working_hours_start, None)
-#             self.assertEqual(record.working_hours_end, None)
-#             self.assertEqual(record.status, WorkingStatus.C_KYUJITU)
+        # 例外が発生してNoneが返されることを確認
+        self.assertIsNone(result)
 
 
 # class TestFinalizeDailyRecord(TestCase):
@@ -1401,7 +1267,7 @@ class GetStepoutPeriodTest(TestCase):
     def test_get_stepout_period_empty(self):
         # 打刻がない場合
         stamps = []
-        stepout_period = get_stepout_period(stamps, self.working_hours)
+        stepout_period = get_stepout_periods(stamps, self.working_hours)
         self.assertEqual(len(stepout_period), 0)
 
     def test_get_stepout_period(self):
@@ -1415,7 +1281,7 @@ class GetStepoutPeriodTest(TestCase):
             datetime(2023, 8, 2, 19, 0),
         ]
 
-        stepout_period = get_stepout_period(stamps, self.working_hours)
+        stepout_period = get_stepout_periods(stamps, self.working_hours)
         self.assertEqual(len(stepout_period), 2)
         self.assertEqual(stepout_period[0].start, datetime(2023, 8, 2, 12, 0))
         self.assertEqual(stepout_period[0].end, datetime(2023, 8, 2, 13, 0))
@@ -1429,7 +1295,7 @@ class GetStepoutPeriodTest(TestCase):
             datetime(2023, 8, 2, 19, 0),  # 退勤
         ]
 
-        stepout_period = get_stepout_period(stamps, self.working_hours)
+        stepout_period = get_stepout_periods(stamps, self.working_hours)
         self.assertEqual(len(stepout_period), 0)
 
     def test_get_stepout_period_incomplete(self):
@@ -1439,6 +1305,6 @@ class GetStepoutPeriodTest(TestCase):
             datetime(2023, 8, 2, 12, 0),  # 外出
             datetime(2023, 8, 2, 19, 0),  # 退勤
         ]
-        stepout_period = get_stepout_period(stamps, self.working_hours)
+        stepout_period = get_stepout_periods(stamps, self.working_hours)
         self.assertEqual(len(stepout_period), 1)
         print("################ %s" % stepout_period[0])

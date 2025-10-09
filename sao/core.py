@@ -1,6 +1,7 @@
 import datetime
 
 import logging
+from collections.abc import Sequence
 
 from django.db import transaction
 from sao.models import (
@@ -700,7 +701,7 @@ def normalize_to_attendance_day(day: datetime.datetime) -> datetime.datetime:
     return day
 
 
-def get_clock_in_out(stamps: list[datetime.datetime | None]) -> Period:
+def get_clock_in_out(stamps: Sequence[datetime.datetime]) -> Period:
     """打刻のリストから出社・退社のペアを取得する
     打刻がないときは(None, None)を返す
     打刻が1件のときは(打刻, None)を返す
@@ -714,7 +715,7 @@ def get_clock_in_out(stamps: list[datetime.datetime | None]) -> Period:
 
 
 def generate_daily_record(
-    stamps: list[datetime.datetime | None], employee: Employee, date: datetime.date
+    stamps: Sequence[datetime.datetime], employee: Employee, date: datetime.date
 ) -> EmployeeDailyRecord | None:
     """EmployeeDailyRecordを生成する
 
@@ -898,14 +899,10 @@ def finalize_daily_record(employee: Employee, date: datetime.date):
     stamps = get_daily_webstamps(employee, date)
 
     # 勤務時間
-    employee_hours = get_employee_hour(employee, date)
-    employee_hours = Period(
-        datetime.datetime.combine(date, employee_hours.begin_time),
-        datetime.datetime.combine(date, employee_hours.end_time),
-    )
+    employee_hours = get_employee_hour(employee, date).get_period(date)
 
     # 外出打刻を抽出する
-    stepouts = get_stepout_period(stamps, employee_hours)
+    stepouts = get_stepout_periods(stamps, employee_hours)
 
     try:
         with transaction.atomic():
@@ -921,13 +918,7 @@ def finalize_daily_record(employee: Employee, date: datetime.date):
             update_attendance_record_and_save(attendance)
 
             # 外出のレコードを生成する
-            for stepout in stepouts:
-                so = SteppingOut(
-                    employee=employee,
-                    out_time=stepout.start,
-                    return_time=stepout.end,
-                )
-                so.save()
+            generate_stepout_records(employee, stepouts)
 
     except Exception as e:
         logger.error(f"[test]レコードの生成に失敗しました: {employee} {date} {e}")
@@ -1122,7 +1113,7 @@ def convert_status_to_display_string(
     return result
 
 
-def get_stepout_period(
+def get_stepout_periods(
     stamps: list[datetime.datetime],
     working_hours: Period,
 ) -> list[Period]:
@@ -1142,3 +1133,14 @@ def get_stepout_period(
             elif stamps_with_status[i + 1][1] == 4:
                 periods.append(Period(stamps_with_status[i][0], None))
     return periods
+
+
+def generate_stepout_records(employee: Employee, periods: list[Period]) -> None:
+    """外出・戻りのペアからSteppingOutレコードを生成する"""
+    for period in periods:
+        so = SteppingOut(
+            employee=employee,
+            out_time=period.start,
+            return_time=period.end,
+        )
+        so.save()
