@@ -19,6 +19,7 @@ from sao.tests.utils import (
     create_time_stamp_data,
     TOTAL_ACTUAL_WORKING_TIME,
     get_working_hour_by_category,
+    create_timerecord,
 )
 from sao.utils import tally_over_work_time, tally_attendances
 from sao.core import (
@@ -71,6 +72,9 @@ from django.test import TestCase
 from unittest.mock import patch, MagicMock
 from sao.period import Period
 from sao.exceptions import NoAssignedWorkingHourError
+from datetime import datetime, date, time, timedelta
+from sao.core import update_attendance_record_and_save
+from sao.models import DailyAttendanceRecord, Employee
 
 # class TallyMonthAttendancesTest(TestCase):
 #     """月の勤怠を集計するテスト"""
@@ -1377,3 +1381,160 @@ class TestInitiateDailyAttendanceRecord(TestCase):
         result = initiate_daily_attendance_record(self.attendance)
         self.assertEqual(result.clock_in, datetime.combine(self.day, time(10, 5)))
         self.assertEqual(result.clock_out, datetime.combine(self.day, time(18, 55)))
+
+
+class TestUpdateAttendanceRecordAndSave(TestCase):
+    def setUp(self):
+        self.employee = create_employee(create_user())
+        self.day = date(2023, 8, 2)
+        self.record = create_timerecord(
+            employee=self.employee,
+            date=self.day,
+            stamp=[
+                datetime.combine(self.day, time(10, 0)),
+                datetime.combine(self.day, time(20, 0)),
+            ],
+            working_hours=(
+                datetime.combine(self.day, time(10, 0)),
+                datetime.combine(self.day, time(19, 0)),
+            ),
+            status=WorkingStatus.C_KINMU,
+        )
+
+        self.attendance = DailyAttendanceRecord.objects.create(
+            employee=self.employee,
+            time_record=self.record,
+            date=self.day,
+            clock_in=self.record.clock_in,
+            clock_out=self.record.clock_out,
+            working_hours_start=self.record.working_hours_start,
+            working_hours_end=self.record.working_hours_end,
+            status=self.record.status,
+        )
+
+    def test_return_if_missing_clock_in_or_out(self):
+        # 打刻が片方欠けている場合、処理をスキップすること
+        self.attendance.clock_in = None
+        result = update_attendance_record_and_save(self.attendance)
+        self.assertEqual(result, self.attendance)
+        self.attendance.clock_in = datetime.combine(self.day, time(10, 0))
+        self.attendance.clock_out = None
+        result = update_attendance_record_and_save(self.attendance)
+        self.assertEqual(result, self.attendance)
+
+    def test_return_if_missing_working_hours(self):
+        # 所定労働時間が片方欠けている場合、処理をスキップすること
+        self.attendance.working_hours_start = None
+        result = update_attendance_record_and_save(self.attendance)
+        self.assertEqual(result, self.attendance)
+        self.attendance.working_hours_start = datetime.combine(self.day, time(10, 0))
+        self.attendance.working_hours_end = None
+        result = update_attendance_record_and_save(self.attendance)
+        self.assertEqual(result, self.attendance)
+
+    def test_return_if_missing_date(self):
+        # 日付が欠けている場合、処理をスキップすること
+        self.attendance.date = None
+        result = update_attendance_record_and_save(self.attendance)
+        self.assertEqual(result, self.attendance)
+
+    def test_return_if_missing_status(self):
+        self.attendance.status = WorkingStatus.C_NONE
+        result = update_attendance_record_and_save(self.attendance)
+        self.assertEqual(result, self.attendance)
+
+    def test_return_if_stamp_missing(self):
+        # 打刻が両方欠けている場合、処理をスキップすること
+        self.attendance.clock_in = None
+        self.attendance.clock_out = None
+        result = update_attendance_record_and_save(self.attendance)
+        self.assertEqual(result, self.attendance)
+
+    def test_return_if_work_hours_missing(self):
+        # 所定労働時間が両方欠けている場合、処理をスキップすること
+        self.attendance.working_hours_start = None
+        self.attendance.working_hours_end = None
+        result = update_attendance_record_and_save(self.attendance)
+        self.assertEqual(result, self.attendance)
+
+    @patch("sao.core.calc_actual_working_hours", return_value=timedelta(hours=8))
+    @patch("sao.core.calc_tardiness", return_value=timedelta(minutes=0))
+    @patch("sao.core.calc_leave_early", return_value=timedelta(minutes=0))
+    @patch("sao.core.calc_overtime", return_value=timedelta(hours=1))
+    @patch("sao.core.calc_over_8h", return_value=timedelta(hours=1))
+    @patch("sao.core.calc_midnight_work", return_value=timedelta(minutes=0))
+    @patch("sao.core.has_permitted_overtime_work", return_value=True)
+    @patch("sao.core.calendar_is_holiday", return_value=False)
+    @patch("sao.core.is_legal_holiday", return_value=False)
+    def test_update_attendance_record_and_save_sets_fields(
+        self,
+        mock_is_legal_holiday,
+        mock_calendar_is_holiday,
+        mock_has_permitted_overtime_work,
+        mock_calc_midnight_work,
+        mock_calc_over_8h,
+        mock_calc_overtime,
+        mock_calc_leave_early,
+        mock_calc_tardiness,
+        mock_calc_actual_working_hours,
+    ):
+        # 正常に勤怠記録の各フィールドが計算されて設定されること
+        result = update_attendance_record_and_save(self.attendance)
+        self.assertEqual(result.stepping_out, Const.TD_ZERO)
+        self.assertEqual(result.actual_work, timedelta(hours=8))
+        self.assertEqual(result.late, timedelta(minutes=0))
+        self.assertEqual(result.early_leave, timedelta(minutes=0))
+        self.assertEqual(result.over, timedelta(hours=1))
+        self.assertEqual(result.over_8h, timedelta(hours=1))
+        self.assertEqual(result.night, timedelta(minutes=0))
+
+    @patch("sao.core.calc_actual_working_hours", return_value=timedelta(hours=8))
+    @patch("sao.core.calendar_is_holiday", return_value=True)
+    @patch("sao.core.is_legal_holiday", return_value=True)
+    @patch("sao.core.calc_tardiness", return_value=timedelta(minutes=0))
+    @patch("sao.core.calc_leave_early", return_value=timedelta(minutes=0))
+    @patch("sao.core.calc_overtime", return_value=timedelta(hours=1))
+    @patch("sao.core.calc_over_8h", return_value=timedelta(hours=1))
+    @patch("sao.core.calc_midnight_work", return_value=timedelta(minutes=0))
+    @patch("sao.core.has_permitted_overtime_work", return_value=True)
+    def test_update_attendance_record_and_save_sets_holiday_fields(
+        self,
+        mock_has_permitted_overtime_work,
+        mock_calc_midnight_work,
+        mock_calc_over_8h,
+        mock_calc_overtime,
+        mock_calc_leave_early,
+        mock_calc_tardiness,
+        mock_is_legal_holiday,
+        mock_calendar_is_holiday,
+        mock_calc_actual_working_hours,
+    ):
+        # 法定休日の場合、legal_holidayフィールドが設定されること
+        result = update_attendance_record_and_save(self.attendance)
+        self.assertEqual(result.legal_holiday, timedelta(hours=8))
+
+    @patch("sao.core.calc_actual_working_hours", return_value=timedelta(hours=8))
+    @patch("sao.core.calendar_is_holiday", return_value=True)
+    @patch("sao.core.is_legal_holiday", return_value=False)
+    @patch("sao.core.calc_tardiness", return_value=timedelta(minutes=0))
+    @patch("sao.core.calc_leave_early", return_value=timedelta(minutes=0))
+    @patch("sao.core.calc_overtime", return_value=timedelta(hours=1))
+    @patch("sao.core.calc_over_8h", return_value=timedelta(hours=1))
+    @patch("sao.core.calc_midnight_work", return_value=timedelta(minutes=0))
+    @patch("sao.core.has_permitted_overtime_work", return_value=True)
+    def test_update_attendance_record_and_save_sets_non_legal_holiday_fields(
+        self,
+        mock_has_permitted_overtime_work,
+        mock_calc_midnight_work,
+        mock_calc_over_8h,
+        mock_calc_overtime,
+        mock_calc_leave_early,
+        mock_calc_tardiness,
+        mock_is_legal_holiday,
+        mock_calendar_is_holiday,
+        mock_calc_actual_working_hours,
+    ):
+        # 休日だが法定休日でない場合、legal_holidayフィールドは設定されないこと
+        result = update_attendance_record_and_save(self.attendance)
+        self.assertEqual(result.holiday, timedelta(hours=8))
+        self.assertEqual(result.legal_holiday, timedelta(0))
