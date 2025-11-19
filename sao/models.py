@@ -578,3 +578,12 @@ class FixedOvertimePayEmployee(models.Model):
 
     def __str__(self):
         return "%s %s" % (self.employee, self.hours)
+
+
+class DailyAttendanceRecordAdmin(admin.ModelAdmin):
+    """管理サイト"""
+
+    list_display = ("employee", "date")
+
+
+admin.site.register(DailyAttendanceRecord, DailyAttendanceRecordAdmin)

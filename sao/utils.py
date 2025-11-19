@@ -1,4 +1,5 @@
 import datetime
+import yaml
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from sao import core
@@ -551,3 +552,55 @@ def get_stepout_record(
     return SteppingOut.objects.filter(
         employee=employee, out_time__gte=day_start, return_time__lt=day_end
     )
+
+
+def generate_sample_coounts():
+    with open("test-data/sample-data.yaml", "r") as file:
+        sample_data = yaml.safe_load(file)
+
+        for working_hour in sample_data["working_hours"]:
+            print(working_hour["start"])
+            start = datetime.datetime.strptime(working_hour["start"], "%H:%M").time()
+            end = datetime.datetime.strptime(working_hour["end"], "%H:%M").time()
+            WorkingHour.objects.filter(
+                begin_time=start,
+                end_time=end,
+                category=working_hour["category"],
+            ).delete()
+            wh = WorkingHour(
+                begin_time=start,
+                end_time=end,
+                category=working_hour["category"],
+            )
+            wh.save()
+
+        employee_no = 10
+        for employee in sample_data["employees"]:
+            User.objects.filter(username=employee["username"]).delete()
+            user = create_user(
+                username=employee["username"],
+                last=employee["last_name"],
+                first=employee["first_name"],
+                password=employee["password"],
+                email=employee["email"],
+            )
+
+            date = datetime.datetime.strptime(employee["join_date"], "%Y-%m-%d").date()
+            name = f"{employee['last_name']} {employee['first_name']}"
+            Employee.objects.filter(name=name).delete()
+            e = create_employee(
+                employee_no=employee_no,
+                name=name,
+                employee_type=Employee.TYPE_PERMANENT_STAFF,
+                department=Employee.DEPT_GENERAL,
+                user=user,
+                join_date=date,
+                payed_holiday=0.0,
+            )
+            working_hour = WorkingHour.objects.get(category=employee["working_hour"])
+            EmployeeHour.objects.create(
+                employee=e,
+                date=date,
+                working_hours=working_hour,
+            )
+            employee_no += 1
