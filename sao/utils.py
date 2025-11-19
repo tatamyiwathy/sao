@@ -444,7 +444,7 @@ def get_anomaly_stamp_type() -> int:
     return r
 
 
-def generate_sample_data(employee: Employee, year: int, month: int) -> None:
+def generate_sample_stamp(employee: Employee, year: int, month: int) -> None:
     """指定した年月のサンプルデータを生成する"""
 
     def make_late_stamp(d):
@@ -554,7 +554,7 @@ def get_stepout_record(
     )
 
 
-def generate_sample_coounts():
+def generate_sample_data(year: int, month: int) -> None:
     with open("test-data/sample-data.yaml", "r") as file:
         sample_data = yaml.safe_load(file)
 
@@ -603,4 +603,7 @@ def generate_sample_coounts():
                 date=date,
                 working_hours=working_hour,
             )
+
+            generate_sample_stamp(e, year, month)
+
             employee_no += 1

@@ -60,7 +60,6 @@ from sao.utils import (
     create_employee,
     generate_sample_data as utils_generate_sample_data,
     get_stepout_record,
-    generate_sample_coounts,
 )
 from sao.utils import setup_sample_data as utils_setup_sample_data
 from sao.period import Period
@@ -1518,11 +1517,8 @@ def generate_sample_data(request):
         year = datetime.date.today().year
         month = datetime.date.today().month
 
-    generate_sample_coounts()
+    utils_generate_sample_data(year, month)
     logger.info("generate sample accounts done")
-    # employee = get_employee_by_user(request.user)
-    # if employee:
-    #     utils_generate_sample_data(employee, year, month)
     return redirect("sao:home")
 
 

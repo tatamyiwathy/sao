@@ -146,8 +146,5 @@ urlpatterns = [
         name="time_clock_detail",
     ),
     # for sample data
-    path("setup_sample_data", setup_sample_data, name="setup_sample_data"),
     path("generate_sample_data", generate_sample_data, name="generate_sample_data"),
-    path("sample_stamp", sample_stamp, name="sample_stamp"),
-    path("clear_stamp", clear_stamp, name="clear_stamp"),
 ]
