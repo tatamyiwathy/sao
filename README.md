@@ -1,6 +1,10 @@
 # sao
 Djangoの勤怠管理アプリです
 
+#### Pythonバージョン
+
+- Python 3.12.3
+
 ## セットアップ
 
 1. コードをzipでダウンロードやgit cloneなどでローカルに展開します
@@ -24,14 +28,9 @@ Djangoの勤怠管理アプリです
 ## 実行
 
 ```
-docker compose up --build
+make run-web
 ```
 
-## 使い方
-
-ブラウザで ```http://localhost:8000/sao/```にアクセス
-
-- 以下、作成中
 
 ## ライセンス
 
