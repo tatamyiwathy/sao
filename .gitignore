@@ -4,6 +4,7 @@ __pycache__/
 *.egg
 *.egg-info/
 *.pyo
+.venv/
 
 # Django関連
 db.sqlite3
