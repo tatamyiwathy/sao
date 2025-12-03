@@ -20,7 +20,7 @@ Djangoの勤怠管理アプリです
    ```
    生成された値を `.env` の `SECRET_KEY=` の後ろに貼り付けてください。
 
-1. DJANGO_SUPERUSER_PASSWORDとMYSQL_ROOT_PASSWORDは```PLEASE_SET_YOUR_OWN_PASSWORD```をユーザーが作成したパスワード文字列におきかえてください
+1. その他の環境変数についても書き換えてください。
 
 
 1. SAO_PROFILEはアプリケーションのプロファイルを切り替えます。```dev```で開発バージョン、```prod```で製品バージョンに切り替わります
