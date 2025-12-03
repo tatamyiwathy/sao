@@ -79,38 +79,26 @@
 					</li>
 					{% endif %}
 
-					{% if user.is_staff %}
-					<li class="nav-item">
-						<a class="nav-link" href={% url 'sao:day_switch_time_view' %}>日付切り替え時間</a>
-					</li>
-					{% endif %}
-
                 </ul>
 
 
 				<ul class="nav navbar-nav ms-auto">
 					{% if user.is_authenticated %}
 
+							{% if user.is_staff %}
 					<li class="nav-item dropdown">
 						<a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="oi oi-cog"></span></a>
 						<ul class="dropdown-menu">
 							<li><a class="dropdown-item" href={% url 'sao:permission' %}>ユーザー権限</a></li>
 							<li><a class="dropdown-item" href={% url 'sao:holiday_settings' %}>公休日設定</a></li>
 							<li><a class="dropdown-item" href={% url 'sao:working_hours_view' %}>勤務時間設定</a></li>
-							{% if user.is_staff %}
-							{% endif %}
-						</ul>
-					</li>
-
-					<li class="nav-item dropdown">
-						<a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">他のアプリ<b class="caret"></b></a>
-						<ul class="dropdown-menu">
-							{% if user.is_staff or user.permission.enable_add_staff %}
 							<li><a class="dropdown-item" href={% url 'sao:employee_list' %}>雇用情報</a></li>
 							<li><a class="dropdown-item" href={% url 'sao_accounts:list' %}>アカウント管理</a></li>
-							{% endif %}
+    						<li><a class="nav-link" href={% url 'sao:day_switch_time_view' %}>日付切り替え時間</a></li>
 						</ul>
 					</li>
+							{% endif %}
+
 
 
 
