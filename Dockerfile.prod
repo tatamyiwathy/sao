@@ -2,6 +2,7 @@ FROM python:3.11-slim
 
 # 環境変数をビルド引数として受け取る
 ARG SAO_APPUSER=saouser
+ENV SAO_APPUSER=${SAO_APPUSER}
 
 # 必要なパッケージをインストール
 RUN apt-get update && apt-get install -y \
