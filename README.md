@@ -28,6 +28,8 @@ Djangoの勤怠管理アプリです
 ## 実行
 
 ```
+make build
+make db-setup
 make run-web
 ```
 
@@ -38,4 +40,4 @@ MIT
 
 ## 開発者
 
-[tatamyiwathy](http://github.com/tatamyiwathy)
+[@tatamyiwathy](http://github.com/tatamyiwathy)
