@@ -16,7 +16,7 @@ export SAO_DB_PASSWORD
 
 .PHONY: build dn deploy deploy-bg shell log ps clean clean-db debug-db run-db stop-db db-shell \
 		test test-with-db test-verbose test-coverage test-app test-file \
-		coverage-report coverage-html clean-test clean-coverage generate-db-init \
+		coverage-report coverage-html clean-test clean-coverage db-setup \
 		makemigrations migrate help run-web stop-web restart-web \
 		merge-to-main create-branch finish-branch git-status
 		
@@ -79,9 +79,9 @@ stop-db:
 	docker compose ${DKC_OPT} stop db
 	@echo "✅ Database service stopped"
 
-# データベース初期化ファイルの生成
-# 	ファイル内で使用する変数は.envファイルから取得
-generate-db-init:
+# データベース初期化SQLファイルの生成
+# .envファイルの環境変数をinit.templateに展開してinit.sqlを作成
+db-setup:
 	@echo "🔧 Generating database initialization file..."
 	envsubst < docker/db-init/init.template > docker/db-init/init.sql
 	@echo "✅ Generated docker/db-init/init.sql"
@@ -203,7 +203,7 @@ help:
 	@echo "    make stop-db     - Stop database service"
 	@echo ""
 	@echo "  Database:"
-	@echo "    make generate-db-init - Generate database initialization file"
+	@echo "    make db-setup - Generate database initialization file"
 	@echo "    make debug-db         - Debug database connection"
 	@echo "    make db-shell         - Access MySQL shell"
 	@echo ""
@@ -235,7 +235,7 @@ help:
 	@echo ""
 	@echo "  Quick Start (Development):"
 	@echo "    1. make build"
-	@echo "    2. make generate-db-init"
+	@echo "    2. make db-setup"
 	@echo "    3. make run-web"
 
 
